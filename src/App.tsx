@@ -25,10 +25,10 @@ import Contact from "./pages/Contact";
 import FAQ from "./pages/FAQ";
 import Privacy from "./pages/Privacy";
 import NotFound from "./pages/NotFound";
-import VerifyLogin from "./pages/verifyLogin";
 import VerifyRegistration from "./pages/verifyRegistration";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
+import VerifyLogin from "./pages/VerifyLogin";
 
 const queryClient = new QueryClient();
 
