@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ShoppingCart, Heart, User, Search, Menu } from "lucide-react";
+import { ShoppingCart, Heart, User, Search, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -8,6 +8,7 @@ import { useState } from "react";
 export const Header = () => {
   const [cartCount] = useState(0);
   const [wishlistCount] = useState(0);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60">
@@ -63,13 +64,19 @@ export const Header = () => {
               </Button>
             </Link>
 
-            <Button variant="ghost" size="icon" className="md:hidden">
-              <Menu className="h-5 w-5" />
+            {/* Hamburger Button */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="md:hidden"
+              onClick={() => setIsMenuOpen((prev) => !prev)}
+            >
+              {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </Button>
           </div>
         </div>
 
-        {/* Navigation */}
+        {/* Navigation - Desktop */}
         <nav className="hidden md:flex h-12 items-center space-x-6 text-sm">
           <Link to="/" className="font-medium text-foreground hover:text-primary transition-colors">
             Home
@@ -90,6 +97,30 @@ export const Header = () => {
             Custom Sattu
           </Link>
         </nav>
+
+        {/* Mobile Menu */}
+        {isMenuOpen && (
+          <div className="md:hidden flex flex-col space-y-2 pb-3">
+            <Link to="/" className="block px-3 py-2 text-sm font-medium text-foreground hover:text-primary">
+              Home
+            </Link>
+            <Link to="/products" className="block px-3 py-2 text-sm text-muted-foreground hover:text-primary">
+              All Products
+            </Link>
+            <Link to="/sattu-powder" className="block px-3 py-2 text-sm text-muted-foreground hover:text-primary">
+              Sattu Powder
+            </Link>
+            <Link to="/ready-to-drink" className="block px-3 py-2 text-sm text-muted-foreground hover:text-primary">
+              Ready to Drink
+            </Link>
+            <Link to="/snacks-ladoo" className="block px-3 py-2 text-sm text-muted-foreground hover:text-primary">
+              Snacks & Ladoo
+            </Link>
+            <Link to="/custom-sattu" className="block px-3 py-2 text-sm text-muted-foreground hover:text-primary">
+              Custom Sattu
+            </Link>
+          </div>
+        )}
 
         {/* Search Bar - Mobile */}
         <div className="pb-3 md:hidden">
