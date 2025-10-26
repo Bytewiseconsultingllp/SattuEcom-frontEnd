@@ -8,6 +8,7 @@ import { useNavigate } from "react-router-dom";
 import CompanyLogo from "@/assets/companyLogo.jpeg";
 import { useCart } from "@/contexts/CartContext";
 import { getUserCookie, removeUserCookie } from "@/utils/cookie";
+import { getWishlistItems } from "@/lib/api/wishlist";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,7 +20,7 @@ import {
 
 export const Header = () => {
   const { cartCount } = useCart();
-  const [wishlistCount] = useState(0);
+  const [wishlistCount, setWishlistCount] = useState(0);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const navigate = useNavigate();
 
@@ -33,6 +34,19 @@ export const Header = () => {
     const uc = userData;
     return Boolean(uc && (uc.token || uc?.data?.token));
   }, [userData]);
+
+  useEffect(() => {
+    const fetchWishlistCount = async () => {
+      try {
+        if (!isLoggedIn) { setWishlistCount(0); return; }
+        const res = await getWishlistItems();
+        setWishlistCount(res?.data?.length || res?.count || 0);
+      } catch {
+        setWishlistCount(0);
+      }
+    };
+    fetchWishlistCount();
+  }, [isLoggedIn]);
 
   const handleWishlistClick = () => {
     if (!isLoggedIn) {
@@ -54,6 +68,7 @@ export const Header = () => {
     navigate("/");
     // force header to re-evaluate
     setUserData(null);
+    setWishlistCount(0);
   };
 
   return (

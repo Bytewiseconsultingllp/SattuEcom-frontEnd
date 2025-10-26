@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -8,75 +9,50 @@ import { Separator } from "@/components/ui/separator";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { MapPin, Package, Gift, Trash2, Plus, Minus, ChevronDown, ChevronUp, CreditCard } from "lucide-react";
 import { toast } from "sonner";
+import { getAddressById as apiGetAddressById } from "@/lib/api/addresses";
+import { useCart } from "@/contexts/CartContext";
 
-const dummyAddresses = [
-  {
-    id: "1",
-    name: "Rahul Kumar",
-    phone: "+91 98765 43210",
-    address: "123, MG Road, Near City Mall",
-    city: "Bangalore",
-    state: "Karnataka",
-    pincode: "560001",
-  },
-  {
-    id: "2",
-    name: "Rahul Kumar",
-    phone: "+91 98765 43210",
-    address: "456, Park Street, Opposite Metro Station",
-    city: "Mumbai",
-    state: "Maharashtra",
-    pincode: "400001",
-  },
-];
 
-const dummyCartItems = [
-  {
-    id: "1",
-    name: "Premium Sattu Powder",
-    category: "Sattu Powder",
-    price: 299,
-    quantity: 2,
-    image: "/placeholder.svg",
-  },
-  {
-    id: "2",
-    name: "Organic Sattu Ladoo",
-    category: "Snacks",
-    price: 199,
-    quantity: 1,
-    image: "/placeholder.svg",
-  },
-];
+// Order review uses the actual items from CartContext
 
 const OrderReview = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const addressId = location.state?.addressId;
+  const addressId = location.state?.addressId || (() => {
+    try { return sessionStorage.getItem('selected_address_id') || undefined; } catch { return undefined; }
+  })();
   const deliveryOptions = location.state?.deliveryOptions || {};
   
-  const [cartItems, setCartItems] = useState(dummyCartItems);
+  const { cartItems, updateQuantity, removeFromCart } = useCart();
   const [isBillOpen, setIsBillOpen] = useState(false);
-  
-  const selectedAddress = dummyAddresses.find(a => a.id === addressId) || dummyAddresses[0];
+  const [selectedAddress, setSelectedAddress] = useState<any | null>(null);
 
-  const updateQuantity = (id: string, change: number) => {
-    setCartItems(items => 
-      items.map(item => 
-        item.id === id 
-          ? { ...item, quantity: Math.max(1, item.quantity + change) }
-          : item
-      )
-    );
+  useEffect(() => {
+    (async () => {
+      if (!addressId) return;
+      try {
+        const res = await apiGetAddressById(addressId);
+        if (res?.success) setSelectedAddress(res.data);
+      } catch (e: any) {
+        // Non-fatal; show minimal info
+        setSelectedAddress(null);
+      }
+    })();
+  }, [addressId]);
+
+  const handleQtyChange = async (itemId: string, change: number, currentQty: number) => {
+    const newQty = Math.max(1, currentQty + change);
+    if (newQty === currentQty) return;
+    await updateQuantity(itemId, newQty);
   };
 
-  const removeItem = (id: string) => {
-    setCartItems(items => items.filter(item => item.id !== id));
+  const removeItem = async (id: string) => {
+    await removeFromCart(id);
     toast.success("Item removed from order");
   };
 
   // Calculate costs
-  const subtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const subtotal = cartItems.reduce((sum, item) => sum + ((item.product?.price || 0) * item.quantity), 0);
   
   const deliveryCharges = deliveryOptions.deliverySpeed === "express" ? 50 : 
                           deliveryOptions.deliverySpeed === "overnight" ? 150 : 0;
@@ -132,12 +108,20 @@ const OrderReview = () => {
                       </Button>
                     </div>
                     <div className="bg-accent/5 p-4 rounded-lg">
-                      <p className="font-semibold mb-1">{selectedAddress.name}</p>
-                      <p className="text-sm text-muted-foreground mb-1">{selectedAddress.address}</p>
-                      <p className="text-sm text-muted-foreground mb-1">
-                        {selectedAddress.city}, {selectedAddress.state} - {selectedAddress.pincode}
-                      </p>
-                      <p className="text-sm text-muted-foreground">Phone: {selectedAddress.phone}</p>
+                      {!addressId ? (
+                        <p className="text-sm text-destructive">No address selected. Go back to Checkout.</p>
+                      ) : selectedAddress ? (
+                        <div>
+                          <p className="font-semibold mb-1">{selectedAddress.full_name}{selectedAddress.label ? ` • ${selectedAddress.label}` : ''}</p>
+                          <p className="text-sm text-muted-foreground mb-1">{selectedAddress.address_line1}{selectedAddress.address_line2 ? `, ${selectedAddress.address_line2}` : ''}</p>
+                          <p className="text-sm text-muted-foreground mb-1">
+                            {selectedAddress.city}, {selectedAddress.state} - {selectedAddress.postal_code}
+                          </p>
+                          <p className="text-sm text-muted-foreground">Phone: {selectedAddress.phone}</p>
+                        </div>
+                      ) : (
+                        <p className="text-sm">Address ID: {addressId}</p>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -150,7 +134,7 @@ const OrderReview = () => {
                         <Package className="h-6 w-6 text-primary" />
                         <h2 className="text-xl font-bold">Delivery Options</h2>
                       </div>
-                      <Button variant="outline" size="sm" onClick={() => navigate("/delivery-options", { state: { addressId } })}>
+                      <Button variant="outline" size="sm" onClick={() => { try { if (addressId) sessionStorage.setItem('selected_address_id', addressId); } catch {}; navigate("/delivery-options", { state: { addressId } }); }}>
                         Change
                       </Button>
                     </div>
@@ -191,18 +175,20 @@ const OrderReview = () => {
                     <div className="space-y-4">
                       {cartItems.map(item => (
                         <div key={item.id} className="flex gap-4 p-4 bg-accent/5 rounded-lg">
-                          <img 
-                            src={item.image} 
-                            alt={item.name}
-                            className="w-20 h-20 object-cover rounded-lg"
-                          />
+                          <Link to={`/product/${item.product?.id}`}>
+                            <img 
+                              src={item.product?.image_url || "/placeholder.svg"} 
+                              alt={item.product?.name || "Product"}
+                              className="w-20 h-20 object-cover rounded-lg"
+                            />
+                          </Link>
                           
                           <div className="flex-1">
-                            <h3 className="font-semibold mb-1">{item.name}</h3>
-                            <p className="text-sm text-muted-foreground mb-2">{item.category}</p>
+                            <Link to={`/product/${item.product?.id}`} className="font-semibold mb-1 block hover:text-primary">{item.product?.name || 'Product'}</Link>
+                            <p className="text-sm text-muted-foreground mb-2">{item.product?.category}</p>
                             
                             <div className="flex items-center justify-between">
-                              <span className="font-bold text-primary">₹{item.price} × {item.quantity}</span>
+                              <span className="font-bold text-primary">₹{item.product?.price || 0} × {item.quantity}</span>
                               
                               <div className="flex items-center gap-2">
                                 <div className="flex items-center border rounded-lg">
@@ -210,7 +196,7 @@ const OrderReview = () => {
                                     variant="ghost" 
                                     size="icon"
                                     className="h-7 w-7"
-                                    onClick={() => updateQuantity(item.id, -1)}
+                                    onClick={() => handleQtyChange(item.id, -1, item.quantity)}
                                   >
                                     <Minus className="h-3 w-3" />
                                   </Button>
@@ -219,7 +205,7 @@ const OrderReview = () => {
                                     variant="ghost" 
                                     size="icon"
                                     className="h-7 w-7"
-                                    onClick={() => updateQuantity(item.id, 1)}
+                                    onClick={() => handleQtyChange(item.id, 1, item.quantity)}
                                   >
                                     <Plus className="h-3 w-3" />
                                   </Button>
@@ -320,7 +306,7 @@ const OrderReview = () => {
                         variant="outline" 
                         size="lg" 
                         className="w-full"
-                        onClick={() => navigate("/delivery-options", { state: { addressId } })}
+                        onClick={() => { try { if (addressId) sessionStorage.setItem('selected_address_id', addressId); } catch {}; navigate("/delivery-options", { state: { addressId } }); }}
                       >
                         Back to Delivery Options
                       </Button>

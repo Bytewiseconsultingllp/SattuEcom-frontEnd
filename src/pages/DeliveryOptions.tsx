@@ -14,7 +14,9 @@ import { toast } from "sonner";
 const DeliveryOptions = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const addressId = location.state?.addressId;
+  const addressId = location.state?.addressId || (() => {
+    try { return sessionStorage.getItem('selected_address_id') || undefined; } catch { return undefined; }
+  })();
   
   const [isGift, setIsGift] = useState(false);
   const [giftMessage, setGiftMessage] = useState("");
@@ -28,6 +30,7 @@ const DeliveryOptions = () => {
       return;
     }
 
+    try { if (addressId) sessionStorage.setItem('selected_address_id', addressId); } catch {}
     navigate("/order-review", { 
       state: { 
         addressId,

@@ -1,14 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   Package,
   Heart,
@@ -21,6 +14,12 @@ import {
   Truck,
   Calendar,
 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+ 
 import {
   Sidebar,
   SidebarContent,
@@ -40,13 +39,32 @@ import {
 } from "@/components/ui/collapsible";
 import { ChevronDown } from "lucide-react";
 import { removeUserCookie } from "@/utils/cookie";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
+import { getAddresses as apiGetAddresses, createAddress as apiCreateAddress, setDefaultAddress as apiSetDefaultAddress, deleteAddress as apiDeleteAddress, updateAddress as apiUpdateAddress } from "@/lib/api/addresses";
+import { toast } from "sonner";
+import { getWishlistItems } from "@/lib/api/wishlist";
 
 const UserDashboard = () => {
   const [activeSection, setActiveSection] = useState("overview");
   const [orderStatusFilter, setOrderStatusFilter] = useState("all");
   const [dateFilter, setDateFilter] = useState("all");
   const navigate = useNavigate();
+  const [addresses, setAddresses] = useState<any[]>([]);
+  const [addrLoading, setAddrLoading] = useState<boolean>(false);
+  const [addrDialogOpen, setAddrDialogOpen] = useState(false);
+  const [editAddressId, setEditAddressId] = useState<string | null>(null);
+  const [newAddress, setNewAddress] = useState({
+    label: "Home",
+    full_name: "",
+    phone: "",
+    address_line1: "",
+    city: "",
+    state: "",
+    postal_code: "",
+    is_default: false,
+  });
+  const [wishlistItems, setWishlistItems] = useState<any[]>([]);
+  const [wishlistLoading, setWishlistLoading] = useState<boolean>(false);
 
   const orders = [
     {
@@ -158,6 +176,111 @@ const UserDashboard = () => {
   function handleLogout() {
     removeUserCookie();
     navigate("/login");
+  }
+
+  useEffect(() => {
+    (async () => {
+      try {
+        setAddrLoading(true);
+        const res = await apiGetAddresses();
+        if (res?.success) setAddresses(res.data || []);
+      } catch (e: any) {
+        toast.error(e.message || "Failed to load addresses");
+      } finally {
+        setAddrLoading(false);
+      }
+    })();
+  }, []);
+
+  useEffect(() => {
+    if (activeSection !== 'wishlist') return;
+    (async () => {
+      try {
+        setWishlistLoading(true);
+        const res = await getWishlistItems();
+        if (res?.success) setWishlistItems(res.data || []);
+      } catch (e: any) {
+        toast.error(e.message || "Failed to load wishlist");
+      } finally {
+        setWishlistLoading(false);
+      }
+    })();
+  }, [activeSection]);
+
+  async function handleAddAddress() {
+    const phoneOk = /^\+?\d{10,15}$/.test(newAddress.phone);
+    const pinOk = /^\d{5,6}$/.test(newAddress.postal_code);
+    if (!newAddress.label || !newAddress.full_name || !newAddress.phone || !newAddress.address_line1 || !newAddress.city || !newAddress.state || !newAddress.postal_code) {
+      toast.error("Please fill all fields");
+      return;
+    }
+    if (!phoneOk) { toast.error("Enter a valid phone number"); return; }
+    if (!pinOk) { toast.error("Enter a valid pincode"); return; }
+    try {
+      if (editAddressId) {
+        const res = await apiUpdateAddress(editAddressId, { ...newAddress, country: 'India' });
+        if (res?.success) {
+          setAddresses(prev => prev.map(a => a.id === editAddressId ? res.data : a));
+          setAddrDialogOpen(false);
+          setEditAddressId(null);
+          resetForm();
+          toast.success("Address updated");
+        }
+      } else {
+        const res = await apiCreateAddress({ ...newAddress, country: 'India' });
+        if (res?.success) {
+          setAddresses(prev => [res.data, ...prev]);
+          resetForm();
+          setAddrDialogOpen(false);
+          toast.success("Address added");
+        }
+      }
+    } catch (e: any) {
+      toast.error(e.message || (editAddressId ? "Failed to update address" : "Failed to add address"));
+    }
+  }
+
+  function resetForm() {
+    setNewAddress({ label: "Home", full_name: "", phone: "", address_line1: "", city: "", state: "", postal_code: "", is_default: false });
+  }
+
+  function openEditAddress(address: any) {
+    setEditAddressId(address.id);
+    setNewAddress({
+      label: address.label || "Home",
+      full_name: address.full_name || "",
+      phone: address.phone || "",
+      address_line1: address.address_line1 || "",
+      city: address.city || "",
+      state: address.state || "",
+      postal_code: address.postal_code || "",
+      is_default: !!address.is_default,
+    });
+    setAddrDialogOpen(true);
+  }
+
+  async function handleSetDefault(id: string) {
+    try {
+      const res = await apiSetDefaultAddress(id);
+      if (res?.success) {
+        setAddresses(prev => prev.map(a => ({ ...a, is_default: a.id === id })));
+        toast.success("Default address updated");
+      }
+    } catch (e: any) {
+      toast.error(e.message || "Failed to set default");
+    }
+  }
+
+  async function handleDeleteAddress(id: string) {
+    try {
+      const res = await apiDeleteAddress(id);
+      if (res?.success) {
+        setAddresses(prev => prev.filter(a => a.id !== id));
+        toast.success("Address removed");
+      }
+    } catch (e: any) {
+      toast.error(e.message || "Failed to delete address");
+    }
   }
 
   return (
@@ -633,25 +756,104 @@ const UserDashboard = () => {
 
             {activeSection === "addresses" && (
               <div className="space-y-6 animate-fade-in">
-                <h2 className="text-2xl font-bold">Saved Addresses</h2>
+                <div className="flex justify-between items-center">
+                  <h2 className="text-2xl font-bold">Saved Addresses</h2>
+                  <Dialog open={addrDialogOpen} onOpenChange={(o) => { setAddrDialogOpen(o); if (!o) setEditAddressId(null); }}>
+                    <DialogTrigger asChild>
+                      <Button onClick={() => { setEditAddressId(null); resetForm(); }}>
+                        + Add New Address
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-md">
+                      <DialogHeader>
+                        <DialogTitle>{editAddressId ? 'Edit Address' : 'Add New Address'}</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4 py-2">
+                        <div className="space-y-2">
+                          <Label htmlFor="label">Label</Label>
+                          <Select value={newAddress.label} onValueChange={(v) => setNewAddress({ ...newAddress, label: v })}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select label" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Home">Home</SelectItem>
+                              <SelectItem value="Work">Work</SelectItem>
+                              <SelectItem value="Other">Other</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="full_name">Full Name</Label>
+                          <Input id="full_name" value={newAddress.full_name} onChange={e => setNewAddress({ ...newAddress, full_name: e.target.value })} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="phone">Phone</Label>
+                          <Input id="phone" value={newAddress.phone} onChange={e => setNewAddress({ ...newAddress, phone: e.target.value })} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="address_line1">Address</Label>
+                          <Textarea id="address_line1" rows={3} value={newAddress.address_line1} onChange={e => setNewAddress({ ...newAddress, address_line1: e.target.value })} />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="city">City</Label>
+                            <Input id="city" value={newAddress.city} onChange={e => setNewAddress({ ...newAddress, city: e.target.value })} />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="state">State</Label>
+                            <Input id="state" value={newAddress.state} onChange={e => setNewAddress({ ...newAddress, state: e.target.value })} />
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="postal_code">Pincode</Label>
+                          <Input id="postal_code" value={newAddress.postal_code} onChange={e => setNewAddress({ ...newAddress, postal_code: e.target.value })} />
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <input id="is_default" type="checkbox" checked={newAddress.is_default} onChange={(e) => setNewAddress({ ...newAddress, is_default: e.target.checked })} />
+                          <Label htmlFor="is_default">Set as default</Label>
+                        </div>
+                        <Button className="w-full" onClick={handleAddAddress}>{editAddressId ? 'Update Address' : 'Save Address'}</Button>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                </div>
                 <Card>
                   <CardContent className="p-6 space-y-4">
-                    <div className="border rounded-lg p-4">
-                      <div className="flex justify-between items-start mb-2">
-                        <h3 className="font-semibold">Home</h3>
-                        <Badge>Default</Badge>
+                    {addrLoading ? (
+                      <p className="text-sm text-muted-foreground">Loading addresses...</p>
+                    ) : addresses.length === 0 ? (
+                      <p className="text-muted-foreground text-center py-8">No addresses yet</p>
+                    ) : (
+                      <div className="space-y-4">
+                        {addresses.map((address: any) => (
+                          <div key={address.id} className="border rounded-lg p-4">
+                            <div className="flex justify-between items-start mb-2">
+                              <div className="flex items-center gap-2">
+                                <MapPin className="h-4 w-4 text-primary" />
+                                <h3 className="font-semibold">{address.full_name}</h3>
+                                {address.label && <Badge variant="outline">{address.label}</Badge>}
+                                {address.is_default && <Badge>Default</Badge>}
+                              </div>
+                              <div className="flex gap-2">
+                                {!address.is_default && (
+                                  <Button variant="outline" size="sm" onClick={() => handleSetDefault(address.id)}>Set Default</Button>
+                                )}
+                                <Button variant="outline" size="sm" onClick={() => openEditAddress(address)}>Edit</Button>
+                                <Button variant="outline" size="sm" onClick={() => handleDeleteAddress(address.id)}>Delete</Button>
+                              </div>
+                            </div>
+                            <p className="text-sm text-muted-foreground">
+                              {address.address_line1}{address.address_line2 ? `, ${address.address_line2}` : ''}
+                              <br />
+                              {address.city}, {address.state} - {address.postal_code}
+                              <br />
+                              {address.country || 'India'}
+                            </p>
+                            <p className="text-sm text-muted-foreground mt-1">Phone: {address.phone}</p>
+                          </div>
+                        ))}
                       </div>
-                      <p className="text-sm text-muted-foreground">
-                        123 Main Street, Apartment 4B
-                        <br />
-                        Patna, Bihar 800001
-                        <br />
-                        India
-                      </p>
-                    </div>
-                    <Button variant="outline" className="w-full">
-                      + Add New Address
-                    </Button>
+                    )}
                   </CardContent>
                 </Card>
               </div>
@@ -662,9 +864,27 @@ const UserDashboard = () => {
                 <h2 className="text-2xl font-bold">My Wishlist</h2>
                 <Card>
                   <CardContent className="p-6">
-                    <p className="text-muted-foreground text-center py-8">
-                      Your wishlist is empty
-                    </p>
+                    {wishlistLoading ? (
+                      <p className="text-muted-foreground text-center py-8">Loading wishlist...</p>
+                    ) : wishlistItems.length === 0 ? (
+                      <p className="text-muted-foreground text-center py-8">Your wishlist is empty</p>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {wishlistItems.map((item: any) => {
+                          const product = item.product;
+                          return (
+                            <div key={item.id} className="border rounded-lg p-4 hover:bg-accent/5 transition">
+                              <Link to={`/product/${product?.id}`} className="block">
+                                <img src={product?.image_url} alt={product?.name} className="w-full h-40 object-cover rounded-md mb-3" />
+                                <h3 className="font-semibold mb-1 line-clamp-2">{product?.name}</h3>
+                                <p className="text-sm text-muted-foreground mb-2">{product?.category}</p>
+                                <p className="font-bold text-primary">₹{product?.price}</p>
+                              </Link>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </div>

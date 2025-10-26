@@ -1,74 +1,80 @@
-import { supabase } from '@/integrations/supabase/client';
+import api from '@/lib/axiosInstance';
+import axios from 'axios';
 
-export const getAddresses = async (userId: string) => {
-  const { data, error } = await supabase
-    .from('addresses')
-    .select('*')
-    .eq('user_id', userId)
-    .order('is_default', { ascending: false });
-
-  if (error) throw error;
-  return data;
+export const getAddresses = async (): Promise<any> => {
+  try {
+    const res = await api.get('/addresses');
+    return res.data; // { success, count, data }
+  } catch (err: any) {
+    if (axios.isAxiosError(err)) {
+      const serverMsg = err.response?.data?.message ?? err.response?.data ?? err.message;
+      throw new Error(typeof serverMsg === 'string' ? serverMsg : JSON.stringify(serverMsg));
+    }
+    throw err;
+  }
 };
 
-export const getAddressById = async (addressId: string) => {
-  const { data, error } = await supabase
-    .from('addresses')
-    .select('*')
-    .eq('id', addressId)
-    .single();
-
-  if (error) throw error;
-  return data;
+export const getAddressById = async (id: string): Promise<any> => {
+  try {
+    const res = await api.get(`/addresses/${id}`);
+    return res.data; // { success, data }
+  } catch (err: any) {
+    if (axios.isAxiosError(err)) {
+      const serverMsg = err.response?.data?.message ?? err.response?.data ?? err.message;
+      throw new Error(typeof serverMsg === 'string' ? serverMsg : JSON.stringify(serverMsg));
+    }
+    throw err;
+  }
 };
 
-export const createAddress = async (address: any) => {
-  const { data, error } = await supabase
-    .from('addresses')
-    .insert(address)
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data;
+export const createAddress = async (payload: any): Promise<any> => {
+  try {
+    const res = await api.post('/addresses', payload);
+    return res.data; // { success, data }
+  } catch (err: any) {
+    if (axios.isAxiosError(err)) {
+      const serverMsg = err.response?.data?.message ?? err.response?.data ?? err.message;
+      throw new Error(typeof serverMsg === 'string' ? serverMsg : JSON.stringify(serverMsg));
+    }
+    throw err;
+  }
 };
 
-export const updateAddress = async (addressId: string, updates: any) => {
-  const { data, error } = await supabase
-    .from('addresses')
-    .update(updates)
-    .eq('id', addressId)
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data;
+export const updateAddress = async (id: string, payload: any): Promise<any> => {
+  try {
+    const res = await api.put(`/addresses/${id}`, payload);
+    return res.data; // { success, data }
+  } catch (err: any) {
+    if (axios.isAxiosError(err)) {
+      const serverMsg = err.response?.data?.message ?? err.response?.data ?? err.message;
+      throw new Error(typeof serverMsg === 'string' ? serverMsg : JSON.stringify(serverMsg));
+    }
+    throw err;
+  }
 };
 
-export const deleteAddress = async (addressId: string) => {
-  const { error } = await supabase
-    .from('addresses')
-    .delete()
-    .eq('id', addressId);
-
-  if (error) throw error;
+export const deleteAddress = async (id: string): Promise<any> => {
+  try {
+    const res = await api.delete(`/addresses/${id}`);
+    return res.data; // { success, message }
+  } catch (err: any) {
+    if (axios.isAxiosError(err)) {
+      const serverMsg = err.response?.data?.message ?? err.response?.data ?? err.message;
+      throw new Error(typeof serverMsg === 'string' ? serverMsg : JSON.stringify(serverMsg));
+    }
+    throw err;
+  }
 };
 
-export const setDefaultAddress = async (userId: string, addressId: string) => {
-  // First, unset all defaults for this user
-  await supabase
-    .from('addresses')
-    .update({ is_default: false })
-    .eq('user_id', userId);
-
-  // Then set the new default
-  const { data, error } = await supabase
-    .from('addresses')
-    .update({ is_default: true })
-    .eq('id', addressId)
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data;
+export const setDefaultAddress = async (id: string): Promise<any> => {
+  try {
+    const res = await api.patch(`/addresses/${id}/set-default`);
+    return res.data; // { success, data }
+  } catch (err: any) {
+    if (axios.isAxiosError(err)) {
+      const serverMsg = err.response?.data?.message ?? err.response?.data ?? err.message;
+      throw new Error(typeof serverMsg === 'string' ? serverMsg : JSON.stringify(serverMsg));
+    }
+    throw err;
+  }
 };

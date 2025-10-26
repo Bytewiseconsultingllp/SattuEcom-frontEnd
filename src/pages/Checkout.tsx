@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -11,68 +11,106 @@ import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Plus, MapPin, Check } from "lucide-react";
 import { toast } from "sonner";
-
-const dummyAddresses = [
-  {
-    id: "1",
-    name: "Rahul Kumar",
-    phone: "+91 98765 43210",
-    address: "123, MG Road, Near City Mall",
-    city: "Bangalore",
-    state: "Karnataka",
-    pincode: "560001",
-    isDefault: true,
-  },
-  {
-    id: "2",
-    name: "Rahul Kumar",
-    phone: "+91 98765 43210",
-    address: "456, Park Street, Opposite Metro Station",
-    city: "Mumbai",
-    state: "Maharashtra",
-    pincode: "400001",
-    isDefault: false,
-  },
-];
+import { getAddresses as apiGetAddresses, createAddress as apiCreateAddress, updateAddress as apiUpdateAddress } from "@/lib/api/addresses";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const Checkout = () => {
   const navigate = useNavigate();
-  const [addresses, setAddresses] = useState(dummyAddresses);
-  const [selectedAddressId, setSelectedAddressId] = useState(addresses.find(a => a.isDefault)?.id || addresses[0]?.id);
+  const [addresses, setAddresses] = useState<any[]>([]);
+  const [selectedAddressId, setSelectedAddressId] = useState<string | undefined>(undefined);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editAddressId, setEditAddressId] = useState<string | null>(null);
   const [newAddress, setNewAddress] = useState({
-    name: "",
+    label: "Home",
+    full_name: "",
     phone: "",
-    address: "",
+    address_line1: "",
     city: "",
     state: "",
-    pincode: "",
+    postal_code: "",
+    is_default: false,
   });
 
-  const handleAddAddress = () => {
-    if (!newAddress.name || !newAddress.phone || !newAddress.address || !newAddress.city || !newAddress.state || !newAddress.pincode) {
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await apiGetAddresses();
+        if (res?.success) {
+          setAddresses(res.data || []);
+          const def = (res.data || []).find((a: any) => a.is_default);
+          setSelectedAddressId(def?.id || (res.data?.[0]?.id));
+        }
+      } catch (e: any) {
+        toast.error(e.message || "Failed to load addresses");
+      }
+    })();
+  }, []);
+
+  const handleAddAddress = async () => {
+    const phoneOk = /^\+?\d{10,15}$/.test(newAddress.phone);
+    const pinOk = /^\d{5,6}$/.test(newAddress.postal_code);
+    if (!newAddress.label || !newAddress.full_name || !newAddress.phone || !newAddress.address_line1 || !newAddress.city || !newAddress.state || !newAddress.postal_code) {
       toast.error("Please fill all fields");
       return;
     }
+    if (!phoneOk) { toast.error("Enter a valid phone number"); return; }
+    if (!pinOk) { toast.error("Enter a valid pincode"); return; }
 
-    const address = {
-      id: Date.now().toString(),
-      ...newAddress,
-      isDefault: addresses.length === 0,
-    };
+    try {
+      const payload = { ...newAddress, country: 'India' };
+      if (editAddressId) {
+        const res = await apiUpdateAddress(editAddressId, payload);
+        if (res?.success) {
+          const updated = res.data;
+          setAddresses(prev => prev.map(a => a.id === editAddressId ? updated : a));
+          setSelectedAddressId(updated.id);
+          setIsDialogOpen(false);
+          setEditAddressId(null);
+          resetForm();
+          toast.success("Address updated successfully");
+        }
+      } else {
+        const res = await apiCreateAddress(payload);
+        if (res?.success) {
+          const created = res.data;
+          setAddresses(prev => [created, ...prev]);
+          setSelectedAddressId(created.id);
+          resetForm();
+          setIsDialogOpen(false);
+          toast.success("Address added successfully");
+        }
+      }
+    } catch (e: any) {
+      toast.error(e.message || (editAddressId ? "Failed to update address" : "Failed to add address"));
+    }
+  };
 
-    setAddresses([...addresses, address]);
-    setSelectedAddressId(address.id);
+  const resetForm = () => {
     setNewAddress({
-      name: "",
+      label: "Home",
+      full_name: "",
       phone: "",
-      address: "",
+      address_line1: "",
       city: "",
       state: "",
-      pincode: "",
+      postal_code: "",
+      is_default: false,
     });
-    setIsDialogOpen(false);
-    toast.success("Address added successfully");
+  };
+
+  const openEdit = (address: any) => {
+    setEditAddressId(address.id);
+    setNewAddress({
+      label: address.label || "Home",
+      full_name: address.full_name || "",
+      phone: address.phone || "",
+      address_line1: address.address_line1 || "",
+      city: address.city || "",
+      state: address.state || "",
+      postal_code: address.postal_code || "",
+      is_default: !!address.is_default,
+    });
+    setIsDialogOpen(true);
   };
 
   const handleContinue = () => {
@@ -80,6 +118,7 @@ const Checkout = () => {
       toast.error("Please select a delivery address");
       return;
     }
+    try { sessionStorage.setItem('selected_address_id', selectedAddressId); } catch {}
     navigate("/delivery-options", { state: { addressId: selectedAddressId } });
   };
 
@@ -101,22 +140,35 @@ const Checkout = () => {
               <h2 className="text-2xl font-bold">Saved Addresses</h2>
               <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                 <DialogTrigger asChild>
-                  <Button>
+                  <Button onClick={() => { setEditAddressId(null); resetForm(); }}>
                     <Plus className="h-4 w-4 mr-2" />
                     Add New Address
                   </Button>
                 </DialogTrigger>
                 <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
                   <DialogHeader>
-                    <DialogTitle>Add New Address</DialogTitle>
+                    <DialogTitle>{editAddressId ? 'Edit Address' : 'Add New Address'}</DialogTitle>
                   </DialogHeader>
                   <div className="space-y-4 py-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="label">Label</Label>
+                      <Select value={newAddress.label} onValueChange={(v) => setNewAddress({ ...newAddress, label: v })}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select label" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Home">Home</SelectItem>
+                          <SelectItem value="Work">Work</SelectItem>
+                          <SelectItem value="Other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                     <div className="space-y-2">
                       <Label htmlFor="name">Full Name</Label>
                       <Input 
                         id="name"
-                        value={newAddress.name}
-                        onChange={(e) => setNewAddress({...newAddress, name: e.target.value})}
+                        value={newAddress.full_name}
+                        onChange={(e) => setNewAddress({...newAddress, full_name: e.target.value})}
                         placeholder="Enter your full name"
                       />
                     </div>
@@ -133,8 +185,8 @@ const Checkout = () => {
                       <Label htmlFor="address">Address</Label>
                       <Textarea 
                         id="address"
-                        value={newAddress.address}
-                        onChange={(e) => setNewAddress({...newAddress, address: e.target.value})}
+                        value={newAddress.address_line1}
+                        onChange={(e) => setNewAddress({...newAddress, address_line1: e.target.value})}
                         placeholder="House No., Building Name, Street Name"
                         rows={3}
                       />
@@ -163,13 +215,17 @@ const Checkout = () => {
                       <Label htmlFor="pincode">Pincode</Label>
                       <Input 
                         id="pincode"
-                        value={newAddress.pincode}
-                        onChange={(e) => setNewAddress({...newAddress, pincode: e.target.value})}
+                        value={newAddress.postal_code}
+                        onChange={(e) => setNewAddress({...newAddress, postal_code: e.target.value})}
                         placeholder="123456"
                       />
                     </div>
+                    <div className="flex items-center gap-2">
+                      <input id="is_default" type="checkbox" checked={newAddress.is_default} onChange={(e) => setNewAddress({ ...newAddress, is_default: e.target.checked })} />
+                      <Label htmlFor="is_default">Set as default</Label>
+                    </div>
                     <Button onClick={handleAddAddress} className="w-full">
-                      Save Address
+                      {editAddressId ? 'Update Address' : 'Save Address'}
                     </Button>
                   </div>
                 </DialogContent>
@@ -178,7 +234,7 @@ const Checkout = () => {
 
             <RadioGroup value={selectedAddressId} onValueChange={setSelectedAddressId}>
               <div className="space-y-4 mb-8">
-                {addresses.map((address) => (
+                {addresses.map((address: any) => (
                   <Card key={address.id} className={`cursor-pointer transition-all ${selectedAddressId === address.id ? 'ring-2 ring-primary' : ''}`}>
                     <CardContent className="p-6">
                       <div className="flex items-start gap-4">
@@ -186,22 +242,28 @@ const Checkout = () => {
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-2">
                             <MapPin className="h-4 w-4 text-primary" />
-                            <span className="font-bold">{address.name}</span>
-                            {address.isDefault && (
+                            <span className="font-bold">{address.full_name}</span>
+                            {address.label && (
+                              <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded">{address.label}</span>
+                            )}
+                            {address.is_default && (
                               <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded">
                                 Default
                               </span>
                             )}
                           </div>
-                          <p className="text-sm text-muted-foreground mb-1">{address.address}</p>
+                          <p className="text-sm text-muted-foreground mb-1">{address.address_line1}{address.address_line2 ? `, ${address.address_line2}` : ''}</p>
                           <p className="text-sm text-muted-foreground mb-1">
-                            {address.city}, {address.state} - {address.pincode}
+                            {address.city}, {address.state} - {address.postal_code}
                           </p>
                           <p className="text-sm text-muted-foreground">Phone: {address.phone}</p>
                         </div>
                         {selectedAddressId === address.id && (
                           <Check className="h-5 w-5 text-primary" />
                         )}
+                        <div className="ml-auto">
+                          <Button variant="outline" size="sm" onClick={() => openEdit(address)}>Edit</Button>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
