@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
+import CompanyLogo from "@/assets/companyLogo.jpeg";
 
 export const Header = () => {
   const [cartCount] = useState(0);
@@ -17,10 +18,11 @@ export const Header = () => {
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-2">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-hero">
+            {/* <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-hero">
               <span className="text-lg font-bold text-primary-foreground">S</span>
-            </div>
-            <span className="text-xl font-bold text-foreground">SattuStore</span>
+            </div> */}
+            <img src={CompanyLogo} className="flex h-16 w-16 items-center justify-center rounded-lg"/>
+            <span className="text-xl font-bold text-foreground">Grain Fusion</span>
           </Link>
 
           {/* Search Bar - Desktop */}
