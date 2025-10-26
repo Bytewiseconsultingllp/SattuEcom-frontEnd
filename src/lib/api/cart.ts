@@ -69,22 +69,3 @@ export async function updateCartItemQuantity(id: string, quantity: number) {
     throw err;
   }
 }
-
-export async function clearCart(user_id?: string) {
-  try {
-    // axios.delete does not accept a body as second positional arg, but accepts config
-    // When user_id is provided we include it in the request body (`data` in axios config)
-    const userId = user_id;
-    const res = await api.delete(`/cart/clear/${userId}`);
-    return res.data;
-  } catch (err: any) {
-    if (axios.isAxiosError(err)) {
-      const serverMsg =
-        err.response?.data?.message ?? err.response?.data ?? err.message;
-      throw new Error(
-        typeof serverMsg === "string" ? serverMsg : JSON.stringify(serverMsg)
-      );
-    }
-    throw err;
-  }
-}

@@ -21,7 +21,7 @@ import { useCart } from "@/contexts/CartContext";
 import { CartItem } from "@/types/cart";
 
 const Cart = () => {
-  const { cartItems, cartTotal, removeFromCart, refreshCart, clearCart, loadingState } = useCart();
+  const { cartItems, cartTotal, removeFromCart, loadingState } = useCart();
 
   // Calculate shipping based on cart total
   const shipping = cartTotal > 500 ? 0 : 50;
@@ -199,26 +199,6 @@ const Cart = () => {
                         Continue Shopping
                       </Button>
                     </Link>
-
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="destructive" size="lg" className="w-full">
-                          Clear Cart
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Clear cart</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            This will remove all items from your cart. This action cannot be undone. Are you sure you want to continue?
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => clearCart()}>Clear</AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
                   </div>
                 </CardContent>
               </Card>

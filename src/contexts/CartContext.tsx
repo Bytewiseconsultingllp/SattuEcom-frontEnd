@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, ReactNode, useMemo } from 'react';
-import { getCartItems, addToCart as apiAddToCart, removeItemFromCart, updateCartItemQuantity, clearCart as apiClearCart } from '@/lib/api/cart';
+import { getCartItems, addToCart as apiAddToCart, removeItemFromCart, updateCartItemQuantity, } from '@/lib/api/cart';
 import { toast } from 'sonner';
 import { CartItem, ApiResponse } from '@/types/cart';
 import { getUserCookie } from '@/utils/cookie';
@@ -39,7 +39,6 @@ interface CartContextType {
   addToCart: (productId: string, quantity: number) => Promise<void>;
   removeFromCart: (itemId: string) => Promise<void>;
   updateQuantity: (itemId: string, quantity: number) => Promise<void>;
-  clearCart: () => Promise<void>;
   refreshCart: () => Promise<void>;
   isItemLoading: (itemId: string) => boolean;
 }
@@ -175,42 +174,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
       setLoadingState(null);
     }
   };
-
-  const clearCart = async () => {
-    // Optimistic clear
-    const previous = [...cartItems];
-    setCartItems([]);
-    setLoadingState({ type: 'clear' });
-    try {
-      const userData = getUserCookie();
-      // Pass user id from cookie when available; backend expects user id to clear
-      const response = await apiClearCart(userData?.data.user.id);
-      // server may return success boolean or ApiResponse - handle both
-      if (response && (response.success === undefined || response.success === true)) {
-        toast.success('Cart cleared');
-        // Ensure backend state reflected locally
-        getCartItems().then((res) => {
-          if ((res as ApiResponse<CartItem[]>).success) setCartItems((res as ApiResponse<CartItem[]>).data);
-        }).catch(() => {});
-      } else {
-        // revert if API indicated failure
-        setCartItems(previous);
-        toast.error('Failed to clear cart');
-      }
-    } catch (error) {
-      console.error('Error clearing cart:', error);
-      toast.error('Failed to clear cart');
-      setCartItems(previous);
-    } finally {
-      setLoadingState(null);
-    }
-  };
-
+  
   // Initial cart load
   useEffect(() => {
     refreshCart();
-    const userDetails = getUserCookie();
-    console.log(userDetails.data.user.id);
   }, []);
 
   // Track last refresh time to prevent rapid refreshes
@@ -263,7 +230,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
     addToCart,
     removeFromCart,
     updateQuantity,
-    clearCart,
     refreshCart,
     isItemLoading,
   };
