@@ -1,20 +1,21 @@
 import { Link } from "react-router-dom";
-import { ShoppingCart, Heart } from "lucide-react";
+import { ShoppingCart, Heart, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { useCart } from "@/contexts/CartContext";
 
 export interface Product {
   id: string;
   name: string;
   price: number;
   originalPrice?: number;
-  image: string;
+  image_url: string;
   category: string;
   rating: number;
-  reviews: number;
-  inStock: boolean;
+  reviews_count: number;
+  in_stock: boolean;
 }
 
 interface ProductCardProps {
@@ -26,10 +27,23 @@ export const ProductCard = ({ product }: ProductCardProps) => {
     ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
     : 0;
 
-  const handleAddToCart = (e: React.MouseEvent) => {
-    e.preventDefault();
-    toast.success("Added to cart!");
-  };
+  const { addToCart, loadingState } = useCart();
+
+  async function handleAddToCart(e: React.MouseEvent | null, productId: string, quantity: number) {
+    // prevent Link navigation when clicking the button inside the card
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    try {
+      await addToCart(productId, quantity);
+      // Cart context already shows toast on success; keep local toast for fallback
+      // toast.success("Added to Cart!");
+    } catch (error: any) {
+      toast.error(error?.message ?? "Failed to add to cart");
+    }
+  }
+  
 
   const handleAddToWishlist = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -41,7 +55,7 @@ export const ProductCard = ({ product }: ProductCardProps) => {
       <Card className="group overflow-hidden transition-all hover:shadow-xl animate-fade-in">
         <div className="relative overflow-hidden">
           <img 
-            src={product.image} 
+            src={product.image_url} 
             alt={product.name}
             className="h-64 w-full object-cover transition-all duration-500 group-hover:scale-110"
           />
@@ -50,7 +64,7 @@ export const ProductCard = ({ product }: ProductCardProps) => {
               {discount}% OFF
             </Badge>
           )}
-          {!product.inStock && (
+          {!product.in_stock && (
             <Badge className="absolute top-3 right-3 bg-muted text-muted-foreground">
               Out of Stock
             </Badge>
@@ -80,7 +94,7 @@ export const ProductCard = ({ product }: ProductCardProps) => {
               <span className="text-sm text-primary">★</span>
               <span className="text-sm font-medium ml-1">{product.rating}</span>
             </div>
-            <span className="text-sm text-muted-foreground">({product.reviews})</span>
+            <span className="text-sm text-muted-foreground">({product.reviews_count})</span>
           </div>
 
           <div className="flex items-baseline gap-2">
@@ -94,11 +108,15 @@ export const ProductCard = ({ product }: ProductCardProps) => {
         <CardFooter className="p-4 pt-0">
           <Button 
             className="w-full transition-all duration-300 hover:scale-105" 
-            disabled={!product.inStock}
-            onClick={handleAddToCart}
+            disabled={!product.in_stock}
+            onClick={(e) => handleAddToCart(e, product.id, 1)}
           >
-            <ShoppingCart className="mr-2 h-4 w-4" />
-            {product.inStock ? "Add to Cart" : "Out of Stock"}
+            {loadingState?.type === 'add' && loadingState.itemId === product.id ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <ShoppingCart className="mr-2 h-4 w-4" />
+            )}
+            {product.in_stock ? "Add to Cart" : "Out of Stock"}
           </Button>
         </CardFooter>
       </Card>

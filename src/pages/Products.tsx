@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { ProductCard } from "@/components/ProductCard";
@@ -7,16 +7,34 @@ import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+import { getProducts } from "@/lib/api/products";
+import { toast } from "sonner";
 
 const Products = () => {
   const [selectedCategory, setSelectedCategory] = useState("All Products");
   const [priceRange, setPriceRange] = useState([0, 1000]);
-  const [inStockOnly, setInStockOnly] = useState(false);
+  const [in_stockOnly, setIn_StockOnly] = useState(false);
+  const [products, setProducts] = useState([]);
+
+  useEffect(() =>{
+    getAllProducts();
+  }, [])
+
+  async function getAllProducts() {
+    try {
+      const response = await getProducts();
+      if (response.success) {
+        setProducts(response.data);
+      }
+    } catch (error: any) {
+      toast.error("Error Fetching the Products");
+    }
+  }
 
   const filteredProducts = products.filter(product => {
     const categoryMatch = selectedCategory === "All Products" || product.category === selectedCategory;
     const priceMatch = product.price >= priceRange[0] && product.price <= priceRange[1];
-    const stockMatch = !inStockOnly || product.inStock;
+    const stockMatch = !in_stockOnly || product.in_stock;
     return categoryMatch && priceMatch && stockMatch;
   });
 
@@ -77,11 +95,11 @@ const Products = () => {
                   <h3 className="font-semibold mb-4">Availability</h3>
                   <div className="flex items-center space-x-2">
                     <Checkbox 
-                      id="inStock" 
-                      checked={inStockOnly}
-                      onCheckedChange={(checked) => setInStockOnly(checked as boolean)}
+                      id="in_stock" 
+                      checked={in_stockOnly}
+                      onCheckedChange={(checked) => setIn_StockOnly(checked as boolean)}
                     />
-                    <Label htmlFor="inStock" className="cursor-pointer">In Stock Only</Label>
+                    <Label htmlFor="in_stock" className="cursor-pointer">In Stock Only</Label>
                   </div>
                 </div>
               </div>

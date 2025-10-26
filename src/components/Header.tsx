@@ -5,9 +5,10 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
 import CompanyLogo from "@/assets/companyLogo.jpeg";
+import { useCart } from "@/contexts/CartContext";
 
 export const Header = () => {
-  const [cartCount] = useState(0);
+  const { cartCount } = useCart();
   const [wishlistCount] = useState(0);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 

@@ -126,3 +126,22 @@ export const deleteAProduct = async (productId:string) => {
     throw err;
   } 
 }
+
+export const getProductById = async (productId: string) => {
+   try {
+    const response = await api.get(`/products/${productId}`);
+    if(response.data) {
+      return response.data;
+    }
+   } catch (err: any) {
+    // Axios error handling - prefer server message when available
+    if (axios.isAxiosError(err)) {
+      const serverMsg =
+        err.response?.data?.message ?? err.response?.data ?? err.message;
+      throw new Error(
+        typeof serverMsg === "string" ? serverMsg : JSON.stringify(serverMsg)
+      );
+    }
+    throw err;
+  } 
+}

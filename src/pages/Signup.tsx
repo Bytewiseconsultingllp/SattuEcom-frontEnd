@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { useAuth } from "@/hooks/useAuth";
+
 import { signup } from "@/lib/api/auth";
 
 const Signup = () => {
@@ -24,14 +24,14 @@ const Signup = () => {
   });
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const { user } = useAuth();
 
-  useEffect(() => {
-    // Redirect if already logged in
-    if (user) {
-      navigate("/user/dashboard");
-    }
-  }, [user, navigate]);
+
+  // useEffect(() => {
+  //   // Redirect if already logged in
+  //   if (user) {
+  //     navigate("/user/dashboard");
+  //   }
+  // }, [user, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

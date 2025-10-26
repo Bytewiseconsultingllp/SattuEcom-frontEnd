@@ -9,24 +9,24 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { useAuth } from "@/hooks/useAuth";
+
 import { signIn } from "@/lib/api/auth";
-import { setUserCookie } from "@/utils/cookie";
+import { setUserCookie, getUserCookie } from "@/utils/cookie";
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const { user } = useAuth();
 
-  useEffect(() => {
-    // Redirect if already logged in
-    if (user) {
-      // Check if admin (you can add admin role check here)
-      navigate("/user/dashboard");
-    }
-  }, [user, navigate]);
+
+  // useEffect(() => {
+  //   // Redirect if already logged in
+  //   if (getUserCookie) {
+  //     // Check if admin (you can add admin role check here)
+  //     navigate("/user/dashboard");
+  //   }
+  // }, [getUserCookie, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
