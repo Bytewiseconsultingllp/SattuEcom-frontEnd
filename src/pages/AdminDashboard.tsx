@@ -5,17 +5,68 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { 
-  Package, ShoppingCart, Users, TrendingUp, 
-  Plus, Edit, Trash2, Eye, Search, Filter,
-  LayoutDashboard, FileText, DollarSign, TrendingDown
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Package,
+  ShoppingCart,
+  Users,
+  TrendingUp,
+  Plus,
+  Edit,
+  Trash2,
+  Eye,
+  Search,
+  Filter,
+  LayoutDashboard,
+  FileText,
+  DollarSign,
+  TrendingDown,
+  LogOut,
 } from "lucide-react";
 import { products } from "@/data/products";
 import { toast } from "sonner";
-import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarProvider,
+  SidebarTrigger,
+} from "@/components/ui/sidebar";
+import {
+  LineChart,
+  Line,
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from "recharts";
+import { removeUserCookie } from "@/utils/cookie";
+import { useNavigate } from "react-router-dom";
 
 const AdminDashboard = () => {
   const [activeSection, setActiveSection] = useState("dashboard");
@@ -26,27 +77,102 @@ const AdminDashboard = () => {
   const [deliveryDetails, setDeliveryDetails] = useState({
     agency: "",
     trackingNumber: "",
-    estimatedDelivery: ""
+    estimatedDelivery: "",
   });
+  const navigate = useNavigate();
 
   const stats = [
-    { title: "Total Revenue", value: "₹2.4L", change: "+12.5%", icon: TrendingUp, color: "text-success" },
-    { title: "Total Orders", value: "1,234", change: "+8.2%", icon: ShoppingCart, color: "text-primary" },
-    { title: "Products", value: "156", change: "+3", icon: Package, color: "text-accent" },
-    { title: "Customers", value: "892", change: "+15.3%", icon: Users, color: "text-primary" },
+    {
+      title: "Total Revenue",
+      value: "₹2.4L",
+      change: "+12.5%",
+      icon: TrendingUp,
+      color: "text-success",
+    },
+    {
+      title: "Total Orders",
+      value: "1,234",
+      change: "+8.2%",
+      icon: ShoppingCart,
+      color: "text-primary",
+    },
+    {
+      title: "Products",
+      value: "156",
+      change: "+3",
+      icon: Package,
+      color: "text-accent",
+    },
+    {
+      title: "Customers",
+      value: "892",
+      change: "+15.3%",
+      icon: Users,
+      color: "text-primary",
+    },
   ];
 
   const orders = [
-    { id: "ORD001", customer: "John Doe", customerId: 1, total: 899, status: "delivered", date: "2025-01-15", items: [{ name: "Sattu Powder", qty: 2 }] },
-    { id: "ORD002", customer: "Jane Smith", customerId: 2, total: 449, status: "shipped", date: "2025-01-14", items: [{ name: "Ready to Drink", qty: 1 }] },
-    { id: "ORD003", customer: "Bob Johnson", customerId: 3, total: 1299, status: "processing", date: "2025-01-13", items: [{ name: "Sattu Ladoo", qty: 3 }] },
-    { id: "ORD004", customer: "Alice Brown", customerId: 1, total: 699, status: "pending", date: "2025-01-12", items: [{ name: "Custom Sattu", qty: 1 }] },
+    {
+      id: "ORD001",
+      customer: "John Doe",
+      customerId: 1,
+      total: 899,
+      status: "delivered",
+      date: "2025-01-15",
+      items: [{ name: "Sattu Powder", qty: 2 }],
+    },
+    {
+      id: "ORD002",
+      customer: "Jane Smith",
+      customerId: 2,
+      total: 449,
+      status: "shipped",
+      date: "2025-01-14",
+      items: [{ name: "Ready to Drink", qty: 1 }],
+    },
+    {
+      id: "ORD003",
+      customer: "Bob Johnson",
+      customerId: 3,
+      total: 1299,
+      status: "processing",
+      date: "2025-01-13",
+      items: [{ name: "Sattu Ladoo", qty: 3 }],
+    },
+    {
+      id: "ORD004",
+      customer: "Alice Brown",
+      customerId: 1,
+      total: 699,
+      status: "pending",
+      date: "2025-01-12",
+      items: [{ name: "Custom Sattu", qty: 1 }],
+    },
   ];
 
   const customers = [
-    { id: 1, name: "John Doe", email: "john@example.com", orders: 12, spent: 5200 },
-    { id: 2, name: "Jane Smith", email: "jane@example.com", orders: 8, spent: 3400 },
-    { id: 3, name: "Bob Johnson", email: "bob@example.com", orders: 15, spent: 7800 },
+    {
+      id: 1,
+      name: "John Doe",
+      email: "john@example.com",
+      orders: 12,
+      spent: 5200,
+    },
+    {
+      id: 2,
+      name: "Jane Smith",
+      email: "jane@example.com",
+      orders: 8,
+      spent: 3400,
+    },
+    {
+      id: 3,
+      name: "Bob Johnson",
+      email: "bob@example.com",
+      orders: 15,
+      spent: 7800,
+    },
   ];
 
   const salesData = [
@@ -65,11 +191,17 @@ const AdminDashboard = () => {
     { name: "Custom Sattu", value: 100 },
   ];
 
-  const COLORS = ['hsl(var(--primary))', 'hsl(var(--accent))', 'hsl(var(--success))', 'hsl(var(--secondary))'];
+  const COLORS = [
+    "hsl(var(--primary))",
+    "hsl(var(--accent))",
+    "hsl(var(--success))",
+    "hsl(var(--secondary))",
+  ];
 
-  const filteredOrders = orderStatusFilter === "all" 
-    ? orders 
-    : orders.filter(o => o.status === orderStatusFilter);
+  const filteredOrders =
+    orderStatusFilter === "all"
+      ? orders
+      : orders.filter((o) => o.status === orderStatusFilter);
 
   const handleStatusChange = (orderId: string, newStatus: string) => {
     if (newStatus === "shipped") {
@@ -83,16 +215,23 @@ const AdminDashboard = () => {
     setShowDeliveryForm(false);
   };
 
-  const customerOrders = selectedCustomer 
-    ? orders.filter(o => o.customerId === selectedCustomer.id)
+  const customerOrders = selectedCustomer
+    ? orders.filter((o) => o.customerId === selectedCustomer.id)
     : [];
+
+  function handleLogout() {
+    removeUserCookie();
+    navigate("/login");
+  }
 
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-muted/30">
         <Sidebar className="border-r border-sidebar-border">
           <div className="p-4 border-b border-sidebar-border">
-            <h2 className="text-lg font-bold text-sidebar-foreground">Admin Panel</h2>
+            <h2 className="text-lg font-bold text-sidebar-foreground">
+              Admin Panel
+            </h2>
           </div>
           <SidebarContent>
             <SidebarGroup>
@@ -100,7 +239,7 @@ const AdminDashboard = () => {
               <SidebarGroupContent>
                 <SidebarMenu>
                   <SidebarMenuItem>
-                    <SidebarMenuButton 
+                    <SidebarMenuButton
                       onClick={() => setActiveSection("dashboard")}
                       isActive={activeSection === "dashboard"}
                     >
@@ -109,7 +248,7 @@ const AdminDashboard = () => {
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                   <SidebarMenuItem>
-                    <SidebarMenuButton 
+                    <SidebarMenuButton
                       onClick={() => setActiveSection("products")}
                       isActive={activeSection === "products"}
                     >
@@ -118,7 +257,7 @@ const AdminDashboard = () => {
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                   <SidebarMenuItem>
-                    <SidebarMenuButton 
+                    <SidebarMenuButton
                       onClick={() => setActiveSection("orders")}
                       isActive={activeSection === "orders"}
                     >
@@ -127,7 +266,7 @@ const AdminDashboard = () => {
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                   <SidebarMenuItem>
-                    <SidebarMenuButton 
+                    <SidebarMenuButton
                       onClick={() => setActiveSection("customers")}
                       isActive={activeSection === "customers"}
                     >
@@ -136,12 +275,24 @@ const AdminDashboard = () => {
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                   <SidebarMenuItem>
-                    <SidebarMenuButton 
+                    <SidebarMenuButton
                       onClick={() => setActiveSection("analytics")}
                       isActive={activeSection === "analytics"}
                     >
                       <TrendingUp className="h-4 w-4" />
                       <span>Analytics</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+            <SidebarGroup>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton onClick={handleLogout}>
+                      <LogOut className="h-4 w-4" />
+                      <span>Logout</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 </SidebarMenu>
@@ -161,18 +312,30 @@ const AdminDashboard = () => {
               <div className="space-y-6 animate-fade-in">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                   {stats.map((stat, index) => (
-                    <Card key={index} className="hover-scale cursor-pointer transition-all">
+                    <Card
+                      key={index}
+                      className="hover-scale cursor-pointer transition-all"
+                    >
                       <CardContent className="p-6">
                         <div className="flex items-center justify-between mb-4">
-                          <div className={`h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center ${stat.color}`}>
+                          <div
+                            className={`h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center ${stat.color}`}
+                          >
                             <stat.icon className="h-6 w-6" />
                           </div>
-                          <Badge variant="outline" className="text-success border-success">
+                          <Badge
+                            variant="outline"
+                            className="text-success border-success"
+                          >
                             {stat.change}
                           </Badge>
                         </div>
-                        <h3 className="text-2xl font-bold mb-1">{stat.value}</h3>
-                        <p className="text-sm text-muted-foreground">{stat.title}</p>
+                        <h3 className="text-2xl font-bold mb-1">
+                          {stat.value}
+                        </h3>
+                        <p className="text-sm text-muted-foreground">
+                          {stat.title}
+                        </p>
                       </CardContent>
                     </Card>
                   ))}
@@ -185,10 +348,15 @@ const AdminDashboard = () => {
                   <CardContent>
                     <div className="space-y-4">
                       {orders.slice(0, 5).map((order) => (
-                        <div key={order.id} className="flex items-center justify-between p-4 border rounded-lg">
+                        <div
+                          key={order.id}
+                          className="flex items-center justify-between p-4 border rounded-lg"
+                        >
                           <div>
                             <p className="font-semibold">{order.id}</p>
-                            <p className="text-sm text-muted-foreground">{order.customer} • ₹{order.total}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {order.customer} • ₹{order.total}
+                            </p>
                           </div>
                           <Badge>{order.status}</Badge>
                         </div>
@@ -212,20 +380,33 @@ const AdminDashboard = () => {
                   <CardContent className="p-6">
                     <div className="space-y-4">
                       {products.slice(0, 5).map((product) => (
-                        <div key={product.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-all">
+                        <div
+                          key={product.id}
+                          className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-all"
+                        >
                           <div className="flex items-center gap-4 flex-1">
-                            <img 
-                              src={product.image} 
+                            <img
+                              src={product.image}
                               alt={product.name}
                               className="w-16 h-16 object-cover rounded-lg"
                             />
                             <div className="flex-1">
                               <h3 className="font-semibold">{product.name}</h3>
                               <div className="flex items-center gap-4 mt-1">
-                                <Badge variant="outline">{product.category}</Badge>
-                                <span className="text-sm font-bold text-primary">₹{product.price}</span>
-                                <Badge variant={product.inStock ? "default" : "destructive"}>
-                                  {product.inStock ? "In Stock" : "Out of Stock"}
+                                <Badge variant="outline">
+                                  {product.category}
+                                </Badge>
+                                <span className="text-sm font-bold text-primary">
+                                  ₹{product.price}
+                                </span>
+                                <Badge
+                                  variant={
+                                    product.inStock ? "default" : "destructive"
+                                  }
+                                >
+                                  {product.inStock
+                                    ? "In Stock"
+                                    : "Out of Stock"}
                                 </Badge>
                               </div>
                             </div>
@@ -254,7 +435,10 @@ const AdminDashboard = () => {
                 <div className="flex justify-between items-center">
                   <h2 className="text-2xl font-bold">Order Management</h2>
                   <div className="flex gap-4">
-                    <Select value={orderStatusFilter} onValueChange={setOrderStatusFilter}>
+                    <Select
+                      value={orderStatusFilter}
+                      onValueChange={setOrderStatusFilter}
+                    >
                       <SelectTrigger className="w-[180px]">
                         <SelectValue placeholder="Filter by status" />
                       </SelectTrigger>
@@ -273,16 +457,25 @@ const AdminDashboard = () => {
                   <CardContent className="p-6">
                     <div className="space-y-4">
                       {filteredOrders.map((order) => (
-                        <div key={order.id} className="border rounded-lg p-4 space-y-4">
+                        <div
+                          key={order.id}
+                          className="border rounded-lg p-4 space-y-4"
+                        >
                           <div className="flex items-center justify-between">
                             <div className="flex-1">
                               <div className="flex items-center gap-3 mb-2">
                                 <h3 className="font-semibold">{order.id}</h3>
-                                <Badge variant={
-                                  order.status === "delivered" ? "default" :
-                                  order.status === "shipped" ? "secondary" :
-                                  order.status === "processing" ? "outline" : "destructive"
-                                }>
+                                <Badge
+                                  variant={
+                                    order.status === "delivered"
+                                      ? "default"
+                                      : order.status === "shipped"
+                                      ? "secondary"
+                                      : order.status === "processing"
+                                      ? "outline"
+                                      : "destructive"
+                                  }
+                                >
                                   {order.status}
                                 </Badge>
                               </div>
@@ -292,75 +485,122 @@ const AdminDashboard = () => {
                             </div>
                             <Dialog>
                               <DialogTrigger asChild>
-                                <Button variant="outline" onClick={() => setSelectedOrder(order)}>
+                                <Button
+                                  variant="outline"
+                                  onClick={() => setSelectedOrder(order)}
+                                >
                                   Manage
                                 </Button>
                               </DialogTrigger>
                               <DialogContent className="max-w-2xl">
                                 <DialogHeader>
-                                  <DialogTitle>Order Details - {selectedOrder?.id}</DialogTitle>
+                                  <DialogTitle>
+                                    Order Details - {selectedOrder?.id}
+                                  </DialogTitle>
                                 </DialogHeader>
                                 <div className="space-y-4">
                                   <div>
                                     <Label>Customer</Label>
-                                    <p className="text-sm">{selectedOrder?.customer}</p>
+                                    <p className="text-sm">
+                                      {selectedOrder?.customer}
+                                    </p>
                                   </div>
                                   <div>
                                     <Label>Order Items</Label>
-                                    {selectedOrder?.items.map((item: any, idx: number) => (
-                                      <p key={idx} className="text-sm">{item.name} x {item.qty}</p>
-                                    ))}
+                                    {selectedOrder?.items.map(
+                                      (item: any, idx: number) => (
+                                        <p key={idx} className="text-sm">
+                                          {item.name} x {item.qty}
+                                        </p>
+                                      )
+                                    )}
                                   </div>
                                   <div>
                                     <Label>Total Amount</Label>
-                                    <p className="text-sm">₹{selectedOrder?.total}</p>
+                                    <p className="text-sm">
+                                      ₹{selectedOrder?.total}
+                                    </p>
                                   </div>
                                   <div>
                                     <Label>Order Status</Label>
-                                    <Select 
+                                    <Select
                                       value={selectedOrder?.status}
-                                      onValueChange={(value) => handleStatusChange(selectedOrder?.id, value)}
+                                      onValueChange={(value) =>
+                                        handleStatusChange(
+                                          selectedOrder?.id,
+                                          value
+                                        )
+                                      }
                                     >
                                       <SelectTrigger>
                                         <SelectValue />
                                       </SelectTrigger>
                                       <SelectContent>
-                                        <SelectItem value="pending">Pending</SelectItem>
-                                        <SelectItem value="processing">Processing</SelectItem>
-                                        <SelectItem value="shipped">Shipped</SelectItem>
-                                        <SelectItem value="delivered">Delivered</SelectItem>
+                                        <SelectItem value="pending">
+                                          Pending
+                                        </SelectItem>
+                                        <SelectItem value="processing">
+                                          Processing
+                                        </SelectItem>
+                                        <SelectItem value="shipped">
+                                          Shipped
+                                        </SelectItem>
+                                        <SelectItem value="delivered">
+                                          Delivered
+                                        </SelectItem>
                                       </SelectContent>
                                     </Select>
                                   </div>
 
                                   {showDeliveryForm && (
                                     <div className="space-y-4 border-t pt-4">
-                                      <h3 className="font-semibold">Delivery Details</h3>
+                                      <h3 className="font-semibold">
+                                        Delivery Details
+                                      </h3>
                                       <div>
                                         <Label>Delivery Agency</Label>
-                                        <Input 
+                                        <Input
                                           value={deliveryDetails.agency}
-                                          onChange={(e) => setDeliveryDetails({...deliveryDetails, agency: e.target.value})}
+                                          onChange={(e) =>
+                                            setDeliveryDetails({
+                                              ...deliveryDetails,
+                                              agency: e.target.value,
+                                            })
+                                          }
                                           placeholder="e.g., Blue Dart, DTDC"
                                         />
                                       </div>
                                       <div>
                                         <Label>Tracking Number</Label>
-                                        <Input 
+                                        <Input
                                           value={deliveryDetails.trackingNumber}
-                                          onChange={(e) => setDeliveryDetails({...deliveryDetails, trackingNumber: e.target.value})}
+                                          onChange={(e) =>
+                                            setDeliveryDetails({
+                                              ...deliveryDetails,
+                                              trackingNumber: e.target.value,
+                                            })
+                                          }
                                           placeholder="Enter tracking number"
                                         />
                                       </div>
                                       <div>
                                         <Label>Estimated Delivery</Label>
-                                        <Input 
+                                        <Input
                                           type="date"
-                                          value={deliveryDetails.estimatedDelivery}
-                                          onChange={(e) => setDeliveryDetails({...deliveryDetails, estimatedDelivery: e.target.value})}
+                                          value={
+                                            deliveryDetails.estimatedDelivery
+                                          }
+                                          onChange={(e) =>
+                                            setDeliveryDetails({
+                                              ...deliveryDetails,
+                                              estimatedDelivery: e.target.value,
+                                            })
+                                          }
                                         />
                                       </div>
-                                      <Button onClick={handleDeliverySubmit}>Save Delivery Details</Button>
+                                      <Button onClick={handleDeliverySubmit}>
+                                        Save Delivery Details
+                                      </Button>
                                     </div>
                                   )}
                                 </div>
@@ -386,9 +626,13 @@ const AdminDashboard = () => {
                     <CardContent>
                       <div className="space-y-4">
                         {customers.map((customer) => (
-                          <div 
-                            key={customer.id} 
-                            className={`flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer ${selectedCustomer?.id === customer.id ? 'bg-muted/50 border-primary' : ''}`}
+                          <div
+                            key={customer.id}
+                            className={`flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer ${
+                              selectedCustomer?.id === customer.id
+                                ? "bg-muted/50 border-primary"
+                                : ""
+                            }`}
                             onClick={() => setSelectedCustomer(customer)}
                           >
                             <div className="flex items-center gap-4">
@@ -396,13 +640,21 @@ const AdminDashboard = () => {
                                 <Users className="h-6 w-6 text-primary" />
                               </div>
                               <div>
-                                <h3 className="font-semibold">{customer.name}</h3>
-                                <p className="text-sm text-muted-foreground">{customer.email}</p>
+                                <h3 className="font-semibold">
+                                  {customer.name}
+                                </h3>
+                                <p className="text-sm text-muted-foreground">
+                                  {customer.email}
+                                </p>
                               </div>
                             </div>
                             <div className="text-right">
-                              <p className="font-semibold">{customer.orders} orders</p>
-                              <p className="text-sm text-muted-foreground">₹{customer.spent} spent</p>
+                              <p className="font-semibold">
+                                {customer.orders} orders
+                              </p>
+                              <p className="text-sm text-muted-foreground">
+                                ₹{customer.spent} spent
+                              </p>
                             </div>
                           </div>
                         ))}
@@ -419,11 +671,16 @@ const AdminDashboard = () => {
                         <div className="space-y-4">
                           {customerOrders.length > 0 ? (
                             customerOrders.map((order) => (
-                              <div key={order.id} className="p-4 border rounded-lg">
+                              <div
+                                key={order.id}
+                                className="p-4 border rounded-lg"
+                              >
                                 <div className="flex justify-between items-start mb-2">
                                   <div>
                                     <p className="font-semibold">{order.id}</p>
-                                    <p className="text-sm text-muted-foreground">{order.date}</p>
+                                    <p className="text-sm text-muted-foreground">
+                                      {order.date}
+                                    </p>
                                   </div>
                                   <Badge>{order.status}</Badge>
                                 </div>
@@ -431,7 +688,9 @@ const AdminDashboard = () => {
                               </div>
                             ))
                           ) : (
-                            <p className="text-muted-foreground text-center py-8">No orders found</p>
+                            <p className="text-muted-foreground text-center py-8">
+                              No orders found
+                            </p>
                           )}
                         </div>
                       </CardContent>
@@ -444,7 +703,7 @@ const AdminDashboard = () => {
             {activeSection === "analytics" && (
               <div className="space-y-6 animate-fade-in">
                 <h2 className="text-2xl font-bold">Analytics & Reports</h2>
-                
+
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   <Card>
                     <CardHeader>
@@ -458,8 +717,18 @@ const AdminDashboard = () => {
                           <YAxis />
                           <Tooltip />
                           <Legend />
-                          <Line type="monotone" dataKey="sales" stroke="hsl(var(--primary))" strokeWidth={2} />
-                          <Line type="monotone" dataKey="orders" stroke="hsl(var(--accent))" strokeWidth={2} />
+                          <Line
+                            type="monotone"
+                            dataKey="sales"
+                            stroke="hsl(var(--primary))"
+                            strokeWidth={2}
+                          />
+                          <Line
+                            type="monotone"
+                            dataKey="orders"
+                            stroke="hsl(var(--accent))"
+                            strokeWidth={2}
+                          />
                         </LineChart>
                       </ResponsiveContainer>
                     </CardContent>
@@ -500,7 +769,10 @@ const AdminDashboard = () => {
                             dataKey="value"
                           >
                             {categoryData.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                              <Cell
+                                key={`cell-${index}`}
+                                fill={COLORS[index % COLORS.length]}
+                              />
                             ))}
                           </Pie>
                           <Tooltip />
@@ -519,7 +791,9 @@ const AdminDashboard = () => {
                           <div className="flex items-center gap-3">
                             <DollarSign className="h-8 w-8 text-success" />
                             <div>
-                              <p className="text-sm text-muted-foreground">Avg Order Value</p>
+                              <p className="text-sm text-muted-foreground">
+                                Avg Order Value
+                              </p>
                               <p className="text-xl font-bold">₹972</p>
                             </div>
                           </div>
@@ -529,7 +803,9 @@ const AdminDashboard = () => {
                           <div className="flex items-center gap-3">
                             <TrendingUp className="h-8 w-8 text-primary" />
                             <div>
-                              <p className="text-sm text-muted-foreground">Conversion Rate</p>
+                              <p className="text-sm text-muted-foreground">
+                                Conversion Rate
+                              </p>
                               <p className="text-xl font-bold">3.2%</p>
                             </div>
                           </div>
@@ -539,7 +815,9 @@ const AdminDashboard = () => {
                           <div className="flex items-center gap-3">
                             <TrendingDown className="h-8 w-8 text-destructive" />
                             <div>
-                              <p className="text-sm text-muted-foreground">Return Rate</p>
+                              <p className="text-sm text-muted-foreground">
+                                Return Rate
+                              </p>
                               <p className="text-xl font-bold">1.8%</p>
                             </div>
                           </div>
