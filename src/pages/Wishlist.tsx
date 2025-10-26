@@ -4,27 +4,52 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Heart, ShoppingCart, Trash2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Heart, ShoppingCart, Trash2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { getUserCookie } from "@/utils/cookie";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useCart } from "@/contexts/CartContext";
+import { getWishlistItems as apiGetWishlistItems, removeFromWishlist as apiRemoveFromWishlist } from "@/lib/api/wishlist";
 
 const Wishlist = () => {
   const [wishlistItems, setWishlistItems] = useState<any[]>([]);
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const { addToCart, loadingState } = useCart();
 
   useEffect(() => {
     const uc = getUserCookie();
     if (!uc || !(uc.token || uc?.data?.token)) {
       navigate("/login");
     }
-    setIsLoading(false);
+    (async () => {
+      try {
+        const res = await apiGetWishlistItems();
+        if (res?.success) {
+          setWishlistItems(res.data || []);
+        }
+      } catch (e: any) {
+        toast.error(e.message || "Failed to fetch wishlist");
+      } finally {
+        setIsLoading(false);
+      }
+    })();
   }, [navigate]);
 
-  const removeItem = (id: string) => {
-    setWishlistItems(items => items.filter(item => item.id !== id));
-    toast.success("Item removed from wishlist");
+  const removeItem = async (id: string) => {
+    try {
+      await apiRemoveFromWishlist(id);
+      setWishlistItems(items => items.filter(item => item.id !== id));
+      toast.success("Item removed from wishlist");
+    } catch (e: any) {
+      toast.error(e.message || "Failed to remove wishlist item");
+    }
+  };
+
+  const handleAddToCart = async (productId?: string) => {
+    if (!productId) return;
+    await addToCart(productId, 1);
   };
 
   if (isLoading) {
@@ -94,34 +119,63 @@ const Wishlist = () => {
 
         <div className="container mx-auto px-4 pb-12">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {wishlistItems.map(item => (
-              <Card key={item.id} className="hover-scale transition-all">
-                <CardContent className="p-4">
-                  <img 
-                    src={item.image} 
-                    alt={item.name}
-                    className="w-full h-48 object-cover rounded-lg mb-4"
-                  />
-                  <h3 className="font-semibold mb-2">{item.name}</h3>
-                  <div className="flex items-center justify-between mb-4">
-                    <span className="text-xl font-bold text-primary">₹{item.price}</span>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button className="flex-1">
-                      <ShoppingCart className="mr-2 h-4 w-4" />
-                      Add to Cart
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      size="icon"
-                      onClick={() => removeItem(item.id)}
-                    >
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+            {wishlistItems.map(item => {
+              const product = item.product;
+              const inStock = product?.in_stock !== false;
+              const isAdding = loadingState?.type === 'add' && loadingState.itemId === product?.id;
+              return (
+                <Card key={item.id} className="hover-scale transition-all animate-fade-in">
+                  <CardContent className="p-4">
+                    <Link to={`/product/${product?.id}`} className="block">
+                      <div className="relative mb-4">
+                        <img
+                          src={product?.image_url}
+                          alt={product?.name}
+                          className="w-full h-48 object-cover rounded-lg"
+                        />
+                        {!inStock && (
+                          <Badge className="absolute top-3 right-3 bg-muted text-muted-foreground">Out of Stock</Badge>
+                        )}
+                      </div>
+                      <h3 className="font-semibold mb-1 line-clamp-2">{product?.name}</h3>
+                    </Link>
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-xl font-bold text-primary">₹{product?.price}</span>
+                        {product?.originalPrice && (
+                          <span className="text-sm text-muted-foreground line-through">₹{product?.originalPrice}</span>
+                        )}
+                      </div>
+                      {product?.category && (
+                        <Badge variant="outline">{product.category}</Badge>
+                      )}
+                    </div>
+                    <div className="flex gap-2">
+                      <Button 
+                        className="flex-1"
+                        disabled={!inStock}
+                        onClick={() => handleAddToCart(product?.id)}
+                      >
+                        {isAdding ? (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                          <ShoppingCart className="mr-2 h-4 w-4" />
+                        )}
+                        {inStock ? 'Add to Cart' : 'Out of Stock'}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => removeItem(item.id)}
+                        aria-label="Remove from wishlist"
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         </div>
       </main>

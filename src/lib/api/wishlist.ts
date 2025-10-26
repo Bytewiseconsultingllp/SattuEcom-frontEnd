@@ -1,46 +1,67 @@
-import { supabase } from '@/integrations/supabase/client';
+import api from '@/lib/axiosInstance';
+import axios from 'axios';
 
-export const getWishlistItems = async (userId: string) => {
-  const { data, error } = await supabase
-    .from('wishlist_items')
-    .select(`
-      *,
-      product:products(*)
-    `)
-    .eq('user_id', userId);
-
-  if (error) throw error;
-  return data;
+export const getWishlistItems = async (): Promise<any> => {
+  try {
+    const res = await api.get('/wishlist');
+    return res.data; // { success, count, data }
+  } catch (err: any) {
+    if (axios.isAxiosError(err)) {
+      const serverMsg = err.response?.data?.message ?? err.response?.data ?? err.message;
+      throw new Error(typeof serverMsg === 'string' ? serverMsg : JSON.stringify(serverMsg));
+    }
+    throw err;
+  }
 };
 
-export const addToWishlist = async (userId: string, productId: string) => {
-  const { data, error } = await supabase
-    .from('wishlist_items')
-    .insert({ user_id: userId, product_id: productId })
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data;
+export const addToWishlist = async (productId: string): Promise<any> => {
+  try {
+    const res = await api.post('/wishlist', { product_id: productId });
+    return res.data; // { success, data, message }
+  } catch (err: any) {
+    if (axios.isAxiosError(err)) {
+      const serverMsg = err.response?.data?.message ?? err.response?.data ?? err.message;
+      throw new Error(typeof serverMsg === 'string' ? serverMsg : JSON.stringify(serverMsg));
+    }
+    throw err;
+  }
 };
 
-export const removeFromWishlist = async (itemId: string) => {
-  const { error } = await supabase
-    .from('wishlist_items')
-    .delete()
-    .eq('id', itemId);
-
-  if (error) throw error;
+export const removeFromWishlist = async (itemId: string): Promise<any> => {
+  try {
+    const res = await api.delete(`/wishlist/${itemId}`);
+    return res.data; // { success, message }
+  } catch (err: any) {
+    if (axios.isAxiosError(err)) {
+      const serverMsg = err.response?.data?.message ?? err.response?.data ?? err.message;
+      throw new Error(typeof serverMsg === 'string' ? serverMsg : JSON.stringify(serverMsg));
+    }
+    throw err;
+  }
 };
 
-export const isInWishlist = async (userId: string, productId: string) => {
-  const { data, error } = await supabase
-    .from('wishlist_items')
-    .select('id')
-    .eq('user_id', userId)
-    .eq('product_id', productId)
-    .single();
+export const isInWishlist = async (productId: string): Promise<any> => {
+  try {
+    const res = await api.get('/wishlist/check', { params: { product_id: productId } });
+    return res.data; // { success, data: { inWishlist, itemId } }
+  } catch (err: any) {
+    if (axios.isAxiosError(err)) {
+      const serverMsg = err.response?.data?.message ?? err.response?.data ?? err.message;
+      throw new Error(typeof serverMsg === 'string' ? serverMsg : JSON.stringify(serverMsg));
+    }
+    throw err;
+  }
+};
 
-  if (error && error.code !== 'PGRST116') throw error;
-  return !!data;
+export const clearWishlist = async (): Promise<any> => {
+  try {
+    const res = await api.delete('/wishlist/clear/all');
+    return res.data; // { success, message }
+  } catch (err: any) {
+    if (axios.isAxiosError(err)) {
+      const serverMsg = err.response?.data?.message ?? err.response?.data ?? err.message;
+      throw new Error(typeof serverMsg === 'string' ? serverMsg : JSON.stringify(serverMsg));
+    }
+    throw err;
+  }
 };

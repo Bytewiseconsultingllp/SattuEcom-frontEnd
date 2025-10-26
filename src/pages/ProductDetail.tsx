@@ -20,6 +20,9 @@ import { useEffect, useState } from "react";
 import { getProductById } from "@/lib/api/products";
 import { useCart } from "@/contexts/CartContext";
 import { Skeleton } from "@/components/ui/skeleton";
+import { addToWishlist as apiAddToWishlist } from "@/lib/api/wishlist";
+import { getUserCookie } from "@/utils/cookie";
+import { useNavigate } from "react-router-dom";
 
 const ProductDetail = () => {
   const { id } = useParams();
@@ -28,6 +31,7 @@ const ProductDetail = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [quantity, setQuantity] = useState(1);
   const { addToCart, loadingState } = useCart();
+  const navigate = useNavigate();
 
   useEffect(() => {
     getAllProducts();
@@ -45,6 +49,22 @@ const ProductDetail = () => {
       toast.error("Error Fetching the Products");
     } finally {
       setIsLoading(false);
+    }
+  }
+
+  async function handleAddToWishlist() {
+    const uc = getUserCookie();
+    if (!uc || !(uc.token || uc?.data?.token)) {
+      navigate("/login");
+      return;
+    }
+    try {
+      const res = await apiAddToWishlist(id as string);
+      if (res?.success) {
+        toast.success(res.message || "Added to wishlist!");
+      }
+    } catch (e: any) {
+      toast.error(e.message || "Failed to add to wishlist");
     }
   }
 
@@ -230,7 +250,7 @@ const ProductDetail = () => {
                 <Button
                   size="lg"
                   variant="outline"
-                  onClick={() => toast.success("Added to wishlist!")}
+                  onClick={handleAddToWishlist}
                 >
                   <Heart className="h-5 w-5" />
                 </Button>

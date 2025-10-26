@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { useCart } from "@/contexts/CartContext";
 import { getUserCookie } from "@/utils/cookie";
 import { useNavigate } from "react-router-dom";
+import { addToWishlist as apiAddToWishlist } from "@/lib/api/wishlist";
 
 export interface Product {
   id: string;
@@ -48,14 +49,21 @@ export const ProductCard = ({ product }: ProductCardProps) => {
   }
   
 
-  const handleAddToWishlist = (e: React.MouseEvent) => {
+  const handleAddToWishlist = async (e: React.MouseEvent) => {
     e.preventDefault();
     const uc = getUserCookie();
     if (!uc || !(uc.token || uc?.data?.token)) {
       navigate("/login");
       return;
     }
-    toast.success("Added to wishlist!");
+    try {
+      const res = await apiAddToWishlist(product.id);
+      if (res?.success) {
+        toast.success(res.message || "Added to wishlist!");
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Failed to add to wishlist");
+    }
   };
 
   return (
