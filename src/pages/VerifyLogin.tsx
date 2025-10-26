@@ -59,7 +59,8 @@ const VerifyLogin = () => {
       const response = await verifySignIn(verificationData);
       if (response.success) {
         toast.success("OTP verified successfully!");
-        navigate("/user/dashboard");
+        // Go back to home and reload to ensure header picks up cookie state
+        window.location.href = "/";
       }
     } catch (error: any) {
       toast.error(error.message || "Failed to verify OTP");

@@ -5,6 +5,8 @@ import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { useCart } from "@/contexts/CartContext";
+import { getUserCookie } from "@/utils/cookie";
+import { useNavigate } from "react-router-dom";
 
 export interface Product {
   id: string;
@@ -28,6 +30,7 @@ export const ProductCard = ({ product }: ProductCardProps) => {
     : 0;
 
   const { addToCart, loadingState } = useCart();
+  const navigate = useNavigate();
 
   async function handleAddToCart(e: React.MouseEvent | null, productId: string, quantity: number) {
     // prevent Link navigation when clicking the button inside the card
@@ -47,6 +50,11 @@ export const ProductCard = ({ product }: ProductCardProps) => {
 
   const handleAddToWishlist = (e: React.MouseEvent) => {
     e.preventDefault();
+    const uc = getUserCookie();
+    if (!uc || !(uc.token || uc?.data?.token)) {
+      navigate("/login");
+      return;
+    }
     toast.success("Added to wishlist!");
   };
 

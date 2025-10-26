@@ -1,14 +1,23 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Heart, ShoppingCart, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { getUserCookie } from "@/utils/cookie";
 
 const Wishlist = () => {
   const [wishlistItems, setWishlistItems] = useState<any[]>([]);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const uc = getUserCookie();
+    if (!uc || !(uc.token || uc?.data?.token)) {
+      navigate("/login");
+    }
+  }, [navigate]);
 
   const removeItem = (id: string) => {
     setWishlistItems(items => items.filter(item => item.id !== id));

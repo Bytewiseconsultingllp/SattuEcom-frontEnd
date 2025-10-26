@@ -24,7 +24,7 @@ const processQueue = (error: any, token: string | null = null) => {
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     const userData = getUserCookie();
-    const token = userData?.data.token;
+    const token = (userData && (userData.token || userData?.data?.token)) || undefined;
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -39,7 +39,8 @@ api.interceptors.response.use(
     const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
     const userData = getUserCookie();
 
-    if (error.response?.status === 401 && !originalRequest._retry && userData?.refreshToken) {
+    const refreshToken = userData?.refreshToken || userData?.data?.refreshToken;
+    if (error.response?.status === 401 && !originalRequest._retry && refreshToken) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           failedQueue.push({
@@ -58,15 +59,15 @@ api.interceptors.response.use(
       try {
         const refreshRes = await axios.post(
           `${import.meta.env.VITE_API_BASE_URL}/auth/refresh-token`,
-          { refreshToken: userData.refreshToken },
+          { refreshToken },
           { headers: { "Content-Type": "application/json" } }
         );
 
-        const { token, refreshToken } = refreshRes.data.data;
-        updateTokens(token, refreshToken);
+        const { token: newToken, refreshToken: newRefreshToken } = refreshRes.data.data;
+        updateTokens(newToken, newRefreshToken);
 
-        processQueue(null, token);
-        originalRequest.headers.Authorization = `Bearer ${token}`;
+        processQueue(null, newToken);
+        originalRequest.headers.Authorization = `Bearer ${newToken}`;
         return api(originalRequest);
       } catch (refreshError) {
         processQueue(refreshError, null);

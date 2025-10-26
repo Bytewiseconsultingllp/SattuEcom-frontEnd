@@ -73,6 +73,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
     // Only show the global/initial loading state when the local cart is empty
     const showLoading = cartItems.length === 0;
     try {
+      // Only hit server when logged in
+      const uc = getUserCookie();
+      if (!uc || !(uc.token || uc?.data?.token)) {
+        return; // keep local cart in guest mode
+      }
       if (showLoading) setLoadingState({ type: 'refresh' });
       const response = await getCartItems() as ApiResponse<CartItem[]>;
       if (response.success) {
@@ -88,9 +93,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
   };
 
   const addToCart = async (productId: string, quantity: number) => {
+    // Require login: block guest users
+    const uc = getUserCookie();
+    if (!uc || !(uc.token || uc?.data?.token)) {
+      toast.error('Please login to use cart');
+      return;
+    }
     // Optimistic update: update local cart immediately
-  const previous = [...cartItems];
-  const existing = previous.find(i => i.product_id === productId);
+    const previous = [...cartItems];
+    const existing = previous.find(i => i.product_id === productId);
     let optimistic: CartItem[];
     if (existing) {
       optimistic = previous.map(i => i.product_id === productId ? { ...i, quantity: i.quantity + quantity } : i);
@@ -124,9 +135,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const updateQuantity = async (itemId: string, quantity: number) => {
     if (quantity < 1) return;
+    const uc = getUserCookie();
+    if (!uc || !(uc.token || uc?.data?.token)) {
+      toast.error('Please login to update cart');
+      return;
+    }
     // Optimistic update
     const previous = [...cartItems];
-  setCartItems(prev => prev.map(i => i.id === itemId ? { ...i, quantity } : i));
+    setCartItems(prev => prev.map(i => i.id === itemId ? { ...i, quantity } : i));
 
     try {
       setLoadingState({ type: 'update', itemId });
@@ -151,8 +167,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const removeFromCart = async (itemId: string) => {
     // Optimistic removal
+    const uc = getUserCookie();
+    if (!uc || !(uc.token || uc?.data?.token)) {
+      toast.error('Please login to update cart');
+      return;
+    }
     const previous = [...cartItems];
-  setCartItems(prev => prev.filter(i => i.id !== itemId));
+    setCartItems(prev => prev.filter(i => i.id !== itemId));
 
     try {
       setLoadingState({ type: 'remove', itemId });
@@ -174,7 +195,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       setLoadingState(null);
     }
   };
-  
+
   // Initial cart load
   useEffect(() => {
     refreshCart();
