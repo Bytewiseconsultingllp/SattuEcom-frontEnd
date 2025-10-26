@@ -19,11 +19,13 @@ import { toast } from "sonner";
 import { useEffect, useState } from "react";
 import { getProductById } from "@/lib/api/products";
 import { useCart } from "@/contexts/CartContext";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const ProductDetail = () => {
   const { id } = useParams();
   // const product = products.find(p => p.id === id);
   const [product, setProduct] = useState<any>({});
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [quantity, setQuantity] = useState(1);
   const { addToCart, loadingState } = useCart();
 
@@ -33,6 +35,7 @@ const ProductDetail = () => {
 
   async function getAllProducts() {
     try {
+      setIsLoading(true);
       const response = await getProductById(id);
       if (response.success) {
         setProduct(response.data);
@@ -40,6 +43,8 @@ const ProductDetail = () => {
       }
     } catch (error: any) {
       toast.error("Error Fetching the Products");
+    } finally {
+      setIsLoading(false);
     }
   }
 
@@ -91,9 +96,33 @@ const ProductDetail = () => {
               Products
             </Link>
             <span className="mx-2">/</span>
-            <span className="text-foreground">{product.name}</span>
+            <span className="text-foreground">{isLoading ? "Loading..." : product.name}</span>
           </nav>
 
+          {isLoading ? (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-12">
+              <div className="space-y-4">
+                <Skeleton className="w-full h-[500px] rounded-lg" />
+              </div>
+              <div className="space-y-6">
+                <Skeleton className="h-6 w-24" />
+                <Skeleton className="h-10 w-2/3" />
+                <div className="flex items-center gap-4 mb-4">
+                  <Skeleton className="h-6 w-32" />
+                  <Skeleton className="h-6 w-24" />
+                  <Skeleton className="h-6 w-20" />
+                </div>
+                <Skeleton className="h-20 w-full" />
+                <Separator />
+                <Skeleton className="h-12 w-48" />
+                <div className="flex items-center gap-4">
+                  <Skeleton className="h-10 w-32" />
+                  <Skeleton className="h-10 w-32" />
+                  <Skeleton className="h-10 w-10" />
+                </div>
+              </div>
+            </div>
+          ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-12">
             {/* Product Image */}
             <div className="space-y-4 animate-fade-in">
@@ -250,6 +279,7 @@ const ProductDetail = () => {
               </div>
             </div>
           </div>
+          )}
 
           {/* Product Details Tabs */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">

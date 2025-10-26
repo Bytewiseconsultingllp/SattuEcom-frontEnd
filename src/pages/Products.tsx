@@ -9,12 +9,14 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { getProducts } from "@/lib/api/products";
 import { toast } from "sonner";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const Products = () => {
   const [selectedCategory, setSelectedCategory] = useState("All Products");
   const [priceRange, setPriceRange] = useState([0, 1000]);
   const [in_stockOnly, setIn_StockOnly] = useState(false);
   const [products, setProducts] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() =>{
     getAllProducts();
@@ -22,12 +24,15 @@ const Products = () => {
 
   async function getAllProducts() {
     try {
+      setIsLoading(true);
       const response = await getProducts();
       if (response.success) {
         setProducts(response.data);
       }
     } catch (error: any) {
       toast.error("Error Fetching the Products");
+    } finally {
+      setIsLoading(false);
     }
   }
 
@@ -113,7 +118,18 @@ const Products = () => {
                 </p>
               </div>
 
-              {filteredProducts.length > 0 ? (
+              {isLoading ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <div key={i} className="animate-fade-in">
+                      <Skeleton className="h-64 w-full rounded-lg mb-3" />
+                      <Skeleton className="h-5 w-2/3 mb-2" />
+                      <Skeleton className="h-4 w-1/3 mb-4" />
+                      <Skeleton className="h-10 w-full" />
+                    </div>
+                  ))}
+                </div>
+              ) : filteredProducts.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                   {filteredProducts.map(product => (
                     <div key={product.id} className="animate-fade-in">

@@ -19,9 +19,10 @@ import {
 import { toast } from "sonner";
 import { useCart } from "@/contexts/CartContext";
 import { CartItem } from "@/types/cart";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const Cart = () => {
-  const { cartItems, cartTotal, removeFromCart, loadingState } = useCart();
+  const { cartItems, cartTotal, removeFromCart, loadingState, isLoading } = useCart();
 
   // Calculate shipping based on cart total
   const shipping = cartTotal > 500 ? 0 : 50;
@@ -94,7 +95,28 @@ const Cart = () => {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Cart Items */}
             <div className="lg:col-span-2 space-y-4">
-              {cartItems.map((item) => (
+              {isLoading && cartItems.length === 0 ? (
+                Array.from({ length: 3 }).map((_, idx) => (
+                  <Card key={idx}>
+                    <CardContent className="p-4">
+                      <div className="flex gap-4">
+                        <Skeleton className="w-24 h-24 rounded-lg" />
+                        <div className="flex-1">
+                          <Skeleton className="h-5 w-2/3 mb-2" />
+                          <Skeleton className="h-4 w-1/3 mb-4" />
+                          <div className="flex items-center justify-between">
+                            <Skeleton className="h-6 w-24" />
+                            <div className="flex items-center gap-2">
+                              <Skeleton className="h-8 w-8" />
+                              <Skeleton className="h-8 w-8" />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              ) : cartItems.map((item) => (
                 <Card key={item.id}>
                   <CardContent className="p-4">
                     <div className="flex gap-4">
@@ -165,41 +187,64 @@ const Cart = () => {
                 <CardContent className="p-6">
                   <h2 className="text-xl font-bold mb-6">Order Summary</h2>
 
-                  <div className="space-y-4 mb-6">
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Subtotal</span>
-                      <span className="font-semibold">₹{cartTotal}</span>
+                  {isLoading && cartItems.length === 0 ? (
+                    <div className="space-y-4 mb-6">
+                      <div className="flex justify-between">
+                        <Skeleton className="h-4 w-24" />
+                        <Skeleton className="h-4 w-16" />
+                      </div>
+                      <div className="flex justify-between">
+                        <Skeleton className="h-4 w-24" />
+                        <Skeleton className="h-4 w-16" />
+                      </div>
+                      <Skeleton className="h-4 w-40" />
+                      <Separator />
+                      <div className="flex justify-between">
+                        <Skeleton className="h-5 w-20" />
+                        <Skeleton className="h-5 w-16" />
+                      </div>
+                      <Skeleton className="h-10 w-full" />
+                      <Skeleton className="h-10 w-full" />
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Shipping</span>
-                      <span className="font-semibold">
-                        {shipping === 0 ? "FREE" : `₹${shipping}`}
-                      </span>
-                    </div>
-                    {cartTotal < 500 && (
-                      <p className="text-xs text-muted-foreground">
-                        Add ₹{500 - cartTotal} more for free shipping
-                      </p>
-                    )}
-                    <Separator />
-                    <div className="flex justify-between text-lg">
-                      <span className="font-bold">Total</span>
-                      <span className="font-bold text-primary">₹{total}</span>
-                    </div>
-                  </div>
+                  ) : (
+                    <>
+                      <div className="space-y-4 mb-6">
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Subtotal</span>
+                          <span className="font-semibold">₹{cartTotal}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Shipping</span>
+                          <span className="font-semibold">
+                            {shipping === 0 ? "FREE" : `₹${shipping}`}
+                          </span>
+                        </div>
+                        {cartTotal < 500 && (
+                          <p className="text-xs text-muted-foreground">
+                            Add ₹{500 - cartTotal} more for free shipping
+                          </p>
+                        )}
+                        <Separator />
+                        <div className="flex justify-between text-lg">
+                          <span className="font-bold">Total</span>
+                          <span className="font-bold text-primary">₹{total}</span>
+                        </div>
+                      </div>
 
-                  <Link to="/checkout">
-                    <Button size="lg" className="w-full mb-3">
-                      Proceed to Checkout
-                    </Button>
-                  </Link>
-                  <div className="space-y-2">
-                    <Link to="/products">
-                      <Button variant="outline" size="lg" className="w-full">
-                        Continue Shopping
-                      </Button>
-                    </Link>
-                  </div>
+                      <Link to="/checkout">
+                        <Button size="lg" className="w-full mb-3">
+                          Proceed to Checkout
+                        </Button>
+                      </Link>
+                      <div className="space-y-2">
+                        <Link to="/products">
+                          <Button variant="outline" size="lg" className="w-full">
+                            Continue Shopping
+                          </Button>
+                        </Link>
+                      </div>
+                    </>
+                  )}
                 </CardContent>
               </Card>
             </div>
