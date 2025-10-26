@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Header } from "@/components/Header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -65,8 +65,11 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
-import { removeUserCookie } from "@/utils/cookie";
+import { ProductForm } from "@/components/admin/ProductForm";
+import { ProductDetailsModal } from "@/components/admin/ProductDetailsModal";
+import { getUserCookie, removeUserCookie } from "@/utils/cookie";
 import { useNavigate } from "react-router-dom";
+import AdminProductsPage from "@/components/admin/AdminProductsPage";
 
 const AdminDashboard = () => {
   const [activeSection, setActiveSection] = useState("dashboard");
@@ -80,6 +83,10 @@ const AdminDashboard = () => {
     estimatedDelivery: "",
   });
   const navigate = useNavigate();
+
+  useEffect(() => {
+    console.log(getUserCookie());
+  }, []);
 
   const stats = [
     {
@@ -286,7 +293,7 @@ const AdminDashboard = () => {
                 </SidebarMenu>
               </SidebarGroupContent>
             </SidebarGroup>
-            <SidebarGroup>
+             <SidebarGroup>
               <SidebarGroupContent>
                 <SidebarMenu>
                   <SidebarMenuItem>
@@ -368,66 +375,7 @@ const AdminDashboard = () => {
             )}
 
             {activeSection === "products" && (
-              <div className="space-y-6 animate-fade-in">
-                <div className="flex justify-between items-center">
-                  <h2 className="text-2xl font-bold">Product Management</h2>
-                  <Button>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add Product
-                  </Button>
-                </div>
-                <Card>
-                  <CardContent className="p-6">
-                    <div className="space-y-4">
-                      {products.slice(0, 5).map((product) => (
-                        <div
-                          key={product.id}
-                          className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-all"
-                        >
-                          <div className="flex items-center gap-4 flex-1">
-                            <img
-                              src={product.image}
-                              alt={product.name}
-                              className="w-16 h-16 object-cover rounded-lg"
-                            />
-                            <div className="flex-1">
-                              <h3 className="font-semibold">{product.name}</h3>
-                              <div className="flex items-center gap-4 mt-1">
-                                <Badge variant="outline">
-                                  {product.category}
-                                </Badge>
-                                <span className="text-sm font-bold text-primary">
-                                  ₹{product.price}
-                                </span>
-                                <Badge
-                                  variant={
-                                    product.inStock ? "default" : "destructive"
-                                  }
-                                >
-                                  {product.inStock
-                                    ? "In Stock"
-                                    : "Out of Stock"}
-                                </Badge>
-                              </div>
-                            </div>
-                          </div>
-                          <div className="flex gap-2">
-                            <Button variant="ghost" size="icon">
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="icon">
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="icon">
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
+              <AdminProductsPage />
             )}
 
             {activeSection === "orders" && (

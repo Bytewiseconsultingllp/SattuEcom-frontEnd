@@ -26,7 +26,7 @@ export async function resendOTP(
     );
   }
   try {
-    const res = await api.post("/resend-otp", { email, type });
+    const res = await api.post("/auth/resend-otp", { email, type });
     return res.data;
   } catch (err: any) {
     if (axios.isAxiosError(err)) {
@@ -67,7 +67,7 @@ export async function signup(formData: SignupForm): Promise<any> {
       acceptTerms: !!acceptTerms,
     };
 
-    const res = await api.post("/register", payload);
+    const res = await api.post("/auth/register", payload);
 
     return res.data;
   } catch (err: any) {
@@ -103,7 +103,7 @@ export async function verifySignup(formData: any): Promise<any> {
       otp,
     };
 
-    const res = await api.post("/verify-registration", payload);
+    const res = await api.post("/auth/verify-registration", payload);
 
     return res.data;
   } catch (err: any) {
@@ -131,7 +131,7 @@ export async function signIn(formData: any): Promise<any> {
       email,
       password,
     };
-    const res = await api.post("/login", payload);
+    const res = await api.post("/auth/login", payload);
     return res.data;
   } catch (err: any) {
     // Axios error handling - prefer server message when available
@@ -162,7 +162,7 @@ export async function verifySignIn(formData: any): Promise<any> {
       otp,
     };
 
-    const res = await api.post("/verify-login", payload);
+    const res = await api.post("/auth/verify-login", payload);
 
     const data = res.data;
     if (data?.success && data?.data?.token && data?.data?.refreshToken) {
@@ -196,7 +196,7 @@ export async function forgotPassword(email: string): Promise<any> {
       email,
     };
 
-    const res = await api.post("/forgot-password", payload);
+    const res = await api.post("/auth/forgot-password", payload);
 
     return res.data;
   } catch (err: any) {
@@ -233,7 +233,7 @@ export async function resetPassword(formData: any): Promise<any> {
       newPassword,
     };
 
-    const res = await api.post("/reset-password", payload, {
+    const res = await api.post("/auth/reset-password", payload, {
       headers: { "Content-Type": "application/json" },
       timeout: 10000,
     });

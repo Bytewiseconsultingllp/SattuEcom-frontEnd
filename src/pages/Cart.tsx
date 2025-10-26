@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -7,9 +7,29 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Trash2, Plus, Minus, ShoppingBag } from "lucide-react";
 import { toast } from "sonner";
+import { getCartItems } from "@/lib/api/cart";
+import { getUserCookie } from "@/utils/cookie";
 
 const Cart = () => {
   const [cartItems, setCartItems] = useState<any[]>([]);
+
+  useEffect(()=> {
+    getCartItemsForUser();
+    const data = getUserCookie();
+    console.log(data);
+  }, []);
+
+  async function getCartItemsForUser() {
+    try {
+      const response = await getCartItems();
+      if(response.success) {
+        toast.success("Successfully Fetched the Cart Items");
+      }
+    }
+    catch(error: any) {
+      toast.error(error.message || "Failed to Fetch the Cart Items")
+    }
+  }
 
   const updateQuantity = (id: string, change: number) => {
     setCartItems(items => 

@@ -24,7 +24,7 @@ const processQueue = (error: any, token: string | null = null) => {
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     const userData = getUserCookie();
-    const token = userData?.token;
+    const token = userData?.data.token;
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }

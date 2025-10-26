@@ -11,6 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { signIn } from "@/lib/api/auth";
+import { setUserCookie } from "@/utils/cookie";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -48,6 +49,7 @@ const Login = () => {
         
         // Check if admin email (simple check - you can enhance this)
         if (email === "admin@sattustore.com") {
+          setUserCookie(response);
           navigate("/admin/dashboard");
         } else {
           navigate("/verify-login", { state: { formData } }); 
