@@ -8,6 +8,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { createProduct, updateProduct } from "@/lib/api/products";
+import { useState, useEffect } from "react";
+import { getCategories as apiGetCategories, createCategory as apiCreateCategory, type Category as ApiCategory } from "@/lib/api/categories";
 
 const productSchema = z.object({
   name: z.string().min(1, "Product name is required").max(200),
@@ -16,10 +18,13 @@ const productSchema = z.object({
   category: z.string().min(1, "Category is required"),
   description: z.string().min(1, "Description is required").max(1000),
   image_url: z.string().url("Must be a valid URL").optional(),
+  images: z
+    .array(z.union([z.string().url("Must be a valid URL"), z.literal("")]))
+    .default([]),
   in_stock: z.boolean(),
   ingredients: z.string().optional(),
   usage: z.string().optional(),
-  benefits: z.array(z.string()).optional(),
+  benefits: z.array(z.string()).default([]),
 });
 
 type ProductFormData = z.infer<typeof productSchema>;
@@ -42,6 +47,9 @@ export function ProductForm({ product, onSuccess, onCancel }: ProductFormProps) 
       category: product?.category || "",
       description: product?.description || "",
       image_url: product?.image_url || "",
+      images: Array.isArray(product?.images)
+        ? product?.images
+        : (product?.image_url ? [product.image_url] : []),
       in_stock: product?.in_stock ?? true,
       ingredients: product?.ingredients || "",
       usage: product?.usage || "",
@@ -49,7 +57,7 @@ export function ProductForm({ product, onSuccess, onCancel }: ProductFormProps) 
         ? Array.isArray(product.benefits)
           ? product.benefits
           : String(product.benefits).split(",").map((b: string) => b.trim()).filter(Boolean)
-        : [""],
+        : [],
     },
   });
 
@@ -58,15 +66,50 @@ export function ProductForm({ product, onSuccess, onCancel }: ProductFormProps) 
     name: "benefits",
   });
 
+  const { fields: imageFields, append: appendImage, remove: removeImage } = useFieldArray({
+    control: form.control,
+    name: "images",
+  });
+
+  const [categories, setCategories] = useState<ApiCategory[]>([]);
+  const [categoriesLoading, setCategoriesLoading] = useState<boolean>(false);
+  const [categoriesError, setCategoriesError] = useState<string | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        setCategoriesLoading(true);
+        setCategoriesError(null);
+        const res = await apiGetCategories();
+        if (res?.success) {
+          setCategories(res.data || []);
+          // If editing and product has a category not in the list, prepend it
+          const current = form.getValues("category");
+          if (current && !(res.data || []).some((c) => c.name === current)) {
+            setCategories((prev) => [{ id: "local", name: current }, ...prev]);
+          }
+        }
+      } catch (e: any) {
+        setCategoriesError(e?.message || "Failed to load categories");
+      } finally {
+        setCategoriesLoading(false);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const onSubmit = async (data: ProductFormData) => {
     try {
+      const imagesClean = (data.images || []).filter(Boolean);
+      const primaryImage = imagesClean[0] || data.image_url || "";
       const productData = {
         name: data.name,
         price: data.price,
         original_price: data.original_price,
         category: data.category,
         description: data.description,
-        image_url: data.image_url,
+        image_url: primaryImage,
+        images: imagesClean,
         in_stock: data.in_stock,
         ingredients: data.ingredients,
         usage: data.usage,
@@ -135,15 +178,42 @@ export function ProductForm({ product, onSuccess, onCancel }: ProductFormProps) 
         <Label htmlFor="category">Category</Label>
         <Select
           value={form.watch("category")}
-          onValueChange={(value) => form.setValue("category", value)}
+          onValueChange={(value) => {
+            if (value === "__add__") {
+              const v = window.prompt("Add new category");
+              const val = (v || "").trim();
+              if (val) {
+                (async () => {
+                  try {
+                    const created = await apiCreateCategory(val);
+                    const cat = created?.data || { id: crypto.randomUUID?.() || val, name: val };
+                    setCategories((prev) => (prev.some((c) => c.name === cat.name) ? prev : [cat, ...prev]));
+                    form.setValue("category", cat.name);
+                    toast.success("Category added");
+                  } catch (e: any) {
+                    toast.error(e?.message || "Failed to add category");
+                  }
+                })();
+              }
+              return;
+            }
+            form.setValue("category", value);
+          }}
         >
           <SelectTrigger>
             <SelectValue placeholder="Select category" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="Sattu Powder">Sattu Powder</SelectItem>
-            <SelectItem value="Ready to Drink">Ready to Drink</SelectItem>
-            <SelectItem value="Snacks & Ladoo">Snacks & Ladoo</SelectItem>
+            <SelectItem value="__add__">+ Add new category</SelectItem>
+            {categoriesLoading && (
+              <div className="px-2 py-1 text-sm text-muted-foreground">Loading...</div>
+            )}
+            {(!categoriesLoading && categoriesError) && (
+              <div className="px-2 py-1 text-sm text-destructive">{categoriesError}</div>
+            )}
+            {(!categoriesLoading && !categoriesError) && categories.map((c) => (
+              <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>
+            ))}
           </SelectContent>
         </Select>
         {form.formState.errors.category && (
@@ -177,6 +247,24 @@ export function ProductForm({ product, onSuccess, onCancel }: ProductFormProps) 
       </div>
 
       <div>
+        <Label>Images</Label>
+        <div className="space-y-2">
+          {imageFields.map((field, index) => (
+            <div key={field.id} className="flex items-center gap-2">
+              <Input
+                {...form.register(`images.${index}` as const)}
+                placeholder={`Image URL ${index + 1}`}
+              />
+              <Button type="button" variant="destructive" onClick={() => removeImage(index)} className="h-9">
+                Remove
+              </Button>
+            </div>
+          ))}
+          <Button type="button" onClick={() => appendImage("")}>Add Image</Button>
+        </div>
+      </div>
+
+      <div>
         <Label htmlFor="ingredients">Ingredients</Label>
         <Textarea
           id="ingredients"
@@ -204,7 +292,6 @@ export function ProductForm({ product, onSuccess, onCancel }: ProductFormProps) 
               <Input
                 {...form.register(`benefits.${index}` as const)}
                 placeholder={`Benefit ${index + 1}`}
-                defaultValue={field as any}
               />
               <Button
                 type="button"

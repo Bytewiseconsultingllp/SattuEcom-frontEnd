@@ -23,6 +23,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { addToWishlist as apiAddToWishlist } from "@/lib/api/wishlist";
 import { getUserCookie } from "@/utils/cookie";
 import { useNavigate } from "react-router-dom";
+import ProductReviews from "@/components/ProductReviews";
 
 const ProductDetail = () => {
   const { id } = useParams();
@@ -150,7 +151,7 @@ const ProductDetail = () => {
                 <img
                   src={product.image_url}
                   alt={product.name}
-                  className="w-full h-[500px] object-cover"
+                  className="w-full h-[500px] object-contain"
                 />
                 {discount > 0 && (
                   <Badge className="absolute top-4 left-4 bg-destructive text-destructive-foreground text-lg px-4 py-2">
@@ -334,6 +335,9 @@ const ProductDetail = () => {
                 </div>
               </CardContent>
             </Card>
+          </div>
+          <div className="mt-8">
+            {id && <ProductReviews productId={id as string} />}
           </div>
         </div>
       </main>

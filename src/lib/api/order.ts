@@ -1,106 +1,82 @@
-import { supabase } from '@/integrations/supabase/client';
+import axios from 'axios';
+import api from '../axiosInstance';
 
-export const getOrders = async (userId: string) => {
-  const { data, error } = await supabase
-    .from('orders')
-    .select(`
-      *,
-      order_items(
-        *,
-        product:products(*)
-      ),
-      shipping_address:addresses(*)
-    `)
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false });
+export type OrderItemInput = { product_id: string; quantity: number; price: number };
 
-  if (error) throw error;
-  return data;
-};
+export async function getOrders() {
+  try {
+    const res = await api.get('/orders');
+    return res.data;
+  } catch (err: any) {
+    if (axios.isAxiosError(err)) {
+      const serverMsg = err.response?.data?.message ?? err.response?.data ?? err.message;
+      throw new Error(typeof serverMsg === 'string' ? serverMsg : JSON.stringify(serverMsg));
+    }
+    throw err;
+  }
+}
 
-export const getOrderById = async (orderId: string) => {
-  const { data, error } = await supabase
-    .from('orders')
-    .select(`
-      *,
-      order_items(
-        *,
-        product:products(*)
-      ),
-      shipping_address:addresses(*)
-    `)
-    .eq('id', orderId)
-    .single();
+export async function getOrderById(id: string) {
+  try {
+    const res = await api.get(`/orders/${id}`);
+    return res.data;
+  } catch (err: any) {
+    if (axios.isAxiosError(err)) {
+      const serverMsg = err.response?.data?.message ?? err.response?.data ?? err.message;
+      throw new Error(typeof serverMsg === 'string' ? serverMsg : JSON.stringify(serverMsg));
+    }
+    throw err;
+  }
+}
 
-  if (error) throw error;
-  return data;
-};
+export async function createOrder(payload: { total_amount: number; shipping_address_id: string; items: OrderItemInput[] }) {
+  try {
+    const res = await api.post('/orders', payload);
+    return res.data;
+  } catch (err: any) {
+    if (axios.isAxiosError(err)) {
+      const serverMsg = err.response?.data?.message ?? err.response?.data ?? err.message;
+      throw new Error(typeof serverMsg === 'string' ? serverMsg : JSON.stringify(serverMsg));
+    }
+    throw err;
+  }
+}
 
-export const createOrder = async (order: {
-  user_id: string;
-  total_amount: number;
-  shipping_address_id: string;
-  items: Array<{ product_id: string; quantity: number; price: number }>;
-}) => {
-  // Create order
-  const { data: orderData, error: orderError } = await supabase
-    .from('orders')
-    .insert({
-      user_id: order.user_id,
-      total_amount: order.total_amount,
-      shipping_address_id: order.shipping_address_id,
-      status: 'pending',
-    })
-    .select()
-    .single();
+export async function updateOrderStatus(id: string, status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled') {
+  try {
+    const res = await api.patch(`/orders/${id}/status`, { status });
+    return res.data;
+  } catch (err: any) {
+    if (axios.isAxiosError(err)) {
+      const serverMsg = err.response?.data?.message ?? err.response?.data ?? err.message;
+      throw new Error(typeof serverMsg === 'string' ? serverMsg : JSON.stringify(serverMsg));
+    }
+    throw err;
+  }
+}
 
-  if (orderError) throw orderError;
+export async function cancelOrder(id: string, reason?: string) {
+  try {
+    const res = await api.patch(`/orders/${id}/cancel`, reason ? { reason } : undefined);
+    return res.data;
+  } catch (err: any) {
+    if (axios.isAxiosError(err)) {
+      const serverMsg = err.response?.data?.message ?? err.response?.data ?? err.message;
+      throw new Error(typeof serverMsg === 'string' ? serverMsg : JSON.stringify(serverMsg));
+    }
+    throw err;
+  }
+}
 
-  // Create order items
-  const orderItems = order.items.map(item => ({
-    order_id: orderData.id,
-    product_id: item.product_id,
-    quantity: item.quantity,
-    price: item.price,
-  }));
-
-  const { error: itemsError } = await supabase
-    .from('order_items')
-    .insert(orderItems);
-
-  if (itemsError) throw itemsError;
-
-  return orderData;
-};
-
-export const updateOrderStatus = async (
-  orderId: string,
-  status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled'
-) => {
-  const { data, error } = await supabase
-    .from('orders')
-    .update({ status })
-    .eq('id', orderId)
-    .select()
-    .single();
-
-  if (error) throw error;
-  return data;
-};
-
-export const getAllOrders = async () => {
-  const { data, error } = await supabase
-    .from('orders')
-    .select(`
-      *,
-      user:users(full_name, email),
-      order_items(
-        *,
-        product:products(name)
-      )
-    `)
-    .order('created_at', { ascending: false });
-
-  if (error) throw error;
-  return data;
-};
+export async function getAllOrders() {
+  try {
+    const res = await api.get('/orders/all');
+    return res.data;
+  } catch (err: any) {
+    if (axios.isAxiosError(err)) {
+      const serverMsg = err.response?.data?.message ?? err.response?.data ?? err.message;
+      throw new Error(typeof serverMsg === 'string' ? serverMsg : JSON.stringify(serverMsg));
+    }
+    throw err;
+  }
+}

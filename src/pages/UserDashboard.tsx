@@ -19,7 +19,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
- 
+
 import {
   Sidebar,
   SidebarContent,
@@ -37,15 +37,22 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, CheckCircle2, Clock } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Link as RouterLink } from "react-router-dom";
 import { removeUserCookie } from "@/utils/cookie";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useLocation } from "react-router-dom";
 import { getAddresses as apiGetAddresses, createAddress as apiCreateAddress, setDefaultAddress as apiSetDefaultAddress, deleteAddress as apiDeleteAddress, updateAddress as apiUpdateAddress } from "@/lib/api/addresses";
 import { toast } from "sonner";
-import { getWishlistItems } from "@/lib/api/wishlist";
+import { getWishlistItems, removeFromWishlist } from "@/lib/api/wishlist";
+import { useCart } from "@/contexts/CartContext";
+import { getProfile } from "@/lib/api/user";
+import { getOrders as apiGetOrders, cancelOrder as apiCancelOrder } from "@/lib/api/order";
+import UserReviewsList from "@/components/UserReviewsList";
 
 const UserDashboard = () => {
   const [activeSection, setActiveSection] = useState("overview");
+  const location = useLocation();
   const [orderStatusFilter, setOrderStatusFilter] = useState("all");
   const [dateFilter, setDateFilter] = useState("all");
   const navigate = useNavigate();
@@ -65,52 +72,22 @@ const UserDashboard = () => {
   });
   const [wishlistItems, setWishlistItems] = useState<any[]>([]);
   const [wishlistLoading, setWishlistLoading] = useState<boolean>(false);
+  const { addToCart, loadingState } = useCart();
+  const [profile, setProfile] = useState<any | null>(null);
+  const [profileLoading, setProfileLoading] = useState<boolean>(false);
 
-  const orders = [
-    {
-      id: "ORD001",
-      date: "2025-01-15",
-      total: 899,
-      status: "delivered",
-      items: 3,
-      tracking: {
-        agency: "Blue Dart",
-        trackingNumber: "BD123456789",
-        estimatedDelivery: "2025-01-18",
-      },
-    },
-    {
-      id: "ORD002",
-      date: "2025-01-10",
-      total: 449,
-      status: "shipped",
-      items: 1,
-      tracking: {
-        agency: "DTDC",
-        trackingNumber: "DTDC987654321",
-        estimatedDelivery: "2025-01-16",
-      },
-    },
-    {
-      id: "ORD003",
-      date: "2025-01-05",
-      total: 1299,
-      status: "processing",
-      items: 5,
-      tracking: null,
-    },
-    {
-      id: "ORD004",
-      date: "2024-12-28",
-      total: 699,
-      status: "delivered",
-      items: 2,
-      tracking: {
-        agency: "Blue Dart",
-        trackingNumber: "BD555666777",
-        estimatedDelivery: "2025-01-02",
-      },
-    },
+  const [orders, setOrders] = useState<any[]>([]);
+  const [ordersLoading, setOrdersLoading] = useState<boolean>(false);
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [cancelOrderId, setCancelOrderId] = useState<string | null>(null);
+  const [cancelReasonKey, setCancelReasonKey] = useState<string>("");
+  const [cancelReasonText, setCancelReasonText] = useState<string>("");
+  const cancelReasons = [
+    { key: 'ordered_by_mistake', label: 'Ordered by mistake' },
+    { key: 'found_better_price', label: 'Found a better price elsewhere' },
+    { key: 'delivery_too_slow', label: 'Delivery time is too long' },
+    { key: 'change_of_mind', label: 'Changed my mind' },
+    { key: 'other', label: 'Other (specify)' },
   ];
 
   const payments = [
@@ -148,16 +125,16 @@ const UserDashboard = () => {
     },
   ];
 
-  const filteredOrders = orders.filter((order) => {
+  const filteredOrders = (orders || []).filter((order: any) => {
     const statusMatch =
       orderStatusFilter === "all" || order.status === orderStatusFilter;
     const dateMatch =
       dateFilter === "all" ||
       (dateFilter === "30days" &&
-        new Date(order.date) >
-          new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)) ||
+        new Date(order.created_at || order.date) >
+        new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)) ||
       (dateFilter === "90days" &&
-        new Date(order.date) > new Date(Date.now() - 90 * 24 * 60 * 60 * 1000));
+        new Date(order.created_at || order.date) > new Date(Date.now() - 90 * 24 * 60 * 60 * 1000));
     return statusMatch && dateMatch;
   });
 
@@ -166,10 +143,10 @@ const UserDashboard = () => {
       dateFilter === "all" ||
       (dateFilter === "30days" &&
         new Date(payment.date) >
-          new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)) ||
+        new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)) ||
       (dateFilter === "90days" &&
         new Date(payment.date) >
-          new Date(Date.now() - 90 * 24 * 60 * 60 * 1000));
+        new Date(Date.now() - 90 * 24 * 60 * 60 * 1000));
     return dateMatch;
   });
 
@@ -177,6 +154,20 @@ const UserDashboard = () => {
     removeUserCookie();
     navigate("/login");
   }
+
+  useEffect(() => {
+    // Initialize active tab from navigation state or persisted storage
+    const initialTab = (location.state as any)?.tab || localStorage.getItem('user_dashboard_tab');
+    if (initialTab && typeof initialTab === 'string') {
+      setActiveSection(initialTab);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    // Persist active tab
+    try { localStorage.setItem('user_dashboard_tab', activeSection); } catch { }
+  }, [activeSection]);
 
   useEffect(() => {
     (async () => {
@@ -206,6 +197,80 @@ const UserDashboard = () => {
       }
     })();
   }, [activeSection]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        setProfileLoading(true);
+        const res = await getProfile();
+        if (res?.success) setProfile(res.data);
+      } catch (e: any) {
+        // non-fatal
+      } finally {
+        setProfileLoading(false);
+      }
+    })();
+  }, []);
+
+  useEffect(() => {
+    if (activeSection !== 'orders') return;
+    (async () => {
+      try {
+        setOrdersLoading(true);
+        const res = await apiGetOrders();
+        if (res?.success) setOrders(res.data || []);
+      } catch (e: any) {
+        // non-fatal
+      } finally {
+        setOrdersLoading(false);
+      }
+    })();
+  }, [activeSection]);
+
+  function openCancelDialog(orderId: string) {
+    setCancelOrderId(orderId);
+    setCancelReasonKey('');
+    setCancelReasonText('');
+    setCancelDialogOpen(true);
+  }
+
+  async function handleConfirmCancel() {
+    if (!cancelOrderId) return;
+    const selected = cancelReasons.find(r => r.key === cancelReasonKey);
+    const reason = cancelReasonKey === 'other' ? cancelReasonText.trim() : selected?.label;
+    if (!reason) return toast.error('Please select or enter a reason');
+    try {
+      const res = await apiCancelOrder(cancelOrderId, reason);
+      if (res?.success) {
+        toast.success('Order cancelled');
+        // refresh list
+        const r2 = await apiGetOrders();
+        if (r2?.success) setOrders(r2.data || []);
+        setCancelDialogOpen(false);
+      }
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to cancel order');
+    }
+  }
+
+  async function handleRemoveWishlist(itemId: string) {
+    try {
+      const res = await removeFromWishlist(itemId);
+      if (res?.success) {
+        setWishlistItems(prev => prev.filter(i => i.id !== itemId));
+        try { window.dispatchEvent(new Event('wishlist:changed')); } catch { }
+        toast.success("Removed from wishlist");
+      }
+    } catch (e: any) {
+      toast.error(e.message || "Failed to remove from wishlist");
+    }
+  }
+
+  async function handleAddToCartFromWishlist(productId?: string) {
+    if (!productId) return;
+    await addToCart(productId, 1);
+    toast.success("Added to cart");
+  }
 
   async function handleAddAddress() {
     const phoneOk = /^\+?\d{10,15}$/.test(newAddress.phone);
@@ -289,9 +354,9 @@ const UserDashboard = () => {
         <Sidebar className="border-r border-sidebar-border">
           <div className="p-4 border-b border-sidebar-border">
             <h2 className="text-lg font-bold text-sidebar-foreground">
-              My Account
+              {profile?.name || 'My Account'}
             </h2>
-            <p className="text-sm text-muted-foreground">John Doe</p>
+            <p className="text-sm text-muted-foreground">{profile?.email || ''}</p>
           </div>
           <SidebarContent>
             <SidebarGroup>
@@ -367,6 +432,15 @@ const UserDashboard = () => {
                     >
                       <Heart className="h-4 w-4" />
                       <span>Wishlist</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      onClick={() => setActiveSection("my-reviews")}
+                      isActive={activeSection === "my-reviews"}
+                    >
+                      <FileText className="h-4 w-4" />
+                      <span>My Reviews</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 </SidebarMenu>
@@ -461,7 +535,7 @@ const UserDashboard = () => {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
-                      {orders.slice(0, 3).map((order) => (
+                      {(orders || []).slice(0, 3).map((order: any) => (
                         <div
                           key={order.id}
                           className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
@@ -471,19 +545,19 @@ const UserDashboard = () => {
                               <h3 className="font-semibold">{order.id}</h3>
                               <Badge
                                 variant={
-                                  order.status === "delivered"
+                                  (order.status || '').toLowerCase() === "delivered"
                                     ? "default"
-                                    : order.status === "shipped"
-                                    ? "secondary"
-                                    : "outline"
+                                    : (order.status || '').toLowerCase() === "shipped"
+                                      ? "secondary"
+                                      : "outline"
                                 }
                               >
-                                {order.status}
+                                {order.status || 'pending'}
                               </Badge>
                             </div>
                             <p className="text-sm text-muted-foreground">
-                              {order.date} • {order.items} items • ₹
-                              {order.total}
+                              {new Date(order.created_at || order.date).toLocaleDateString()} • {(order.order_items?.length) ?? order.items} items • ₹
+                              {order.total_amount ?? order.total}
                             </p>
                           </div>
                           <Button
@@ -497,6 +571,40 @@ const UserDashboard = () => {
                     </div>
                   </CardContent>
                 </Card>
+                <Dialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Cancel Order</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-3">
+                      <p className="text-sm text-muted-foreground">Select a reason for cancellation:</p>
+                      <div className="grid gap-2">
+                        {cancelReasons.map(r => (
+                          <label key={r.key} className={`border rounded p-2 cursor-pointer ${cancelReasonKey === r.key ? 'border-primary' : 'border-border'}`}>
+                            <input type="radio" name="cancel_reason" className="mr-2" checked={cancelReasonKey === r.key} onChange={() => setCancelReasonKey(r.key)} />
+                            {r.label}
+                          </label>
+                        ))}
+                      </div>
+                      {cancelReasonKey === 'other' && (
+                        <div className="space-y-1">
+                          <label className="text-sm">Please specify</label>
+                          <Textarea value={cancelReasonText} onChange={(e) => setCancelReasonText(e.target.value)} placeholder="Enter cancellation reason" />
+                        </div>
+                      )}
+                      <div className="flex justify-end gap-2 pt-2">
+                        <Button variant="outline" onClick={() => setCancelDialogOpen(false)}>Close</Button>
+                        <Button variant="destructive" onClick={handleConfirmCancel}>Confirm Cancel</Button>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </div>
+            )}
+
+            {activeSection === "my-reviews" && (
+              <div className="space-y-6 animate-fade-in">
+                <UserReviewsList />
               </div>
             )}
 
@@ -534,69 +642,108 @@ const UserDashboard = () => {
 
                 <Card>
                   <CardContent className="p-6">
-                    <div className="space-y-4">
-                      {filteredOrders.map((order) => (
-                        <Collapsible key={order.id}>
-                          <div className="border rounded-lg p-4">
-                            <div className="flex items-center justify-between">
-                              <div className="flex-1">
-                                <div className="flex items-center gap-3 mb-2">
-                                  <h3 className="font-semibold">{order.id}</h3>
-                                  <Badge
-                                    variant={
-                                      order.status === "delivered"
-                                        ? "default"
-                                        : order.status === "shipped"
-                                        ? "secondary"
-                                        : "outline"
-                                    }
-                                  >
-                                    {order.status}
-                                  </Badge>
+                    {ordersLoading ? (
+                      <div className="space-y-3">
+                        {Array.from({ length: 3 }).map((_, i) => (
+                          <div key={i} className="flex items-center justify-between p-4 border rounded-lg">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-3 mb-2">
+                                <Skeleton className="h-4 w-40" />
+                                <Skeleton className="h-5 w-20" />
+                              </div>
+                              <Skeleton className="h-3 w-56" />
+                            </div>
+                            <Skeleton className="h-9 w-20" />
+                          </div>
+                        ))}
+                      </div>
+                    ) : filteredOrders.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">No orders found for the selected filters.</p>
+                    ) : (
+                      <div className="space-y-4">
+                        {filteredOrders.map((order) => (
+                          <Collapsible key={order.id}>
+                            <div className="border rounded-lg p-4">
+                              <div className="flex items-center justify-between">
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-3 mb-2">
+                                    <h3 className="font-semibold">{order.id}</h3>
+                                    <Badge
+                                      variant={
+                                        (order.status || '').toLowerCase() === "delivered"
+                                          ? "default"
+                                          : (order.status || '').toLowerCase() === "shipped"
+                                            ? "secondary"
+                                            : "outline"
+                                      }
+                                    >
+                                      {((s) => s === 'delivered' ? <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> : s === 'shipped' ? <Truck className="h-3.5 w-3.5 mr-1" /> : s === 'processing' ? <Package className="h-3.5 w-3.5 mr-1" /> : <Clock className="h-3.5 w-3.5 mr-1" />)((order.status || '').toLowerCase())}
+                                      {order.status || 'pending'}
+                                    </Badge>
+                                  </div>
+                                  <p className="text-sm text-muted-foreground">
+                                    {new Date(order.created_at || order.date).toLocaleDateString()} • {(order.order_items?.length) ?? order.items} items • ₹
+                                    {order.total_amount ?? order.total}
+                                  </p>
+                                </div>
+                                <CollapsibleTrigger asChild>
+                                  <Button variant="ghost" size="sm">
+                                    <ChevronDown className="h-4 w-4" />
+                                  </Button>
+                                </CollapsibleTrigger>
+                                {(['pending', 'processing'] as string[]).includes((order.status || '').toLowerCase()) && (
+                                  <Button variant="destructive" size="sm" onClick={() => openCancelDialog(order.id)}>Cancel</Button>
+                                )}
+                                <Button asChild variant="outline" size="sm">
+                                  <RouterLink to={`/order/${order.id}`}>Details</RouterLink>
+                                </Button>
+                              </div>
+                              <CollapsibleContent className="mt-4 space-y-2 border-t pt-4">
+                                <p className="text-sm font-semibold">
+                                  Order Details:
+                                </p>
+                                <div className="space-y-3">
+                                  {(order.order_items || []).map((it: any) => (
+                                    <div key={it.id || it.product_id} className="flex items-center justify-between">
+                                      <div className="flex items-center gap-3">
+                                        <img
+                                          src={it.product?.image || it.product?.thumbnail || it.product?.image_url || '/placeholder.svg'}
+                                          alt={it.product?.name || it.product_id}
+                                          className="h-10 w-10 rounded object-cover"
+                                        />                                      <div>
+                                          <p className="text-sm font-medium">{it.product?.name || it.product_id}</p>
+                                          <p className="text-xs text-muted-foreground">Qty: {it.quantity} • ₹{it.price}</p>
+                                        </div>
+                                      </div>
+                                      <p className="text-sm font-semibold">₹{(it.price || 0) * (it.quantity || 0)}</p>
+                                    </div>
+                                  ))}
                                 </div>
                                 <p className="text-sm text-muted-foreground">
-                                  {order.date} • {order.items} items • ₹
-                                  {order.total}
+                                  Shipping Address: {order.shipping_address ? `${order.shipping_address.address_line1}${order.shipping_address.address_line2 ? ', ' + order.shipping_address.address_line2 : ''}, ${order.shipping_address.city}, ${order.shipping_address.state} - ${order.shipping_address.postal_code}` : '-'}
                                 </p>
-                              </div>
-                              <CollapsibleTrigger asChild>
-                                <Button variant="ghost" size="sm">
-                                  <ChevronDown className="h-4 w-4" />
-                                </Button>
-                              </CollapsibleTrigger>
+                                {order.tracking && (
+                                  <div className="mt-2 p-3 bg-muted/50 rounded-lg">
+                                    <p className="text-sm font-semibold mb-1">
+                                      Tracking Info:
+                                    </p>
+                                    <p className="text-sm">
+                                      Agency: {order.tracking.agency}
+                                    </p>
+                                    <p className="text-sm">
+                                      Tracking #: {order.tracking.trackingNumber}
+                                    </p>
+                                    <p className="text-sm">
+                                      Est. Delivery: {order.tracking.estimatedDelivery}
+                                    </p>
+                                  </div>
+                                )}
+                              </CollapsibleContent>
                             </div>
-                            <CollapsibleContent className="mt-4 space-y-2 border-t pt-4">
-                              <p className="text-sm font-semibold">
-                                Order Details:
-                              </p>
-                              <p className="text-sm text-muted-foreground">
-                                Items: Sattu Powder x2, Ready to Drink x1
-                              </p>
-                              <p className="text-sm text-muted-foreground">
-                                Shipping Address: 123 Main St, Patna
-                              </p>
-                              {order.tracking && (
-                                <div className="mt-2 p-3 bg-muted/50 rounded-lg">
-                                  <p className="text-sm font-semibold mb-1">
-                                    Tracking Info:
-                                  </p>
-                                  <p className="text-sm">
-                                    Agency: {order.tracking.agency}
-                                  </p>
-                                  <p className="text-sm">
-                                    Tracking #: {order.tracking.trackingNumber}
-                                  </p>
-                                  <p className="text-sm">
-                                    Est. Delivery:{" "}
-                                    {order.tracking.estimatedDelivery}
-                                  </p>
-                                </div>
-                              )}
-                            </CollapsibleContent>
-                          </div>
-                        </Collapsible>
-                      ))}
-                    </div>
+                          </Collapsible>
+                        ))}
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </div>
@@ -659,9 +806,9 @@ const UserDashboard = () => {
                 <Card>
                   <CardContent className="p-6">
                     <div className="space-y-6">
-                      {orders
+                      {(orders || [])
                         .filter((o) => o.tracking)
-                        .map((order) => (
+                        .map((order: any) => (
                           <div key={order.id} className="border rounded-lg p-6">
                             <div className="flex items-center justify-between mb-4">
                               <div>
@@ -670,19 +817,19 @@ const UserDashboard = () => {
                                 </h3>
                                 <Badge
                                   variant={
-                                    order.status === "delivered"
+                                    (order.status || '').toLowerCase() === "delivered"
                                       ? "default"
                                       : "secondary"
                                   }
                                 >
-                                  {order.status}
+                                  {order.status || 'pending'}
                                 </Badge>
                               </div>
                               <div className="text-right">
                                 <p className="text-sm text-muted-foreground">
                                   Order Date
                                 </p>
-                                <p className="font-semibold">{order.date}</p>
+                                <p className="font-semibold">{new Date(order.created_at || order.date).toLocaleDateString()}</p>
                               </div>
                             </div>
 
@@ -731,24 +878,69 @@ const UserDashboard = () => {
 
             {activeSection === "profile" && (
               <div className="space-y-6 animate-fade-in">
-                <h2 className="text-2xl font-bold">Personal Information</h2>
+                <div className="flex items-center justify-between">
+                  <h2 className="text-2xl font-bold">Profile</h2>
+                  <div className="flex items-center gap-2">
+                    {profile?.isVerified ? (
+                      <Badge>Verified</Badge>
+                    ) : (
+                      <Badge variant="outline">Unverified</Badge>
+                    )}
+                    {profile?.role && <Badge variant="outline">{profile.role}</Badge>}
+                  </div>
+                </div>
                 <Card>
-                  <CardContent className="p-6 space-y-4">
-                    <div className="flex items-center gap-4">
-                      <div className="h-20 w-20 rounded-full bg-primary/10 flex items-center justify-center">
+                  <CardContent className="p-6">
+                    <div className="flex items-start gap-6">
+                      <div className="h-20 w-20 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
                         <User className="h-10 w-10 text-primary" />
                       </div>
-                      <div>
-                        <h3 className="text-xl font-bold">John Doe</h3>
-                        <p className="text-muted-foreground">
-                          john.doe@example.com
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          +91 98765 43210
-                        </p>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
+                        <div>
+                          <p className="text-sm text-muted-foreground">Name</p>
+                          <p className="font-semibold">{profile?.name || '-'}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Email</p>
+                          <p className="font-semibold">{profile?.email || '-'}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Phone</p>
+                          <p className="font-semibold">{profile?.phone || '-'}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">User ID</p>
+                          <p className="font-mono text-sm">{profile?.id || '-'}</p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-muted-foreground">Joined</p>
+                          <p className="font-semibold">{profile?.createdAt ? new Date(profile.createdAt).toLocaleDateString() : '-'}</p>
+                        </div>
                       </div>
                     </div>
-                    <Button>Edit Profile</Button>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Default Address</CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-6">
+                    {(() => {
+                      const da = profile?.addresses?.find((a: any) => a.is_default);
+                      return da ? (
+                        <div className="text-sm">
+                          <p>{da.full_name}</p>
+                          <p>{da.label}</p>
+                          <p>{da.phone}</p>
+                          <p>{da.address_line1}{da.address_line2 ? `, ${da.address_line2}` : ''}</p>
+                          <p>{da.city}, {da.state} - {da.postal_code}</p>
+                          <p>{da.country || 'India'}</p>
+                        </div>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">No default address added yet</p>
+                      );
+                    })()}
                   </CardContent>
                 </Card>
               </div>
@@ -880,6 +1072,14 @@ const UserDashboard = () => {
                                 <p className="text-sm text-muted-foreground mb-2">{product?.category}</p>
                                 <p className="font-bold text-primary">₹{product?.price}</p>
                               </Link>
+                              <div className="mt-3 flex gap-2">
+                                <Button className="flex-1" onClick={() => handleAddToCartFromWishlist(product?.id)} disabled={loadingState?.type === 'add' && loadingState.itemId === product?.id}>
+                                  Add to Cart
+                                </Button>
+                                <Button variant="outline" onClick={() => handleRemoveWishlist(item.id)}>
+                                  Remove
+                                </Button>
+                              </div>
                             </div>
                           );
                         })}

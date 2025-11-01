@@ -73,7 +73,7 @@ export const ProductCard = ({ product }: ProductCardProps) => {
           <img 
             src={product.image_url} 
             alt={product.name}
-            className="h-64 w-full object-cover transition-all duration-500 group-hover:scale-110"
+            className="h-64 w-full object-contain transition-all duration-500 group-hover:scale-110"
           />
           {discount > 0 && (
             <Badge className="absolute top-3 left-3 bg-destructive text-destructive-foreground animate-scale-in">

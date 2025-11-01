@@ -41,6 +41,7 @@ const Wishlist = () => {
     try {
       await apiRemoveFromWishlist(id);
       setWishlistItems(items => items.filter(item => item.id !== id));
+      try { window.dispatchEvent(new Event('wishlist:changed')); } catch {}
       toast.success("Item removed from wishlist");
     } catch (e: any) {
       toast.error(e.message || "Failed to remove wishlist item");

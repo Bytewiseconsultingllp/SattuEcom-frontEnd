@@ -46,6 +46,9 @@ export const Header = () => {
       }
     };
     fetchWishlistCount();
+    const handler = () => { fetchWishlistCount(); };
+    window.addEventListener('wishlist:changed', handler);
+    return () => window.removeEventListener('wishlist:changed', handler);
   }, [isLoggedIn]);
 
   const handleWishlistClick = () => {

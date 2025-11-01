@@ -11,6 +11,7 @@ import { MapPin, Package, Gift, Trash2, Plus, Minus, ChevronDown, ChevronUp, Cre
 import { toast } from "sonner";
 import { getAddressById as apiGetAddressById } from "@/lib/api/addresses";
 import { useCart } from "@/contexts/CartContext";
+import { createOrder, OrderItemInput } from "@/lib/api/order";
 
 
 // Order review uses the actual items from CartContext
@@ -23,7 +24,7 @@ const OrderReview = () => {
   })();
   const deliveryOptions = location.state?.deliveryOptions || {};
   
-  const { cartItems, updateQuantity, removeFromCart } = useCart();
+  const { cartItems, updateQuantity, removeFromCart, refreshCart } = useCart();
   const [isBillOpen, setIsBillOpen] = useState(false);
   const [selectedAddress, setSelectedAddress] = useState<any | null>(null);
 
@@ -64,16 +65,34 @@ const OrderReview = () => {
   
   const total = subtotal + deliveryCharges + giftCharges + taxAmount;
 
-  const handlePlaceOrder = () => {
+  const handlePlaceOrder = async () => {
     if (cartItems.length === 0) {
       toast.error("Your cart is empty");
       return;
     }
-    toast.success("Order placed successfully!");
-    // Navigate to order success page or user dashboard
-    setTimeout(() => {
-      navigate("/");
-    }, 2000);
+    if (!addressId && !selectedAddress?.id) {
+      toast.error("Please select a delivery address");
+      return;
+    }
+    try {
+      const items: OrderItemInput[] = cartItems.map(ci => ({
+        product_id: ci.product?.id || ci.product_id,
+        quantity: ci.quantity,
+        price: ci.product?.price || 0,
+      }));
+      const res = await createOrder({
+        total_amount: total,
+        shipping_address_id: (selectedAddress?.id || addressId) as string,
+        items,
+      });
+      if (res?.success) {
+        toast.success("Order placed successfully");
+        await refreshCart();
+        navigate("/dashboard", { replace: true, state: { tab: "orders" } });
+      }
+    } catch (e: any) {
+      toast.error(e.message || "Failed to place order");
+    }
   };
 
   return (
