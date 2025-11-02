@@ -7,11 +7,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { MapPin, Package, Gift, Trash2, Plus, Minus, ChevronDown, ChevronUp, CreditCard } from "lucide-react";
+import { MapPin, Package, Gift, Trash2, Plus, Minus, ChevronDown, ChevronUp, CreditCard, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { getAddressById as apiGetAddressById } from "@/lib/api/addresses";
 import { useCart } from "@/contexts/CartContext";
 import { createOrder, OrderItemInput } from "@/lib/api/order";
+import { useRazorpay } from "@/hooks/useRazorpay.production";
+import { getUserCookie } from "@/utils/cookie";
 
 
 // Order review uses the actual items from CartContext
@@ -27,6 +29,8 @@ const OrderReview = () => {
   const { cartItems, updateQuantity, removeFromCart, refreshCart } = useCart();
   const [isBillOpen, setIsBillOpen] = useState(false);
   const [selectedAddress, setSelectedAddress] = useState<any | null>(null);
+  const [isPlacingOrder, setIsPlacingOrder] = useState(false);
+  const { initiatePayment, isProcessing } = useRazorpay();
 
   useEffect(() => {
     (async () => {
@@ -74,24 +78,55 @@ const OrderReview = () => {
       toast.error("Please select a delivery address");
       return;
     }
+
+    // Get user details from cookie
+    const user = getUserCookie();
+
+    setIsPlacingOrder(true);
+
     try {
+      
+      // Step 1: Create order on backend
       const items: OrderItemInput[] = cartItems.map(ci => ({
         product_id: ci.product?.id || ci.product_id,
         quantity: ci.quantity,
         price: ci.product?.price || 0,
       }));
-      const res = await createOrder({
+
+      const orderRes = await createOrder({
         total_amount: total,
         shipping_address_id: (selectedAddress?.id || addressId) as string,
         items,
       });
-      if (res?.success) {
-        toast.success("Order placed successfully");
+
+      if (!orderRes?.success || !orderRes?.data?.id) {
+        throw new Error("Failed to create order");
+      }
+
+      const orderId = orderRes.data.id;
+      toast.success("Order created! Proceeding to payment...");
+
+      // Step 2: Initiate Razorpay payment with user details from cookie and selected address
+      const paymentResult = await initiatePayment(orderId, {
+        name: user?.name || selectedAddress?.full_name || "",
+        email: user?.email || "",
+        contact: selectedAddress?.phone || user?.phone || "",
+      });
+
+      if (paymentResult.success) {
+        // Payment successful - clear cart and redirect
         await refreshCart();
-        navigate("/dashboard", { replace: true, state: { tab: "orders" } });
+        toast.success("Payment successful! Order placed.");
+        navigate(`/orders/${orderId}`, { replace: true });
+      } else {
+        // Payment failed or cancelled
+        toast.error("Payment was not completed. Order is pending payment.");
+        navigate("/dashboard", { state: { tab: "orders" } });
       }
     } catch (e: any) {
       toast.error(e.message || "Failed to place order");
+    } finally {
+      setIsPlacingOrder(false);
     }
   };
 
@@ -317,8 +352,23 @@ const OrderReview = () => {
                     </Collapsible>
 
                     <div className="mt-6 space-y-3">
-                      <Button size="lg" className="w-full" onClick={handlePlaceOrder}>
-                        Place Order
+                      <Button 
+                        size="lg" 
+                        className="w-full" 
+                        onClick={handlePlaceOrder}
+                        disabled={isPlacingOrder || isProcessing || cartItems.length === 0}
+                      >
+                        {isPlacingOrder || isProcessing ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            {isPlacingOrder ? "Creating Order..." : "Processing Payment..."}
+                          </>
+                        ) : (
+                          <>
+                            <CreditCard className="mr-2 h-4 w-4" />
+                            Place Order & Pay ₹{total}
+                          </>
+                        )}
                       </Button>
                       
                       <Button 

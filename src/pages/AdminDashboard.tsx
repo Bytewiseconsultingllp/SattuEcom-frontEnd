@@ -37,6 +37,14 @@ import {
   Tag,
   Percent,
   Gift,
+  Grid3x3,
+  Image as ImageIcon,
+  FileBarChart,
+  Receipt,
+  ShoppingBag,
+  Share2,
+  Building2,
+  Mail,
 } from "lucide-react";
 import { products } from "@/data/products";
 import { toast } from "sonner";
@@ -78,6 +86,22 @@ import { Textarea } from "@/components/ui/textarea";
 import AdminProductsPage from "@/components/admin/AdminProductsPage";
 import AdminReviewsPage from "@/components/admin/AdminReviewsPage";
 import AdminCouponsPage from "@/components/admin/AdminCouponsPage";
+import { PaymentManagement } from "@/components/admin/PaymentManagement";
+import { ProductCataloguePage } from "@/components/admin/ProductCataloguePage";
+import { BannersManagementPage } from "@/components/admin/BannersManagementPage";
+import { ReportsPage } from "@/components/admin/ReportsPage";
+import { ExpenseManagementPage } from "@/components/admin/ExpenseManagementPage";
+import { OfflineSalesPage } from "@/components/admin/OfflineSalesPage";
+import { SocialMediaPage } from "@/components/admin/SocialMediaPage";
+import { CompanySettingsPage } from "@/components/admin/CompanySettingsPage";
+import { ContactManagementPage } from "@/components/admin/ContactManagementPage";
+import { DashboardHome } from "@/components/admin/DashboardHome";
+import { ModernAdminSidebar } from "@/components/admin/ModernAdminSidebar";
+import { ModernAdminHeader } from "@/components/admin/ModernAdminHeader";
+import { ModernProductsPage } from "@/components/admin/ModernProductsPage";
+import { ModernOrdersPage } from "@/components/admin/ModernOrdersPage";
+import { ModernCustomersPage } from "@/components/admin/ModernCustomersPage";
+import { ModernAnalyticsPage } from "@/components/admin/ModernAnalyticsPage";
 
 const AdminDashboard = () => {
   const [activeSection, setActiveSection] = useState("dashboard");
@@ -274,169 +298,28 @@ const AdminDashboard = () => {
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-muted/30">
-        <Sidebar className="border-r border-sidebar-border">
-          <div className="p-4 border-b border-sidebar-border">
-            <h2 className="text-lg font-bold text-sidebar-foreground">
-              Admin Panel
-            </h2>
-          </div>
-          <SidebarContent>
-            <SidebarGroup>
-              <SidebarGroupLabel>Main Menu</SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      onClick={() => setActiveSection("dashboard")}
-                      isActive={activeSection === "dashboard"}
-                    >
-                      <LayoutDashboard className="h-4 w-4" />
-                      <span>Dashboard</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      onClick={() => setActiveSection("products")}
-                      isActive={activeSection === "products"}
-                    >
-                      <Package className="h-4 w-4" />
-                      <span>Products</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      onClick={() => setActiveSection("orders")}
-                      isActive={activeSection === "orders"}
-                    >
-                      <ShoppingCart className="h-4 w-4" />
-                      <span>Orders</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      onClick={() => setActiveSection("customers")}
-                      isActive={activeSection === "customers"}
-                    >
-                      <Users className="h-4 w-4" />
-                      <span>Customers</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      onClick={() => setActiveSection("reviews")}
-                      isActive={activeSection === "reviews"}
-                    >
-                      <MessageSquare className="h-4 w-4" />
-                      <span>Reviews</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      onClick={() => setActiveSection("coupons")}
-                      isActive={activeSection === "coupons"}
-                    >
-                      <Tag className="h-4 w-4" />
-                      <span>Coupons</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
-                      onClick={() => setActiveSection("analytics")}
-                      isActive={activeSection === "analytics"}
-                    >
-                      <TrendingUp className="h-4 w-4" />
-                      <span>Analytics</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-            <SidebarGroup>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton onClick={handleLogout}>
-                      <LogOut className="h-4 w-4" />
-                      <span>Logout</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-          </SidebarContent>
-        </Sidebar>
+        {/* Modern Sidebar with Categories */}
+        <ModernAdminSidebar
+          activeSection={activeSection}
+          setActiveSection={setActiveSection}
+        />
 
         <div className="flex-1 flex flex-col">
-          <header className="h-16 border-b border-border bg-background flex items-center px-4 gap-4">
-            <SidebarTrigger />
-            <h1 className="text-xl font-bold">Admin Dashboard</h1>
-          </header>
+          {/* Modern Header with Logo & User Info */}
+          <ModernAdminHeader />
 
           <main className="flex-1 overflow-auto p-6">
-            {activeSection === "dashboard" && (
-              <div className="space-y-6 animate-fade-in">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                  {stats.map((stat, index) => (
-                    <Card
-                      key={index}
-                      className="hover-scale cursor-pointer transition-all"
-                    >
-                      <CardContent className="p-6">
-                        <div className="flex items-center justify-between mb-4">
-                          <div
-                            className={`h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center ${stat.color}`}
-                          >
-                            <stat.icon className="h-6 w-6" />
-                          </div>
-                          <Badge
-                            variant="outline"
-                            className="text-success border-success"
-                          >
-                            {stat.change}
-                          </Badge>
-                        </div>
-                        <h3 className="text-2xl font-bold mb-1">
-                          {stat.value}
-                        </h3>
-                        <p className="text-sm text-muted-foreground">
-                          {stat.title}
-                        </p>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
+            {/* Modern Dashboard Home */}
+            {activeSection === "dashboard" && <DashboardHome />}
 
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Recent Activity</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      {orders.slice(0, 5).map((order) => (
-                        <div
-                          key={order.id}
-                          className="flex items-center justify-between p-4 border rounded-lg"
-                        >
-                          <div>
-                            <p className="font-semibold">{order.id}</p>
-                            <p className="text-sm text-muted-foreground">
-                              {order.customer} • ₹{order.total}
-                            </p>
-                          </div>
-                          <Badge>{order.status}</Badge>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            )}
+            {/* Modern Products Page */}
+            {activeSection === "products" && <ModernProductsPage />}
 
-            {activeSection === "products" && (
-              <AdminProductsPage />
-            )}
+            {/* Modern Orders Page */}
+            {activeSection === "orders" && <ModernOrdersPage />}
 
-            {activeSection === "orders" && (
+            {/* Old Orders Section - Removed, using ModernOrdersPage now */}
+            {activeSection === "orders-old" && (
               <div className="space-y-6 animate-fade-in">
                 <div className="flex justify-between items-center">
                   <h2 className="text-2xl font-bold">Order Management</h2>
@@ -694,7 +577,11 @@ const AdminDashboard = () => {
               </div>
             )}
 
-            {activeSection === "customers" && (() => {
+            {/* Modern Customers Page */}
+            {activeSection === "customers" && <ModernCustomersPage />}
+
+            {/* Old Customers Section - Removed, using ModernCustomersPage now */}
+            {activeSection === "customers-old" && (() => {
               // Filter customers
               const filteredCustomers = users.filter((user: any) => {
                 const matchesSearch = (user.name || user.full_name || user.email || '').toLowerCase().includes(customerSearch.toLowerCase());
@@ -981,134 +868,45 @@ const AdminDashboard = () => {
               <AdminCouponsPage />
             )}
 
-            {activeSection === "analytics" && (
-              <div className="space-y-6 animate-fade-in">
-                <h2 className="text-2xl font-bold">Analytics & Reports</h2>
-
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Sales & Orders Trend</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <ResponsiveContainer width="100%" height={300}>
-                        <LineChart data={salesData}>
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="month" />
-                          <YAxis />
-                          <Tooltip />
-                          <Legend />
-                          <Line
-                            type="monotone"
-                            dataKey="sales"
-                            stroke="hsl(var(--primary))"
-                            strokeWidth={2}
-                          />
-                          <Line
-                            type="monotone"
-                            dataKey="orders"
-                            stroke="hsl(var(--accent))"
-                            strokeWidth={2}
-                          />
-                        </LineChart>
-                      </ResponsiveContainer>
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Revenue by Month</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <ResponsiveContainer width="100%" height={300}>
-                        <BarChart data={salesData}>
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="month" />
-                          <YAxis />
-                          <Tooltip />
-                          <Bar dataKey="sales" fill="hsl(var(--primary))" />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Product Category Distribution</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <ResponsiveContainer width="100%" height={300}>
-                        <PieChart>
-                          <Pie
-                            data={categoryData}
-                            cx="50%"
-                            cy="50%"
-                            labelLine={false}
-                            label={(entry) => entry.name}
-                            outerRadius={100}
-                            fill="hsl(var(--primary))"
-                            dataKey="value"
-                          >
-                            {categoryData.map((entry, index) => (
-                              <Cell
-                                key={`cell-${index}`}
-                                fill={COLORS[index % COLORS.length]}
-                              />
-                            ))}
-                          </Pie>
-                          <Tooltip />
-                        </PieChart>
-                      </ResponsiveContainer>
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Key Metrics</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-4">
-                        <div className="flex justify-between items-center p-4 border rounded-lg">
-                          <div className="flex items-center gap-3">
-                            <DollarSign className="h-8 w-8 text-success" />
-                            <div>
-                              <p className="text-sm text-muted-foreground">
-                                Avg Order Value
-                              </p>
-                              <p className="text-xl font-bold">₹972</p>
-                            </div>
-                          </div>
-                          <Badge className="bg-success">+5.2%</Badge>
-                        </div>
-                        <div className="flex justify-between items-center p-4 border rounded-lg">
-                          <div className="flex items-center gap-3">
-                            <TrendingUp className="h-8 w-8 text-primary" />
-                            <div>
-                              <p className="text-sm text-muted-foreground">
-                                Conversion Rate
-                              </p>
-                              <p className="text-xl font-bold">3.2%</p>
-                            </div>
-                          </div>
-                          <Badge className="bg-primary">+0.8%</Badge>
-                        </div>
-                        <div className="flex justify-between items-center p-4 border rounded-lg">
-                          <div className="flex items-center gap-3">
-                            <TrendingDown className="h-8 w-8 text-destructive" />
-                            <div>
-                              <p className="text-sm text-muted-foreground">
-                                Return Rate
-                              </p>
-                              <p className="text-xl font-bold">1.8%</p>
-                            </div>
-                          </div>
-                          <Badge variant="destructive">-0.3%</Badge>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
+            {activeSection === "payments" && (
+              <div className="animate-fade-in">
+                <PaymentManagement />
               </div>
+            )}
+
+            {/* Modern Analytics Page */}
+            {activeSection === "analytics" && <ModernAnalyticsPage />}
+
+            {activeSection === "catalogue" && (
+              <ProductCataloguePage />
+            )}
+
+            {activeSection === "banners" && (
+              <BannersManagementPage />
+            )}
+
+            {activeSection === "reports" && (
+              <ReportsPage />
+            )}
+
+            {activeSection === "expenses" && (
+              <ExpenseManagementPage />
+            )}
+
+            {activeSection === "offline-sales" && (
+              <OfflineSalesPage />
+            )}
+
+            {activeSection === "social-media" && (
+              <SocialMediaPage />
+            )}
+
+            {activeSection === "settings" && (
+              <CompanySettingsPage />
+            )}
+
+            {activeSection === "contact" && (
+              <ContactManagementPage />
             )}
           </main>
         </div>

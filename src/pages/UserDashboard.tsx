@@ -49,6 +49,14 @@ import { useCart } from "@/contexts/CartContext";
 import { getProfile } from "@/lib/api/user";
 import { getOrders as apiGetOrders, cancelOrder as apiCancelOrder } from "@/lib/api/order";
 import UserReviewsList from "@/components/UserReviewsList";
+import { PaymentHistory } from "@/components/user/PaymentHistory";
+import { OrdersPage } from "@/components/user/OrdersPage";
+import { DashboardOverview } from "@/components/user/DashboardOverview";
+import { TrackOrdersPage } from "@/components/user/TrackOrdersPage";
+import { AddressesPage } from "@/components/user/AddressesPage";
+import { ProfilePage } from "@/components/user/ProfilePage";
+import { WishlistPage } from "@/components/user/WishlistPage";
+import { MyReviewsPage } from "@/components/user/MyReviewsPage";
 
 const UserDashboard = () => {
   const [activeSection, setActiveSection] = useState("overview");
@@ -470,413 +478,32 @@ const UserDashboard = () => {
 
           <main className="flex-1 overflow-auto p-6">
             {activeSection === "overview" && (
-              <div className="space-y-6 animate-fade-in">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                  <Card className="hover-scale cursor-pointer transition-all">
-                    <CardContent className="p-6 flex items-center">
-                      <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mr-4">
-                        <Package className="h-6 w-6 text-primary" />
-                      </div>
-                      <div>
-                        <p className="text-2xl font-bold">12</p>
-                        <p className="text-sm text-muted-foreground">
-                          Total Orders
-                        </p>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="hover-scale cursor-pointer transition-all">
-                    <CardContent className="p-6 flex items-center">
-                      <div className="h-12 w-12 rounded-full bg-accent/10 flex items-center justify-center mr-4">
-                        <Heart className="h-6 w-6 text-accent" />
-                      </div>
-                      <div>
-                        <p className="text-2xl font-bold">8</p>
-                        <p className="text-sm text-muted-foreground">
-                          Wishlist Items
-                        </p>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="hover-scale cursor-pointer transition-all">
-                    <CardContent className="p-6 flex items-center">
-                      <div className="h-12 w-12 rounded-full bg-success/10 flex items-center justify-center mr-4">
-                        <MapPin className="h-6 w-6 text-success" />
-                      </div>
-                      <div>
-                        <p className="text-2xl font-bold">3</p>
-                        <p className="text-sm text-muted-foreground">
-                          Saved Addresses
-                        </p>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="hover-scale cursor-pointer transition-all">
-                    <CardContent className="p-6 flex items-center">
-                      <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mr-4">
-                        <CreditCard className="h-6 w-6 text-primary" />
-                      </div>
-                      <div>
-                        <p className="text-2xl font-bold">₹5.2K</p>
-                        <p className="text-sm text-muted-foreground">
-                          Total Spent
-                        </p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Recent Orders</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      {(orders || []).slice(0, 3).map((order: any) => (
-                        <div
-                          key={order.id}
-                          className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
-                        >
-                          <div className="flex-1">
-                            <div className="flex items-center gap-3 mb-2">
-                              <h3 className="font-semibold">{order.id}</h3>
-                              <Badge
-                                variant={
-                                  (order.status || '').toLowerCase() === "delivered"
-                                    ? "default"
-                                    : (order.status || '').toLowerCase() === "shipped"
-                                      ? "secondary"
-                                      : "outline"
-                                }
-                              >
-                                {order.status || 'pending'}
-                              </Badge>
-                            </div>
-                            <p className="text-sm text-muted-foreground">
-                              {new Date(order.created_at || order.date).toLocaleDateString()} • {(order.order_items?.length) ?? order.items} items • ₹
-                              {order.total_amount ?? order.total}
-                            </p>
-                          </div>
-                          <Button
-                            variant="outline"
-                            onClick={() => setActiveSection("orders")}
-                          >
-                            View
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-                <Dialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Cancel Order</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-3">
-                      <p className="text-sm text-muted-foreground">Select a reason for cancellation:</p>
-                      <div className="grid gap-2">
-                        {cancelReasons.map(r => (
-                          <label key={r.key} className={`border rounded p-2 cursor-pointer ${cancelReasonKey === r.key ? 'border-primary' : 'border-border'}`}>
-                            <input type="radio" name="cancel_reason" className="mr-2" checked={cancelReasonKey === r.key} onChange={() => setCancelReasonKey(r.key)} />
-                            {r.label}
-                          </label>
-                        ))}
-                      </div>
-                      {cancelReasonKey === 'other' && (
-                        <div className="space-y-1">
-                          <label className="text-sm">Please specify</label>
-                          <Textarea value={cancelReasonText} onChange={(e) => setCancelReasonText(e.target.value)} placeholder="Enter cancellation reason" />
-                        </div>
-                      )}
-                      <div className="flex justify-end gap-2 pt-2">
-                        <Button variant="outline" onClick={() => setCancelDialogOpen(false)}>Close</Button>
-                        <Button variant="destructive" onClick={handleConfirmCancel}>Confirm Cancel</Button>
-                      </div>
-                    </div>
-                  </DialogContent>
-                </Dialog>
-              </div>
+              <DashboardOverview />
             )}
 
             {activeSection === "my-reviews" && (
-              <div className="space-y-6 animate-fade-in">
-                <UserReviewsList />
-              </div>
+              <MyReviewsPage />
             )}
 
             {activeSection === "orders" && (
-              <div className="space-y-6 animate-fade-in">
-                <div className="flex justify-between items-center">
-                  <h2 className="text-2xl font-bold">Order History</h2>
-                  <div className="flex gap-4">
-                    <Select
-                      value={orderStatusFilter}
-                      onValueChange={setOrderStatusFilter}
-                    >
-                      <SelectTrigger className="w-[180px]">
-                        <SelectValue placeholder="Filter by status" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Orders</SelectItem>
-                        <SelectItem value="processing">Processing</SelectItem>
-                        <SelectItem value="shipped">Shipped</SelectItem>
-                        <SelectItem value="delivered">Delivered</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Select value={dateFilter} onValueChange={setDateFilter}>
-                      <SelectTrigger className="w-[180px]">
-                        <SelectValue placeholder="Filter by date" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Time</SelectItem>
-                        <SelectItem value="30days">Last 30 Days</SelectItem>
-                        <SelectItem value="90days">Last 90 Days</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <Card>
-                  <CardContent className="p-6">
-                    {ordersLoading ? (
-                      <div className="space-y-3">
-                        {Array.from({ length: 3 }).map((_, i) => (
-                          <div key={i} className="flex items-center justify-between p-4 border rounded-lg">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-3 mb-2">
-                                <Skeleton className="h-4 w-40" />
-                                <Skeleton className="h-5 w-20" />
-                              </div>
-                              <Skeleton className="h-3 w-56" />
-                            </div>
-                            <Skeleton className="h-9 w-20" />
-                          </div>
-                        ))}
-                      </div>
-                    ) : filteredOrders.length === 0 ? (
-                      <p className="text-sm text-muted-foreground">No orders found for the selected filters.</p>
-                    ) : (
-                      <div className="space-y-4">
-                        {filteredOrders.map((order) => (
-                          <Collapsible key={order.id}>
-                            <div className="border rounded-lg p-4">
-                              <div className="flex items-center justify-between">
-                                <div className="flex-1">
-                                  <div className="flex items-center gap-3 mb-2">
-                                    <h3 className="font-semibold">{order.id}</h3>
-                                    <Badge
-                                      variant={
-                                        (order.status || '').toLowerCase() === "delivered"
-                                          ? "default"
-                                          : (order.status || '').toLowerCase() === "shipped"
-                                            ? "secondary"
-                                            : "outline"
-                                      }
-                                    >
-                                      {((s) => s === 'delivered' ? <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> : s === 'shipped' ? <Truck className="h-3.5 w-3.5 mr-1" /> : s === 'processing' ? <Package className="h-3.5 w-3.5 mr-1" /> : <Clock className="h-3.5 w-3.5 mr-1" />)((order.status || '').toLowerCase())}
-                                      {order.status || 'pending'}
-                                    </Badge>
-                                  </div>
-                                  <p className="text-sm text-muted-foreground">
-                                    {new Date(order.created_at || order.date).toLocaleDateString()} • {(order.order_items?.length) ?? order.items} items • ₹
-                                    {order.total_amount ?? order.total}
-                                  </p>
-                                </div>
-                                <CollapsibleTrigger asChild>
-                                  <Button variant="ghost" size="sm">
-                                    <ChevronDown className="h-4 w-4" />
-                                  </Button>
-                                </CollapsibleTrigger>
-                                {(['pending', 'processing'] as string[]).includes((order.status || '').toLowerCase()) && (
-                                  <Button variant="destructive" size="sm" onClick={() => openCancelDialog(order.id)}>Cancel</Button>
-                                )}
-                                <Button asChild variant="outline" size="sm">
-                                  <RouterLink to={`/order/${order.id}`}>Details</RouterLink>
-                                </Button>
-                              </div>
-                              <CollapsibleContent className="mt-4 space-y-2 border-t pt-4">
-                                <p className="text-sm font-semibold">
-                                  Order Details:
-                                </p>
-                                <div className="space-y-3">
-                                  {(order.order_items || []).map((it: any) => (
-                                    <div key={it.id || it.product_id} className="flex items-center justify-between">
-                                      <div className="flex items-center gap-3">
-                                        <img
-                                          src={it.product?.image || it.product?.thumbnail || it.product?.images?.[0] || '/placeholder.svg'}
-                                          alt={it.product?.name || it.product_id}
-                                          className="h-10 w-10 rounded object-cover"
-                                        />                                      <div>
-                                          <p className="text-sm font-medium">{it.product?.name || it.product_id}</p>
-                                          <p className="text-xs text-muted-foreground">Qty: {it.quantity} • ₹{it.price}</p>
-                                        </div>
-                                      </div>
-                                      <p className="text-sm font-semibold">₹{(it.price || 0) * (it.quantity || 0)}</p>
-                                    </div>
-                                  ))}
-                                </div>
-                                <p className="text-sm text-muted-foreground">
-                                  Shipping Address: {order.shipping_address ? `${order.shipping_address.address_line1}${order.shipping_address.address_line2 ? ', ' + order.shipping_address.address_line2 : ''}, ${order.shipping_address.city}, ${order.shipping_address.state} - ${order.shipping_address.postal_code}` : '-'}
-                                </p>
-                                {order.tracking && (
-                                  <div className="mt-2 p-3 bg-muted/50 rounded-lg">
-                                    <p className="text-sm font-semibold mb-1">
-                                      Tracking Info:
-                                    </p>
-                                    <p className="text-sm">
-                                      Agency: {order.tracking.agency}
-                                    </p>
-                                    <p className="text-sm">
-                                      Tracking #: {order.tracking.trackingNumber}
-                                    </p>
-                                    <p className="text-sm">
-                                      Est. Delivery: {order.tracking.estimatedDelivery}
-                                    </p>
-                                  </div>
-                                )}
-                              </CollapsibleContent>
-                            </div>
-                          </Collapsible>
-                        ))}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </div>
+              <OrdersPage />
             )}
 
             {activeSection === "payments" && (
-              <div className="space-y-6 animate-fade-in">
-                <div className="flex justify-between items-center">
-                  <h2 className="text-2xl font-bold">Payment History</h2>
-                  <Select value={dateFilter} onValueChange={setDateFilter}>
-                    <SelectTrigger className="w-[180px]">
-                      <SelectValue placeholder="Filter by date" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Time</SelectItem>
-                      <SelectItem value="30days">Last 30 Days</SelectItem>
-                      <SelectItem value="90days">Last 90 Days</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <Card>
-                  <CardContent className="p-6">
-                    <div className="space-y-4">
-                      {filteredPayments.map((payment) => (
-                        <div
-                          key={payment.id}
-                          className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
-                        >
-                          <div className="flex-1">
-                            <div className="flex items-center gap-3 mb-2">
-                              <h3 className="font-semibold">{payment.id}</h3>
-                              <Badge
-                                variant={
-                                  payment.status === "completed"
-                                    ? "default"
-                                    : "outline"
-                                }
-                              >
-                                {payment.status}
-                              </Badge>
-                            </div>
-                            <p className="text-sm text-muted-foreground">
-                              Order: {payment.orderId} • {payment.date} •{" "}
-                              {payment.method}
-                            </p>
-                          </div>
-                          <p className="font-bold text-lg">₹{payment.amount}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
+              <div className="animate-fade-in">
+                <PaymentHistory />
               </div>
             )}
 
             {activeSection === "tracking" && (
-              <div className="space-y-6 animate-fade-in">
-                <h2 className="text-2xl font-bold">Track Your Orders</h2>
-                <Card>
-                  <CardContent className="p-6">
-                    <div className="space-y-6">
-                      {(orders || [])
-                        .filter((o) => o.tracking)
-                        .map((order: any) => (
-                          <div key={order.id} className="border rounded-lg p-6">
-                            <div className="flex items-center justify-between mb-4">
-                              <div>
-                                <h3 className="text-lg font-semibold">
-                                  {order.id}
-                                </h3>
-                                <Badge
-                                  variant={
-                                    (order.status || '').toLowerCase() === "delivered"
-                                      ? "default"
-                                      : "secondary"
-                                  }
-                                >
-                                  {order.status || 'pending'}
-                                </Badge>
-                              </div>
-                              <div className="text-right">
-                                <p className="text-sm text-muted-foreground">
-                                  Order Date
-                                </p>
-                                <p className="font-semibold">{new Date(order.created_at || order.date).toLocaleDateString()}</p>
-                              </div>
-                            </div>
-
-                            <div className="bg-muted/50 rounded-lg p-4 space-y-3">
-                              <div className="flex items-center gap-3">
-                                <Truck className="h-5 w-5 text-primary" />
-                                <div>
-                                  <p className="text-sm text-muted-foreground">
-                                    Delivery Partner
-                                  </p>
-                                  <p className="font-semibold">
-                                    {order.tracking?.agency}
-                                  </p>
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-3">
-                                <FileText className="h-5 w-5 text-primary" />
-                                <div>
-                                  <p className="text-sm text-muted-foreground">
-                                    Tracking Number
-                                  </p>
-                                  <p className="font-semibold font-mono">
-                                    {order.tracking?.trackingNumber}
-                                  </p>
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-3">
-                                <Calendar className="h-5 w-5 text-primary" />
-                                <div>
-                                  <p className="text-sm text-muted-foreground">
-                                    Estimated Delivery
-                                  </p>
-                                  <p className="font-semibold">
-                                    {order.tracking?.estimatedDelivery}
-                                  </p>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
+              <TrackOrdersPage />
             )}
 
             {activeSection === "profile" && (
+              <ProfilePage />
+            )}
+
+            {activeSection === "profile-old" && (
               <div className="space-y-6 animate-fade-in">
                 <div className="flex items-center justify-between">
                   <h2 className="text-2xl font-bold">Profile</h2>
@@ -947,6 +574,10 @@ const UserDashboard = () => {
             )}
 
             {activeSection === "addresses" && (
+              <AddressesPage />
+            )}
+
+            {activeSection === "addresses-old" && (
               <div className="space-y-6 animate-fade-in">
                 <div className="flex justify-between items-center">
                   <h2 className="text-2xl font-bold">Saved Addresses</h2>
@@ -1052,6 +683,10 @@ const UserDashboard = () => {
             )}
 
             {activeSection === "wishlist" && (
+              <WishlistPage />
+            )}
+
+            {activeSection === "wishlist-old" && (
               <div className="space-y-6 animate-fade-in">
                 <h2 className="text-2xl font-bold">My Wishlist</h2>
                 <Card>
