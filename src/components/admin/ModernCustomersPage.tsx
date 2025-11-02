@@ -5,6 +5,13 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Table,
   TableBody,
   TableCell,
@@ -34,6 +41,7 @@ import { toast } from "sonner";
 import { getAllUsers } from "@/lib/api/user";
 import { getOrders } from "@/lib/api/order";
 import { format } from "date-fns";
+import { Pagination } from "@/components/common/Pagination";
 
 export function ModernCustomersPage() {
   const [customers, setCustomers] = useState<any[]>([]);
@@ -44,16 +52,23 @@ export function ModernCustomersPage() {
   const [customerOrders, setCustomerOrders] = useState<any[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
   const [showOrdersDialog, setShowOrdersDialog] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [totalCustomers, setTotalCustomers] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
 
   useEffect(() => {
     fetchCustomers();
-  }, []);
+  }, [currentPage, pageSize, searchQuery]);
 
   const fetchCustomers = async () => {
     try {
       setLoading(true);
-      const response = await getAllUsers();
-      setCustomers(Array.isArray(response) ? response : response?.data || []);
+      const response = await getAllUsers(currentPage, pageSize, searchQuery);
+      const customersData = Array.isArray(response?.data) ? response.data : [];
+      setCustomers(customersData);
+      setTotalCustomers(response?.total || 0);
+      setTotalPages(response?.totalPages || 0);
     } catch (error: any) {
       console.error("Failed to fetch customers:", error);
       toast.error(error.message || "Failed to load customers");
@@ -62,20 +77,10 @@ export function ModernCustomersPage() {
     }
   };
 
-  const filteredCustomers = Array.isArray(customers)
-    ? customers.filter((customer) => {
-        const matchesSearch =
-          searchQuery === "" ||
-          customer.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          customer.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          customer.phone?.includes(searchQuery);
-
-        return matchesSearch;
-      })
-    : [];
+  const filteredCustomers = customers; // Filtering is now done on backend
 
   const stats = {
-    total: customers.length,
+    total: totalCustomers,
     active: customers.filter((c) => c.status === "active").length,
     newThisMonth: customers.filter((c) => {
       const createdDate = new Date(c.created_at);
@@ -210,89 +215,125 @@ export function ModernCustomersPage() {
           </CardContent>
         </Card>
       ) : (
-        <Card>
-          <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Customer</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Phone</TableHead>
-                    <TableHead>Role</TableHead>
-                    <TableHead>Joined</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredCustomers.map((customer) => (
-                    <TableRow key={customer.id}>
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          <Avatar>
-                            <AvatarFallback className="bg-primary text-primary-foreground">
-                              {getInitials(customer.name || customer.email)}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <p className="font-medium">
-                              {customer.name || "N/A"}
-                            </p>
-                            <p className="text-sm text-muted-foreground">
-                              {customer.id}
-                            </p>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Mail className="h-4 w-4 text-muted-foreground" />
-                          {customer.email}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Phone className="h-4 w-4 text-muted-foreground" />
-                          {customer.phone || "Not provided"}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="secondary">{customer.role || "user"}</Badge>
-                      </TableCell>
-                      <TableCell>
-                        {customer.createdAt || customer.created_at
-                          ? format(new Date(customer.createdAt || customer.created_at), "dd MMM yyyy")
-                          : "Not available"}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              setSelectedCustomer(customer);
-                              setShowCustomerDialog(true);
-                            }}
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleViewOrders(customer)}
-                          >
-                            <ShoppingBag className="h-4 w-4 mr-1" />
-                            Orders
-                          </Button>
-                        </div>
-                      </TableCell>
+        <>
+          <Card>
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Customer</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Phone</TableHead>
+                      <TableHead>Role</TableHead>
+                      <TableHead>Joined</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          </CardContent>
-        </Card>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredCustomers.map((customer) => (
+                      <TableRow key={customer.id}>
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <Avatar>
+                              <AvatarFallback className="bg-primary text-primary-foreground">
+                                {getInitials(customer.name || customer.email)}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <p className="font-medium">
+                                {customer.name || "N/A"}
+                              </p>
+                              <p className="text-sm text-muted-foreground">
+                                {customer.id}
+                              </p>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Mail className="h-4 w-4 text-muted-foreground" />
+                            {customer.email}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Phone className="h-4 w-4 text-muted-foreground" />
+                            {customer.phone || "Not provided"}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="secondary">{customer.role || "user"}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          {customer.createdAt || customer.created_at
+                            ? format(new Date(customer.createdAt || customer.created_at), "dd MMM yyyy")
+                            : "Not available"}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedCustomer(customer);
+                                setShowCustomerDialog(true);
+                              }}
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleViewOrders(customer)}
+                            >
+                              <ShoppingBag className="h-4 w-4 mr-1" />
+                              Orders
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="text-sm text-muted-foreground">
+                    Showing {(currentPage - 1) * pageSize + 1} to{" "}
+                    {Math.min(currentPage * pageSize, totalCustomers)} of {totalCustomers} customers
+                  </div>
+                  <Select value={pageSize.toString()} onValueChange={(val) => {
+                    setPageSize(parseInt(val));
+                    setCurrentPage(1);
+                  }}>
+                    <SelectTrigger className="w-[150px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="5">5 per page</SelectItem>
+                      <SelectItem value="10">10 per page</SelectItem>
+                      <SelectItem value="20">20 per page</SelectItem>
+                      <SelectItem value="50">50 per page</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={setCurrentPage}
+                  isLoading={loading}
+                />
+              </CardContent>
+            </Card>
+          )}
+        </>
       )}
 
       {/* Customer Details Dialog */}

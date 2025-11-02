@@ -43,6 +43,7 @@ import {
 import { toast } from "sonner";
 import { getProducts, deleteAProduct } from "@/lib/api/products";
 import { ProductForm } from "@/components/admin/ProductForm";
+import { Pagination } from "@/components/common/Pagination";
 
 export function ModernProductsPage() {
   const [products, setProducts] = useState<any[]>([]);
@@ -55,23 +56,26 @@ export function ModernProductsPage() {
   const [showProductDialog, setShowProductDialog] = useState(false);
   const [showProductForm, setShowProductForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState<any>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [totalProducts, setTotalProducts] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
 
   useEffect(() => {
     fetchProducts();
-  }, []);
+  }, [currentPage, pageSize]);
 
   const fetchProducts = async () => {
     try {
       setLoading(true);
-      const response = await getProducts();
-      const productsData = Array.isArray(response)
-        ? response
-        : response?.data
-          ? Array.isArray(response.data)
-            ? response.data
-            : []
-          : [];
+      const response = await getProducts(currentPage, pageSize, {
+        category: categoryFilter !== "all" ? categoryFilter : undefined,
+      });
+      
+      const productsData = Array.isArray(response?.data) ? response.data : [];
       setProducts(productsData);
+      setTotalProducts(response?.total || 0);
+      setTotalPages(response?.totalPages || 0);
     } catch (error: any) {
       console.error("Failed to fetch products:", error);
       toast.error(error.message || "Failed to load products");
@@ -100,28 +104,8 @@ export function ModernProductsPage() {
     )
   );
 
-  const filteredProducts = Array.isArray(products)
-    ? products.filter((product) => {
-      const matchesSearch =
-        searchQuery === "" ||
-        product.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        product.description?.toLowerCase().includes(searchQuery.toLowerCase());
-
-      const matchesCategory =
-        categoryFilter === "all" || product.category === categoryFilter;
-
-      const matchesStock =
-        stockFilter === "all" ||
-        (stockFilter === "in-stock" && product.stock > 0) ||
-        (stockFilter === "low-stock" && product.stock > 0 && product.stock <= 10) ||
-        (stockFilter === "out-of-stock" && product.stock === 0);
-
-      return matchesSearch && matchesCategory && matchesStock;
-    })
-    : [];
-
   const stats = {
-    total: Array.isArray(products) ? products.length : 0,
+    total: totalProducts,
     inStock: Array.isArray(products)
       ? products.filter((p) => p.in_stock > 0).length
       : 0,
@@ -132,6 +116,8 @@ export function ModernProductsPage() {
       ? products.filter((p) => p.stock === 0).length
       : 0,
   };
+
+  const filteredProducts = products; // Filtering is now done on backend
 
   const getStockBadge = (stock: number) => {
     if (stock === 0) {
@@ -454,6 +440,40 @@ export function ModernProductsPage() {
             </Card>
           ))}
         </div>
+      )}
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="text-sm text-muted-foreground">
+                Showing {(currentPage - 1) * pageSize + 1} to{" "}
+                {Math.min(currentPage * pageSize, totalProducts)} of {totalProducts} products
+              </div>
+              <Select value={pageSize.toString()} onValueChange={(val) => {
+                setPageSize(parseInt(val));
+                setCurrentPage(1);
+              }}>
+                <SelectTrigger className="w-[150px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="5">5 per page</SelectItem>
+                  <SelectItem value="10">10 per page</SelectItem>
+                  <SelectItem value="20">20 per page</SelectItem>
+                  <SelectItem value="50">50 per page</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+              isLoading={loading}
+            />
+          </CardContent>
+        </Card>
       )}
 
       {/* Product Details Dialog */}

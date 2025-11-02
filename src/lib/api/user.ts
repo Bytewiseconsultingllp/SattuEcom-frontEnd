@@ -13,9 +13,15 @@ export type UserProfile = {
   createdAt?: string;
 };
 
-export const getAllUsers = async (): Promise<{ success: boolean; data: UserProfile[] }> => {
+export const getAllUsers = async (page = 1, limit = 10, search = '', role = 'all'): Promise<any> => {
   try {
-    const res = await api.get('/users');
+    const params = new URLSearchParams();
+    params.append('page', page.toString());
+    params.append('limit', limit.toString());
+    if (search) params.append('search', search);
+    if (role && role !== 'all') params.append('role', role);
+
+    const res = await api.get(`/users?${params.toString()}`);
     return res.data;
   } catch (err: any) {
     if (axios.isAxiosError(err)) {

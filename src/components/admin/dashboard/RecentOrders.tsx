@@ -59,7 +59,7 @@ export function RecentOrders() {
   const fetchOrders = async () => {
     try {
       setLoading(true);
-      const response = await getRecentOrders(4);
+      const response = await getRecentOrders(1);
       if (response?.success) {
         setRecentOrders(response.data);
       }

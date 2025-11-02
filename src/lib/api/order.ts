@@ -68,15 +68,9 @@ export async function cancelOrder(id: string, reason?: string) {
   }
 }
 
-// ✅ Get all orders with pagination support
-export async function getAllOrders(page: number = 1, limit: number = 10) {
+export async function getAllOrders() {
   try {
-    const res = await api.get('/orders/all', {
-      params: {
-        page,
-        limit
-      }
-    });
+    const res = await api.get('/orders/all');
     return res.data;
   } catch (err: any) {
     if (axios.isAxiosError(err)) {

@@ -88,9 +88,26 @@ export const updateProduct = async (id: string, productData: any) => {
   } 
 };
 
-export const getProducts = async () => {
+export const getProducts = async (page = 1, limit = 10, filters?: any) => {
    try {
-    const response = await api.get("/products");
+    const params = new URLSearchParams();
+    params.append('page', page.toString());
+    params.append('limit', limit.toString());
+    
+    if (filters?.category && filters.category !== 'all') {
+      params.append('category', filters.category);
+    }
+    if (filters?.minPrice !== undefined) {
+      params.append('minPrice', filters.minPrice.toString());
+    }
+    if (filters?.maxPrice !== undefined) {
+      params.append('maxPrice', filters.maxPrice.toString());
+    }
+    if (filters?.inStockOnly) {
+      params.append('inStockOnly', 'true');
+    }
+
+    const response = await api.get(`/products?${params.toString()}`);
     if(response.data) {
       return response.data;
     }
