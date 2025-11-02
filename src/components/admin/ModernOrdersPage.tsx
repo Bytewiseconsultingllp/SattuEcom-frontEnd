@@ -36,6 +36,8 @@ import {
   XCircle,
   Eye,
   Filter,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { toast } from "sonner";
 import { getAllOrders, updateOrderStatus } from "@/lib/api/order";
@@ -54,16 +56,23 @@ export function ModernOrdersPage() {
     trackingNumber: "",
     estimatedDelivery: "",
   });
+  
+  // ✅ Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [pagination, setPagination] = useState<any>(null);
 
   useEffect(() => {
-    fetchOrders();
-  }, []);
+    fetchOrders(currentPage, pageSize);
+  }, [currentPage, pageSize]);
 
-  const fetchOrders = async () => {
+  // ✅ Fetch orders with pagination
+  const fetchOrders = async (page: number = 1, limit: number = 10) => {
     try {
       setLoading(true);
-      const response = await getAllOrders();
-      setOrders(Array.isArray(response) ? response : response?.data || []);
+      const response = await getAllOrders(page, limit);
+      setOrders(Array.isArray(response?.data) ? response.data : []);
+      setPagination(response?.pagination || null);
     } catch (error: any) {
       console.error("Failed to fetch orders:", error);
       toast.error(error.message || "Failed to load orders");
@@ -395,6 +404,58 @@ export function ModernOrdersPage() {
                   ))}
                 </TableBody>
               </Table>
+            </div>
+            
+            {/* ✅ Pagination Controls */}
+            <div className="flex items-center justify-between p-4 border-t bg-muted/50">
+              <div className="text-sm text-muted-foreground">
+                Showing {orders.length > 0 ? (currentPage - 1) * pageSize + 1 : 0} to{" "}
+                {Math.min(currentPage * pageSize, pagination?.total || 0)} of{" "}
+                {pagination?.total || 0} orders
+              </div>
+              
+              <div className="flex items-center gap-2">
+                {/* Page Size Selector */}
+                <Select value={pageSize.toString()} onValueChange={(val) => {
+                  setPageSize(parseInt(val));
+                  setCurrentPage(1);
+                }}>
+                  <SelectTrigger className="w-[100px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="5">5 per page</SelectItem>
+                    <SelectItem value="10">10 per page</SelectItem>
+                    <SelectItem value="20">20 per page</SelectItem>
+                    <SelectItem value="50">50 per page</SelectItem>
+                  </SelectContent>
+                </Select>
+                
+                {/* Previous Button */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                  disabled={!pagination?.hasPrevPage || loading}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                
+                {/* Page Info */}
+                <div className="px-3 py-1 text-sm font-medium">
+                  Page {currentPage} of {pagination?.totalPages || 1}
+                </div>
+                
+                {/* Next Button */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(currentPage + 1)}
+                  disabled={!pagination?.hasNextPage || loading}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>
