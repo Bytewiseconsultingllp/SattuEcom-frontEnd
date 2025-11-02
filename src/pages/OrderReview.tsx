@@ -196,7 +196,7 @@ const OrderReview = () => {
                         <div key={item.id} className="flex gap-4 p-4 bg-accent/5 rounded-lg">
                           <Link to={`/product/${item.product?.id}`}>
                             <img 
-                              src={item.product?.image_url || "/placeholder.svg"} 
+                              src={item.product?.images?.[0] || "/placeholder.svg"} 
                               alt={item.product?.name || "Product"}
                               className="w-20 h-20 object-cover rounded-lg"
                             />

@@ -119,7 +119,7 @@ export default function OrderDetails() {
                       <div key={it.id || it.product_id} className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                           <img
-                            src={it.product?.image || it.product?.thumbnail || it.product?.image_url || '/placeholder.svg'}
+                            src={it.product?.images?.[0] || it.product?.thumbnail || it.product?.images?.[0] || '/placeholder.svg'}
                             alt={it.product?.name || it.product_id}
                             className="h-14 w-14 rounded object-cover"
                           />                          <div>

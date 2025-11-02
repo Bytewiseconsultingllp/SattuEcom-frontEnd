@@ -707,7 +707,7 @@ const UserDashboard = () => {
                                     <div key={it.id || it.product_id} className="flex items-center justify-between">
                                       <div className="flex items-center gap-3">
                                         <img
-                                          src={it.product?.image || it.product?.thumbnail || it.product?.image_url || '/placeholder.svg'}
+                                          src={it.product?.image || it.product?.thumbnail || it.product?.images?.[0] || '/placeholder.svg'}
                                           alt={it.product?.name || it.product_id}
                                           className="h-10 w-10 rounded object-cover"
                                         />                                      <div>
@@ -1067,7 +1067,7 @@ const UserDashboard = () => {
                           return (
                             <div key={item.id} className="border rounded-lg p-4 hover:bg-accent/5 transition">
                               <Link to={`/product/${product?.id}`} className="block">
-                                <img src={product?.image_url} alt={product?.name} className="w-full h-40 object-cover rounded-md mb-3" />
+                                <img src={product?.images?.[0] || product?.thumbnail || '/placeholder.svg'} alt={product?.name} className="w-full h-40 object-cover rounded-md mb-3" />
                                 <h3 className="font-semibold mb-1 line-clamp-2">{product?.name}</h3>
                                 <p className="text-sm text-muted-foreground mb-2">{product?.category}</p>
                                 <p className="font-bold text-primary">₹{product?.price}</p>

@@ -130,7 +130,7 @@ const Wishlist = () => {
                     <Link to={`/product/${product?.id}`} className="block">
                       <div className="relative mb-4">
                         <img
-                          src={product?.image_url}
+                          src={product?.images?.[0] || product?.thumbnail || '/placeholder.svg'}
                           alt={product?.name}
                           className="w-full h-48 object-cover rounded-lg"
                         />

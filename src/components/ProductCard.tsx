@@ -8,13 +8,20 @@ import { useCart } from "@/contexts/CartContext";
 import { getUserCookie } from "@/utils/cookie";
 import { useNavigate } from "react-router-dom";
 import { addToWishlist as apiAddToWishlist } from "@/lib/api/wishlist";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
 
 export interface Product {
   id: string;
   name: string;
   price: number;
   originalPrice?: number;
-  image_url: string;
+  images: string[]; // Array of base64 images from backend
   category: string;
   rating: number;
   reviews_count: number;
@@ -32,6 +39,13 @@ export const ProductCard = ({ product }: ProductCardProps) => {
 
   const { addToCart, loadingState } = useCart();
   const navigate = useNavigate();
+
+  // Determine images to display: use images array or fallback to placeholder
+  const displayImages = product.images && product.images.length > 0 
+    ? product.images 
+    : ["/placeholder.svg"];
+  
+  const hasMultipleImages = displayImages.length > 1;
 
   async function handleAddToCart(e: React.MouseEvent | null, productId: string, quantity: number) {
     // prevent Link navigation when clicking the button inside the card
@@ -66,30 +80,69 @@ export const ProductCard = ({ product }: ProductCardProps) => {
     }
   };
 
+  const handleCardClick = (e: React.MouseEvent) => {
+    // Allow carousel navigation without triggering card click
+    const target = e.target as HTMLElement;
+    if (target.closest('button[aria-label*="slide"]')) {
+      e.preventDefault();
+      return;
+    }
+    navigate(`/product/${product.id}`);
+  };
+
   return (
-    <Link to={`/product/${product.id}`}>
-      <Card className="group overflow-hidden transition-all hover:shadow-xl animate-fade-in">
-        <div className="relative overflow-hidden">
+    <Card 
+      className="group overflow-hidden transition-all hover:shadow-xl animate-fade-in cursor-pointer"
+      onClick={handleCardClick}
+    >
+      <div className="relative overflow-hidden">
+        {hasMultipleImages ? (
+          <Carousel className="w-full" opts={{ loop: true }}>
+            <CarouselContent>
+              {displayImages.map((imageUrl, index) => (
+                <CarouselItem key={index}>
+                  <img 
+                    src={imageUrl} 
+                    alt={`${product.name} - Image ${index + 1}`}
+                    className="h-64 w-full object-contain transition-all duration-500 group-hover:scale-110"
+                  />
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+            <CarouselPrevious 
+              className="left-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity" 
+              onClick={(e) => e.stopPropagation()}
+            />
+            <CarouselNext 
+              className="right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity" 
+              onClick={(e) => e.stopPropagation()}
+            />
+          </Carousel>
+        ) : (
           <img 
-            src={product.image_url} 
+            src={displayImages[0]} 
             alt={product.name}
             className="h-64 w-full object-contain transition-all duration-500 group-hover:scale-110"
           />
+        )}
           {discount > 0 && (
-            <Badge className="absolute top-3 left-3 bg-destructive text-destructive-foreground animate-scale-in">
+            <Badge className="absolute top-3 left-3 bg-destructive text-destructive-foreground animate-scale-in z-10">
               {discount}% OFF
             </Badge>
           )}
           {!product.in_stock && (
-            <Badge className="absolute top-3 right-3 bg-muted text-muted-foreground">
+            <Badge className="absolute top-3 right-3 bg-muted text-muted-foreground z-10">
               Out of Stock
             </Badge>
           )}
           <Button
             size="icon"
             variant="secondary"
-            className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-all duration-300 transform group-hover:scale-110"
-            onClick={handleAddToWishlist}
+            className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-all duration-300 transform group-hover:scale-110 z-10"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleAddToWishlist(e);
+            }}
           >
             <Heart className="h-4 w-4" />
           </Button>
@@ -125,7 +178,10 @@ export const ProductCard = ({ product }: ProductCardProps) => {
           <Button 
             className="w-full transition-all duration-300 hover:scale-105" 
             disabled={!product.in_stock}
-            onClick={(e) => handleAddToCart(e, product.id, 1)}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleAddToCart(e, product.id, 1);
+            }}
           >
             {loadingState?.type === 'add' && loadingState.itemId === product.id ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -136,6 +192,5 @@ export const ProductCard = ({ product }: ProductCardProps) => {
           </Button>
         </CardFooter>
       </Card>
-    </Link>
   );
 };

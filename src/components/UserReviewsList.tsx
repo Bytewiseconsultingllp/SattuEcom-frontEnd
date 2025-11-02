@@ -6,9 +6,9 @@ import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
 import { getUserReviews, deleteReview, type Review } from '@/lib/api/reviews';
 
-// Backend getUserReviews populates product: { name, image_url }
+// Backend getUserReviews populates product: { name, images }
 // Extend for local consumption
-type UserReview = Review & { product?: { name?: string; image_url?: string } };
+type UserReview = Review & { product?: { name?: string; images?: string[] } };
 
 export default function UserReviewsList() {
   const [reviews, setReviews] = useState<UserReview[]>([]);
@@ -65,7 +65,7 @@ export default function UserReviewsList() {
           reviews.map(r => (
             <div key={r.id} className="border rounded-lg p-4">
               <div className="flex items-start gap-4">
-                <img src={r.product?.image_url} alt={r.product?.name} className="w-16 h-16 object-cover rounded" />
+                <img src={r.product?.images?.[0] || "/placeholder.svg"} alt={r.product?.name} className="w-16 h-16 object-cover rounded" />
                 <div className="flex-1">
                   <div className="flex items-center justify-between">
                     <div>

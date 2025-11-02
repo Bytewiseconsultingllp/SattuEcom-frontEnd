@@ -6,10 +6,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ImageUpload } from "@/components/ui/image-upload";
 import { toast } from "sonner";
 import { createProduct, updateProduct } from "@/lib/api/products";
 import { useState, useEffect } from "react";
 import { getCategories as apiGetCategories, createCategory as apiCreateCategory, type Category as ApiCategory } from "@/lib/api/categories";
+import { Loader2 } from "lucide-react";
 
 const productSchema = z.object({
   name: z.string().min(1, "Product name is required").max(200),
@@ -17,10 +20,7 @@ const productSchema = z.object({
   original_price: z.number().min(0, "Original price must be positive").optional(),
   category: z.string().min(1, "Category is required"),
   description: z.string().min(1, "Description is required").max(1000),
-  image_url: z.string().url("Must be a valid URL").optional(),
-  images: z
-    .array(z.union([z.string().url("Must be a valid URL"), z.literal("")]))
-    .default([]),
+  images: z.array(z.string()).min(1, "At least one image is required"),
   in_stock: z.boolean(),
   ingredients: z.string().optional(),
   usage: z.string().optional(),
@@ -46,10 +46,9 @@ export function ProductForm({ product, onSuccess, onCancel }: ProductFormProps) 
       original_price: product?.original_price || undefined,
       category: product?.category || "",
       description: product?.description || "",
-      image_url: product?.image_url || "",
-      images: Array.isArray(product?.images)
-        ? product?.images
-        : (product?.image_url ? [product.image_url] : []),
+      images: Array.isArray(product?.images) && product.images.length > 0
+        ? product.images
+        : [],
       in_stock: product?.in_stock ?? true,
       ingredients: product?.ingredients || "",
       usage: product?.usage || "",
@@ -66,14 +65,12 @@ export function ProductForm({ product, onSuccess, onCancel }: ProductFormProps) 
     name: "benefits",
   });
 
-  const { fields: imageFields, append: appendImage, remove: removeImage } = useFieldArray({
-    control: form.control,
-    name: "images",
-  });
-
   const [categories, setCategories] = useState<ApiCategory[]>([]);
   const [categoriesLoading, setCategoriesLoading] = useState<boolean>(false);
   const [categoriesError, setCategoriesError] = useState<string | null>(null);
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [isCreatingCategory, setIsCreatingCategory] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -100,23 +97,17 @@ export function ProductForm({ product, onSuccess, onCancel }: ProductFormProps) 
 
   const onSubmit = async (data: ProductFormData) => {
     try {
-      const imagesClean = (data.images || []).filter(Boolean);
-      const primaryImage = imagesClean[0] || data.image_url || "";
       const productData = {
         name: data.name,
         price: data.price,
         original_price: data.original_price,
         category: data.category,
         description: data.description,
-        image_url: primaryImage,
-        images: imagesClean,
+        images: data.images,
         in_stock: data.in_stock,
         ingredients: data.ingredients,
         usage: data.usage,
-        // benefits: send as array (filter out empty values)
         benefits: data.benefits ? data.benefits.filter(Boolean) : [],
-        // also provide a comma-separated fallback if backend expects CSV
-        benefits_csv: data.benefits ? data.benefits.filter(Boolean).join(",") : "",
       };
 
       if (isEdit) {
@@ -177,27 +168,13 @@ export function ProductForm({ product, onSuccess, onCancel }: ProductFormProps) 
       <div>
         <Label htmlFor="category">Category</Label>
         <Select
-          value={form.watch("category")}
+          value={form.watch("category") || ""}
           onValueChange={(value) => {
             if (value === "__add__") {
-              const v = window.prompt("Add new category");
-              const val = (v || "").trim();
-              if (val) {
-                (async () => {
-                  try {
-                    const created = await apiCreateCategory(val);
-                    const cat = created?.data || { id: crypto.randomUUID?.() || val, name: val };
-                    setCategories((prev) => (prev.some((c) => c.name === cat.name) ? prev : [cat, ...prev]));
-                    form.setValue("category", cat.name);
-                    toast.success("Category added");
-                  } catch (e: any) {
-                    toast.error(e?.message || "Failed to add category");
-                  }
-                })();
-              }
+              setShowCategoryModal(true);
               return;
             }
-            form.setValue("category", value);
+            form.setValue("category", value, { shouldValidate: true });
           }}
         >
           <SelectTrigger>
@@ -235,33 +212,18 @@ export function ProductForm({ product, onSuccess, onCancel }: ProductFormProps) 
       </div>
 
       <div>
-        <Label htmlFor="image_url">Image URL</Label>
-        <Input
-          id="image_url"
-          {...form.register("image_url")}
-          placeholder="https://example.com/image.jpg"
+        <Label>Product Images</Label>
+        <p className="text-sm text-muted-foreground mb-2">
+          Upload up to 5 images. The first image will be the primary image.
+        </p>
+        <ImageUpload
+          value={form.watch("images")}
+          onChange={(images) => form.setValue("images", images, { shouldValidate: true })}
+          maxImages={5}
         />
-        {form.formState.errors.image_url && (
-          <p className="text-sm text-destructive mt-1">{form.formState.errors.image_url.message}</p>
+        {form.formState.errors.images && (
+          <p className="text-sm text-destructive mt-1">{form.formState.errors.images.message}</p>
         )}
-      </div>
-
-      <div>
-        <Label>Images</Label>
-        <div className="space-y-2">
-          {imageFields.map((field, index) => (
-            <div key={field.id} className="flex items-center gap-2">
-              <Input
-                {...form.register(`images.${index}` as const)}
-                placeholder={`Image URL ${index + 1}`}
-              />
-              <Button type="button" variant="destructive" onClick={() => removeImage(index)} className="h-9">
-                Remove
-              </Button>
-            </div>
-          ))}
-          <Button type="button" onClick={() => appendImage("")}>Add Image</Button>
-        </div>
       </div>
 
       <div>
@@ -332,6 +294,89 @@ export function ProductForm({ product, onSuccess, onCancel }: ProductFormProps) 
           {isEdit ? "Update Product" : "Add Product"}
         </Button>
       </div>
+
+      {/* Add Category Modal */}
+      <Dialog open={showCategoryModal} onOpenChange={setShowCategoryModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add New Category</DialogTitle>
+            <DialogDescription>
+              Enter a name for the new category. It will be available immediately after creation.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <Label htmlFor="new-category">Category Name</Label>
+              <Input
+                id="new-category"
+                value={newCategoryName}
+                onChange={(e) => setNewCategoryName(e.target.value)}
+                placeholder="e.g., Organic Products"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !isCreatingCategory) {
+                    e.preventDefault();
+                    handleCreateCategory();
+                  }
+                }}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setShowCategoryModal(false);
+                setNewCategoryName("");
+              }}
+              disabled={isCreatingCategory}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={handleCreateCategory}
+              disabled={isCreatingCategory || !newCategoryName.trim()}
+            >
+              {isCreatingCategory && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Create Category
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </form>
   );
+
+  async function handleCreateCategory() {
+    const val = newCategoryName.trim();
+    if (!val) {
+      toast.error("Category name is required");
+      return;
+    }
+
+    try {
+      setIsCreatingCategory(true);
+      const created = await apiCreateCategory(val);
+      const cat = created?.data || { id: crypto.randomUUID?.() || val, name: val };
+      
+      // Add to categories list if not already present
+      setCategories((prev) => {
+        if (prev.some((c) => c.name === cat.name)) {
+          return prev;
+        }
+        return [cat, ...prev];
+      });
+      
+      // Set the newly created category as selected
+      form.setValue("category", cat.name, { shouldValidate: true });
+      
+      toast.success("Category created successfully");
+      setShowCategoryModal(false);
+      setNewCategoryName("");
+    } catch (e: any) {
+      toast.error(e?.message || "Failed to create category");
+    } finally {
+      setIsCreatingCategory(false);
+    }
+  }
 }

@@ -65,7 +65,7 @@ function AdminProductsPage() {
               >
                 <div className="flex items-center gap-4 flex-1">
                   <img
-                    src={product.image_url}
+                    src={product.images?.[0] || "/placeholder.svg"}
                     alt={product.name}
                     className="w-16 h-16 object-cover rounded-lg"
                   />

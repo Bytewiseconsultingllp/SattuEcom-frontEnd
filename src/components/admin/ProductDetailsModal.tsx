@@ -28,10 +28,10 @@ export function ProductDetailsModal({
         </DialogHeader>
 
         <div className="space-y-4">
-          {product.image_url && (
+          {product.images?.[0] && (
             <div className="w-full">
               <img
-                src={product.image_url}
+                src={product.images?.[0] || "/placeholder.svg"}
                 alt={product.name}
                 className="w-full h-64 object-cover rounded-lg"
               />

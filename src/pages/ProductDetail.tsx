@@ -24,6 +24,13 @@ import { addToWishlist as apiAddToWishlist } from "@/lib/api/wishlist";
 import { getUserCookie } from "@/utils/cookie";
 import { useNavigate } from "react-router-dom";
 import ProductReviews from "@/components/ProductReviews";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
 
 const ProductDetail = () => {
   const { id } = useParams();
@@ -101,6 +108,13 @@ const ProductDetail = () => {
       )
     : 0;
 
+  // Determine images to display: use images array or fallback to placeholder
+  const displayImages = product.images && product.images.length > 0 
+    ? product.images 
+    : ["/placeholder.svg"];
+  
+  const hasMultipleImages = displayImages.length > 1;
+
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
@@ -148,13 +162,31 @@ const ProductDetail = () => {
             {/* Product Image */}
             <div className="space-y-4 animate-fade-in">
               <div className="relative overflow-hidden rounded-lg">
-                <img
-                  src={product.image_url}
-                  alt={product.name}
-                  className="w-full h-[500px] object-contain"
-                />
+                {hasMultipleImages ? (
+                  <Carousel className="w-full" opts={{ loop: true }}>
+                    <CarouselContent>
+                      {displayImages.map((imageUrl, index) => (
+                        <CarouselItem key={index}>
+                          <img
+                            src={imageUrl}
+                            alt={`${product.name} - Image ${index + 1}`}
+                            className="w-full h-[500px] object-contain"
+                          />
+                        </CarouselItem>
+                      ))}
+                    </CarouselContent>
+                    <CarouselPrevious className="left-4" />
+                    <CarouselNext className="right-4" />
+                  </Carousel>
+                ) : (
+                  <img
+                    src={displayImages[0]}
+                    alt={product.name}
+                    className="w-full h-[500px] object-contain"
+                  />
+                )}
                 {discount > 0 && (
-                  <Badge className="absolute top-4 left-4 bg-destructive text-destructive-foreground text-lg px-4 py-2">
+                  <Badge className="absolute top-4 left-4 bg-destructive text-destructive-foreground text-lg px-4 py-2 z-10">
                     {discount}% OFF
                   </Badge>
                 )}
