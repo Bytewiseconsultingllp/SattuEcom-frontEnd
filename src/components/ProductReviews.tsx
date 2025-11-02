@@ -58,8 +58,10 @@ export default function ProductReviews({ productId }: Props) {
       if (filter !== 'all') params.rating = filter;
       const res = await getProductReviews(productId, params);
       if (res?.success) {
-        setReviews(res.data || []);
-        setTotal(res.count || 0);
+        // Filter out hidden reviews (admin can hide offensive reviews)
+        const visibleReviews = (res.data || []).filter(review => !review.is_hidden);
+        setReviews(visibleReviews);
+        setTotal(visibleReviews.length);
       }
     } catch (e: any) {
       toast.error(e.message || 'Failed to load reviews');

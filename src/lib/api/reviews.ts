@@ -9,8 +9,10 @@ export type Review = {
   comment?: string;
   created_at: string;
   updated_at: string;
-  user?: { full_name: string };
+  user?: { full_name: string; email?: string };
+  product?: { name?: string; images?: string[] };
   images?: string[]; // base64 data URLs or absolute URLs
+  is_hidden?: boolean; // Admin can hide offensive reviews
 };
 
 export async function getProductReviews(
@@ -103,6 +105,46 @@ export async function deleteReview(id: string): Promise<{ success: boolean; data
 export async function getUserReviews(params?: { page?: number; limit?: number }): Promise<{ success: boolean; count: number; page?: number; limit?: number; data: Review[] }> {
   try {
     const res = await api.get('/reviews/my-reviews', { params });
+    return res.data;
+  } catch (err: any) {
+    if (axios.isAxiosError(err)) {
+      const serverMsg = err.response?.data?.message ?? err.response?.data ?? err.message;
+      throw new Error(typeof serverMsg === 'string' ? serverMsg : JSON.stringify(serverMsg));
+    }
+    throw err;
+  }
+}
+
+// Admin functions
+export async function getAllReviews(params?: { page?: number; limit?: number; product_id?: string; is_hidden?: boolean }): Promise<{ success: boolean; count: number; page?: number; limit?: number; data: Review[] }> {
+  try {
+    const res = await api.get('/admin/reviews', { params });
+    return res.data;
+  } catch (err: any) {
+    if (axios.isAxiosError(err)) {
+      const serverMsg = err.response?.data?.message ?? err.response?.data ?? err.message;
+      throw new Error(typeof serverMsg === 'string' ? serverMsg : JSON.stringify(serverMsg));
+    }
+    throw err;
+  }
+}
+
+export async function toggleReviewVisibility(reviewId: string, isHidden: boolean): Promise<{ success: boolean; data: Review; message?: string }> {
+  try {
+    const res = await api.patch(`/admin/reviews/${reviewId}/visibility`, { is_hidden: isHidden });
+    return res.data;
+  } catch (err: any) {
+    if (axios.isAxiosError(err)) {
+      const serverMsg = err.response?.data?.message ?? err.response?.data ?? err.message;
+      throw new Error(typeof serverMsg === 'string' ? serverMsg : JSON.stringify(serverMsg));
+    }
+    throw err;
+  }
+}
+
+export async function deleteReviewAsAdmin(reviewId: string): Promise<{ success: boolean; message?: string }> {
+  try {
+    const res = await api.delete(`/admin/reviews/${reviewId}`);
     return res.data;
   } catch (err: any) {
     if (axios.isAxiosError(err)) {

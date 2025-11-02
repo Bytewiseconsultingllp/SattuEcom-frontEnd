@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
   Select,
   SelectContent,
@@ -28,6 +29,14 @@ import {
   DollarSign,
   TrendingDown,
   LogOut,
+  ChevronLeft,
+  ChevronRight,
+  Star,
+  EyeOff,
+  MessageSquare,
+  Tag,
+  Percent,
+  Gift,
 } from "lucide-react";
 import { products } from "@/data/products";
 import { toast } from "sonner";
@@ -67,6 +76,8 @@ import { getAllOrders as apiGetAllOrders, updateOrderStatus as apiUpdateOrderSta
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import AdminProductsPage from "@/components/admin/AdminProductsPage";
+import AdminReviewsPage from "@/components/admin/AdminReviewsPage";
+import AdminCouponsPage from "@/components/admin/AdminCouponsPage";
 
 const AdminDashboard = () => {
   const [activeSection, setActiveSection] = useState("dashboard");
@@ -83,6 +94,12 @@ const AdminDashboard = () => {
   const [ordersLoading, setOrdersLoading] = useState<boolean>(false);
   const [users, setUsers] = useState<any[]>([]);
   const [usersLoading, setUsersLoading] = useState<boolean>(false);
+  
+  // Customer filters and pagination
+  const [customerSearch, setCustomerSearch] = useState("");
+  const [customerRoleFilter, setCustomerRoleFilter] = useState("all");
+  const [customerPage, setCustomerPage] = useState(1);
+  const [customersPerPage, setCustomersPerPage] = useState(10);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [cancelOrderId, setCancelOrderId] = useState<string | null>(null);
   const [cancelReasonKey, setCancelReasonKey] = useState<string>("");
@@ -306,6 +323,24 @@ const AdminDashboard = () => {
                   </SidebarMenuItem>
                   <SidebarMenuItem>
                     <SidebarMenuButton
+                      onClick={() => setActiveSection("reviews")}
+                      isActive={activeSection === "reviews"}
+                    >
+                      <MessageSquare className="h-4 w-4" />
+                      <span>Reviews</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      onClick={() => setActiveSection("coupons")}
+                      isActive={activeSection === "coupons"}
+                    >
+                      <Tag className="h-4 w-4" />
+                      <span>Coupons</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
                       onClick={() => setActiveSection("analytics")}
                       isActive={activeSection === "analytics"}
                     >
@@ -425,22 +460,34 @@ const AdminDashboard = () => {
                 </div>
 
                 <Card>
-                  <CardContent className="p-6">
+                  <CardContent className="p-0">
                     {ordersLoading ? (
-                      <p className="text-sm text-muted-foreground">Loading orders...</p>
+                      <p className="text-sm text-muted-foreground p-6">Loading orders...</p>
                     ) : filteredOrders.length === 0 ? (
-                      <p className="text-sm text-muted-foreground">No orders found for the selected filters.</p>
+                      <p className="text-sm text-muted-foreground p-6">No orders found for the selected filters.</p>
                     ) : (
-                      <div className="space-y-4">
-                        {filteredOrders.map((order) => (
-                          <div
-                            key={order.id}
-                            className="border rounded-lg p-4 space-y-4"
-                          >
-                            <div className="flex items-center justify-between">
-                              <div className="flex-1">
-                                <div className="flex items-center gap-3 mb-2">
-                                  <h3 className="font-semibold">{order.id}</h3>
+                      <div className="overflow-x-auto">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Order ID</TableHead>
+                              <TableHead>Date</TableHead>
+                              <TableHead>Customer</TableHead>
+                              <TableHead>Items</TableHead>
+                              <TableHead>Total</TableHead>
+                              <TableHead>Status</TableHead>
+                              <TableHead className="text-right">Actions</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {filteredOrders.map((order) => (
+                              <TableRow key={order.id}>
+                                <TableCell className="font-medium">{order.id}</TableCell>
+                                <TableCell>{new Date(order.created_at || order.date).toLocaleDateString()}</TableCell>
+                                <TableCell>{order.customer || order.user?.email || 'N/A'}</TableCell>
+                                <TableCell>{(order.order_items?.length) ?? order.items}</TableCell>
+                                <TableCell>₹{order.total_amount ?? order.total}</TableCell>
+                                <TableCell>
                                   <Badge
                                     variant={
                                       (order.status || '').toLowerCase() === "delivered"
@@ -454,165 +501,164 @@ const AdminDashboard = () => {
                                   >
                                     {order.status || 'pending'}
                                   </Badge>
-                                </div>
-                                <p className="text-sm text-muted-foreground">
-                                  {new Date(order.created_at || order.date).toLocaleDateString()} • {(order.order_items?.length) ?? order.items} items • ₹{order.total_amount ?? order.total}
-                                </p>
-                                {((order.status || '').toLowerCase() === 'cancelled') && order.cancellation_reason && (
-                                  <p className="text-xs text-muted-foreground">Reason: {order.cancellation_reason}</p>
-                                )}
-                              </div>
-                              <div className="flex items-center gap-2">
-                                {(['pending', 'processing', 'shipped'] as string[]).includes((order.status || '').toLowerCase()) && (
-                                  <Button variant="destructive" size="sm" onClick={() => openCancelDialog(order.id)}>Cancel</Button>
-                                )}
-                                <Button asChild variant="outline" size="sm">
-                                  <RouterLink to={`/order/${order.id}`}>Details</RouterLink>
-                                </Button>
-                              </div>
-                              <Dialog>
-                                <DialogTrigger asChild>
-                                  <Button
-                                    variant="outline"
-                                    onClick={() => setSelectedOrder(order)}
-                                  >
-                                    Manage
-                                  </Button>
-                                </DialogTrigger>
-                                <DialogContent className="max-w-2xl">
-                                  <DialogHeader>
-                                    <DialogTitle>
-                                      Order Details - {selectedOrder?.id}
-                                    </DialogTitle>
-                                  </DialogHeader>
-                                  <div className="space-y-4">
-                                    <div>
-                                      <Label>Customer</Label>
-                                      <p className="text-sm">
-                                        {selectedOrder?.customer}
-                                      </p>
-                                    </div>
-                                    <div>
-                                      <Label>Order Items</Label>
-                                      <div className="mt-2 space-y-3">
-                                        {(selectedOrder?.order_items || []).map((it: any) => (
-                                          <div key={it.id || it.product_id} className="flex items-center justify-between">
-                                            <div className="flex items-center gap-3">
-                                              <img src={it.product?.images?.[0] || '/placeholder.svg'} alt={it.product?.name || it.product_id} className="h-10 w-10 rounded object-cover" />
-                                              <div>
-                                                <p className="text-sm font-medium">{it.product?.name || it.product_id}</p>
-                                                <p className="text-xs text-muted-foreground">Qty: {it.quantity} • ₹{it.price}</p>
-                                              </div>
-                                            </div>
-                                            <p className="text-sm font-semibold">₹{(it.price || 0) * (it.quantity || 0)}</p>
-                                          </div>
-                                        ))}
-                                      </div>
-                                    </div>
-                                    <div>
-                                      <Label>Total Amount</Label>
-                                      <p className="text-sm">
-                                        ₹{selectedOrder?.total_amount ?? selectedOrder?.total}
-                                      </p>
-                                    </div>
-                                    <div>
-                                      <Label>Order Status</Label>
-                                      <Select
-                                        value={selectedOrder?.status}
-                                        onValueChange={(value) =>
-                                          handleStatusChange(
-                                            selectedOrder?.id,
-                                            value
-                                          )
-                                        }
-                                      >
-                                        <SelectTrigger>
-                                          <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                          <SelectItem value="pending">
-                                            Pending
-                                          </SelectItem>
-                                          <SelectItem value="processing">
-                                            Processing
-                                          </SelectItem>
-                                          <SelectItem value="shipped">
-                                            Shipped
-                                          </SelectItem>
-                                          <SelectItem value="delivered">
-                                            Delivered
-                                          </SelectItem>
-                                        </SelectContent>
-                                      </Select>
-                                    </div>
-
-                                    {(selectedOrder?.status || '').toLowerCase() === 'cancelled' && (
-                                      <div>
-                                        <Label>Cancellation</Label>
-                                        <p className="text-sm text-muted-foreground">
-                                          {selectedOrder?.cancellation_reason ? `Reason: ${selectedOrder.cancellation_reason}` : 'No reason provided'}
-                                          {selectedOrder?.cancelled_at ? ` • At: ${new Date(selectedOrder.cancelled_at).toLocaleString()}` : ''}
-                                        </p>
-                                      </div>
+                                </TableCell>
+                                <TableCell className="text-right">
+                                  <div className="flex items-center justify-end gap-2">
+                                    {(['pending', 'processing', 'shipped'] as string[]).includes((order.status || '').toLowerCase()) && (
+                                      <Button variant="destructive" size="sm" onClick={() => openCancelDialog(order.id)}>
+                                        Cancel
+                                      </Button>
                                     )}
-
-                                    {showDeliveryForm && (
-                                      <div className="space-y-4 border-t pt-4">
-                                        <h3 className="font-semibold">
-                                          Delivery Details
-                                        </h3>
-                                        <div>
-                                          <Label>Delivery Agency</Label>
-                                          <Input
-                                            value={deliveryDetails.agency}
-                                            onChange={(e) =>
-                                              setDeliveryDetails({
-                                                ...deliveryDetails,
-                                                agency: e.target.value,
-                                              })
-                                            }
-                                            placeholder="e.g., Blue Dart, DTDC"
-                                          />
-                                        </div>
-                                        <div>
-                                          <Label>Tracking Number</Label>
-                                          <Input
-                                            value={deliveryDetails.trackingNumber}
-                                            onChange={(e) =>
-                                              setDeliveryDetails({
-                                                ...deliveryDetails,
-                                                trackingNumber: e.target.value,
-                                              })
-                                            }
-                                            placeholder="Enter tracking number"
-                                          />
-                                        </div>
-                                        <div>
-                                          <Label>Estimated Delivery</Label>
-                                          <Input
-                                            type="date"
-                                            value={
-                                              deliveryDetails.estimatedDelivery
-                                            }
-                                            onChange={(e) =>
-                                              setDeliveryDetails({
-                                                ...deliveryDetails,
-                                                estimatedDelivery: e.target.value,
-                                              })
-                                            }
-                                          />
-                                        </div>
-                                        <Button onClick={handleDeliverySubmit}>
-                                          Save Delivery Details
+                                    <Button asChild variant="outline" size="sm">
+                                      <RouterLink to={`/order/${order.id}`}>Details</RouterLink>
+                                    </Button>
+                                    <Dialog>
+                                      <DialogTrigger asChild>
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={() => setSelectedOrder(order)}
+                                        >
+                                          Manage
                                         </Button>
-                                      </div>
-                                    )}
+                                      </DialogTrigger>
+                                      <DialogContent className="max-w-2xl">
+                                        <DialogHeader>
+                                          <DialogTitle>
+                                            Order Details - {order.id}
+                                          </DialogTitle>
+                                        </DialogHeader>
+                                        <div className="space-y-4">
+                                          <div>
+                                            <Label>Customer</Label>
+                                            <p className="text-sm">
+                                              {order.customer || order.user?.email || 'N/A'}
+                                            </p>
+                                          </div>
+                                          <div>
+                                            <Label>Order Items</Label>
+                                            <div className="mt-2 space-y-3">
+                                              {(order.order_items || []).map((it: any) => (
+                                                <div key={it.id || it.product_id} className="flex items-center justify-between">
+                                                  <div className="flex items-center gap-3">
+                                                    <img src={it.product?.images?.[0] || '/placeholder.svg'} alt={it.product?.name || it.product_id} className="h-10 w-10 rounded object-cover" />
+                                                    <div>
+                                                      <p className="text-sm font-medium">{it.product?.name || it.product_id}</p>
+                                                      <p className="text-xs text-muted-foreground">Qty: {it.quantity} • ₹{it.price}</p>
+                                                    </div>
+                                                  </div>
+                                                  <p className="text-sm font-semibold">₹{(it.price || 0) * (it.quantity || 0)}</p>
+                                                </div>
+                                              ))}
+                                            </div>
+                                          </div>
+                                          <div>
+                                            <Label>Total Amount</Label>
+                                            <p className="text-sm">
+                                              ₹{order.total_amount ?? order.total}
+                                            </p>
+                                          </div>
+                                          <div>
+                                            <Label>Order Status</Label>
+                                            <Select
+                                              value={order.status}
+                                              onValueChange={(value) =>
+                                                handleStatusChange(
+                                                  order.id,
+                                                  value
+                                                )
+                                              }
+                                            >
+                                              <SelectTrigger>
+                                                <SelectValue />
+                                              </SelectTrigger>
+                                              <SelectContent>
+                                                <SelectItem value="pending">
+                                                  Pending
+                                                </SelectItem>
+                                                <SelectItem value="processing">
+                                                  Processing
+                                                </SelectItem>
+                                                <SelectItem value="shipped">
+                                                  Shipped
+                                                </SelectItem>
+                                                <SelectItem value="delivered">
+                                                  Delivered
+                                                </SelectItem>
+                                              </SelectContent>
+                                            </Select>
+                                          </div>
+
+                                          {(order.status || '').toLowerCase() === 'cancelled' && (
+                                            <div>
+                                              <Label>Cancellation</Label>
+                                              <p className="text-sm text-muted-foreground">
+                                                {order.cancellation_reason ? `Reason: ${order.cancellation_reason}` : 'No reason provided'}
+                                                {order.cancelled_at ? ` • At: ${new Date(order.cancelled_at).toLocaleString()}` : ''}
+                                              </p>
+                                            </div>
+                                          )}
+
+                                          {showDeliveryForm && (
+                                            <div className="space-y-4 border-t pt-4">
+                                              <h3 className="font-semibold">
+                                                Delivery Details
+                                              </h3>
+                                              <div>
+                                                <Label>Delivery Agency</Label>
+                                                <Input
+                                                  value={deliveryDetails.agency}
+                                                  onChange={(e) =>
+                                                    setDeliveryDetails({
+                                                      ...deliveryDetails,
+                                                      agency: e.target.value,
+                                                    })
+                                                  }
+                                                  placeholder="e.g., Blue Dart, DTDC"
+                                                />
+                                              </div>
+                                              <div>
+                                                <Label>Tracking Number</Label>
+                                                <Input
+                                                  value={deliveryDetails.trackingNumber}
+                                                  onChange={(e) =>
+                                                    setDeliveryDetails({
+                                                      ...deliveryDetails,
+                                                      trackingNumber: e.target.value,
+                                                    })
+                                                  }
+                                                  placeholder="Enter tracking number"
+                                                />
+                                              </div>
+                                              <div>
+                                                <Label>Estimated Delivery</Label>
+                                                <Input
+                                                  type="date"
+                                                  value={
+                                                    deliveryDetails.estimatedDelivery
+                                                  }
+                                                  onChange={(e) =>
+                                                    setDeliveryDetails({
+                                                      ...deliveryDetails,
+                                                      estimatedDelivery: e.target.value,
+                                                    })
+                                                  }
+                                                />
+                                              </div>
+                                              <Button onClick={handleDeliverySubmit}>
+                                                Save Delivery Details
+                                              </Button>
+                                            </div>
+                                          )}
+                                        </div>
+                                      </DialogContent>
+                                    </Dialog>
                                   </div>
-                                </DialogContent>
-                              </Dialog>
-                            </div>
-                          </div>
-                        ))}
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
                       </div>
                     )}
                   </CardContent>
@@ -648,85 +694,291 @@ const AdminDashboard = () => {
               </div>
             )}
 
-            {activeSection === "customers" && (
-              <div className="space-y-6 animate-fade-in">
-                <h2 className="text-2xl font-bold">Customer Management</h2>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {activeSection === "customers" && (() => {
+              // Filter customers
+              const filteredCustomers = users.filter((user: any) => {
+                const matchesSearch = (user.name || user.full_name || user.email || '').toLowerCase().includes(customerSearch.toLowerCase());
+                const matchesRole = customerRoleFilter === "all" || user.role === customerRoleFilter;
+                return matchesSearch && matchesRole;
+              });
+
+              // Paginate
+              const totalCustomerPages = Math.ceil(filteredCustomers.length / customersPerPage);
+              const startIdx = (customerPage - 1) * customersPerPage;
+              const paginatedCustomers = filteredCustomers.slice(startIdx, startIdx + customersPerPage);
+
+              return (
+                <div className="space-y-6 animate-fade-in">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <h2 className="text-2xl font-bold">Customer Management</h2>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        {filteredCustomers.length} customer{filteredCustomers.length !== 1 ? 's' : ''} found
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Search and Filters */}
                   <Card>
-                    <CardHeader>
-                      <CardTitle>Customer List</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-4">
-                        {usersLoading ? (
-                          <p className="text-sm text-muted-foreground">Loading users...</p>
-                        ) : users.length === 0 ? (
-                          <p className="text-muted-foreground text-center py-8">No users found</p>
-                        ) : (
-                          users.map((user: any) => (
-                            <div
-                              key={user.id}
-                              className={`flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer ${selectedCustomer?.id === user.id ? "bg-muted/50 border-primary" : ""}`}
-                              onClick={() => setSelectedCustomer(user)}
-                            >
-                              <div className="flex items-center gap-4">
-                                <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                                  <Users className="h-6 w-6 text-primary" />
-                                </div>
-                                <div>
-                                  <h3 className="font-semibold">{user.name || user.full_name || user.username || user.email}</h3>
-                                  <p className="text-sm text-muted-foreground">{user.email}</p>
-                                  {user.role && <p className="text-xs text-muted-foreground">Role: {user.role}{user.isVerified ? " • Verified" : ""}</p>}
-                                </div>
-                              </div>
-                              <div className="text-right">
-                                {user.createdAt && (
-                                  <p className="text-xs text-muted-foreground">Joined: {new Date(user.createdAt).toLocaleDateString()}</p>
-                                )}
-                              </div>
-                            </div>
-                          ))
-                        )}
+                    <CardContent className="p-4">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="md:col-span-2">
+                          <div className="relative">
+                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input
+                              placeholder="Search customers by name or email..."
+                              value={customerSearch}
+                              onChange={(e) => {
+                                setCustomerSearch(e.target.value);
+                                setCustomerPage(1);
+                              }}
+                              className="pl-10"
+                            />
+                          </div>
+                        </div>
+                        <Select value={customerRoleFilter} onValueChange={(val) => {
+                          setCustomerRoleFilter(val);
+                          setCustomerPage(1);
+                        }}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Filter by role" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All Roles</SelectItem>
+                            <SelectItem value="customer">Customer</SelectItem>
+                            <SelectItem value="admin">Admin</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
                     </CardContent>
                   </Card>
 
-                  {selectedCustomer && (
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <Card>
                       <CardHeader>
-                        <CardTitle>Orders by {selectedCustomer.name || selectedCustomer.email}</CardTitle>
+                        <CardTitle>Customer List</CardTitle>
                       </CardHeader>
                       <CardContent>
                         <div className="space-y-4">
-                          {customerOrders.length > 0 ? (
-                            customerOrders.map((order) => (
+                          {usersLoading ? (
+                            <p className="text-sm text-muted-foreground">Loading users...</p>
+                          ) : paginatedCustomers.length === 0 ? (
+                            <p className="text-muted-foreground text-center py-8">
+                              {users.length === 0 ? "No users found" : "No customers match your filters"}
+                            </p>
+                          ) : (
+                            paginatedCustomers.map((user: any) => (
                               <div
-                                key={order.id}
-                                className="p-4 border rounded-lg"
+                                key={user.id}
+                                className={`flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer ${selectedCustomer?.id === user.id ? "bg-muted/50 border-primary" : ""}`}
+                                onClick={() => setSelectedCustomer(user)}
                               >
-                                <div className="flex justify-between items-start mb-2">
-                                  <div>
-                                    <p className="font-semibold">{order.id}</p>
-                                    <p className="text-sm text-muted-foreground">
-                                      {new Date(order.created_at || order.date).toLocaleDateString()}
-                                    </p>
+                                <div className="flex items-center gap-4">
+                                  <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                                    <Users className="h-6 w-6 text-primary" />
                                   </div>
-                                  <Badge>{order.status}</Badge>
+                                  <div>
+                                    <h3 className="font-semibold">{user.name || user.full_name || user.username || user.email}</h3>
+                                    <p className="text-sm text-muted-foreground">{user.email}</p>
+                                    {user.role && <p className="text-xs text-muted-foreground">Role: {user.role}{user.isVerified ? " • Verified" : ""}</p>}
+                                  </div>
                                 </div>
-                                <p className="text-sm">₹{order.total_amount ?? order.total}</p>
+                                <div className="text-right">
+                                  {user.createdAt && (
+                                    <p className="text-xs text-muted-foreground">Joined: {new Date(user.createdAt).toLocaleDateString()}</p>
+                                  )}
+                                </div>
                               </div>
                             ))
-                          ) : (
-                            <p className="text-muted-foreground text-center py-8">
-                              No orders found
-                            </p>
                           )}
                         </div>
+
+                        {/* Pagination */}
+                        {totalCustomerPages > 1 && (
+                          <div className="flex items-center justify-between mt-6 pt-6 border-t">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm text-muted-foreground">
+                                Showing {startIdx + 1}-{Math.min(startIdx + customersPerPage, filteredCustomers.length)} of {filteredCustomers.length}
+                              </span>
+                              <Select
+                                value={customersPerPage.toString()}
+                                onValueChange={(value) => {
+                                  setCustomersPerPage(Number(value));
+                                  setCustomerPage(1);
+                                }}
+                              >
+                                <SelectTrigger className="w-[100px]">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="5">5 / page</SelectItem>
+                                  <SelectItem value="10">10 / page</SelectItem>
+                                  <SelectItem value="20">20 / page</SelectItem>
+                                  <SelectItem value="50">50 / page</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setCustomerPage(customerPage - 1)}
+                                disabled={customerPage === 1}
+                              >
+                                <ChevronLeft className="h-4 w-4" />
+                                Previous
+                              </Button>
+                              
+                              <div className="flex items-center gap-1">
+                                {Array.from({ length: totalCustomerPages }, (_, i) => i + 1)
+                                  .filter(page => {
+                                    return page === 1 || 
+                                           page === totalCustomerPages || 
+                                           (page >= customerPage - 1 && page <= customerPage + 1);
+                                  })
+                                  .map((page, index, array) => (
+                                    <div key={page} className="flex items-center">
+                                      {index > 0 && array[index - 1] !== page - 1 && (
+                                        <span className="px-2 text-muted-foreground">...</span>
+                                      )}
+                                      <Button
+                                        variant={customerPage === page ? "default" : "outline"}
+                                        size="sm"
+                                        onClick={() => setCustomerPage(page)}
+                                        className="w-10"
+                                      >
+                                        {page}
+                                      </Button>
+                                    </div>
+                                  ))}
+                              </div>
+
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setCustomerPage(customerPage + 1)}
+                                disabled={customerPage === totalCustomerPages}
+                              >
+                                Next
+                                <ChevronRight className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        )}
                       </CardContent>
                     </Card>
-                  )}
+
+                    {selectedCustomer && (
+                      <Card>
+                        <CardHeader>
+                          <CardTitle>Customer Details</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-6">
+                          {/* Customer Info */}
+                          <div className="space-y-3">
+                            <div>
+                              <Label className="text-xs text-muted-foreground">Name</Label>
+                              <p className="font-medium">{selectedCustomer.name || selectedCustomer.full_name || 'N/A'}</p>
+                            </div>
+                            <div>
+                              <Label className="text-xs text-muted-foreground">Email</Label>
+                              <p className="font-medium">{selectedCustomer.email}</p>
+                            </div>
+                            <div>
+                              <Label className="text-xs text-muted-foreground">Role</Label>
+                              <p className="font-medium">{selectedCustomer.role || 'customer'}</p>
+                            </div>
+                            <div>
+                              <Label className="text-xs text-muted-foreground">Joined</Label>
+                              <p className="font-medium">
+                                {selectedCustomer.createdAt ? new Date(selectedCustomer.createdAt).toLocaleDateString() : 'N/A'}
+                              </p>
+                            </div>
+                            <div>
+                              <Label className="text-xs text-muted-foreground">Status</Label>
+                              <Badge variant={selectedCustomer.isVerified ? "default" : "secondary"}>
+                                {selectedCustomer.isVerified ? "Verified" : "Unverified"}
+                              </Badge>
+                            </div>
+                          </div>
+
+                          <div className="border-t pt-4">
+                            <h3 className="font-semibold mb-4">Order History</h3>
+                            <div className="space-y-3">
+                              {customerOrders.length > 0 ? (
+                                customerOrders.map((order) => (
+                                  <div
+                                    key={order.id}
+                                    className="p-3 border rounded-lg hover:bg-muted/50 transition-colors"
+                                  >
+                                    <div className="flex justify-between items-start mb-2">
+                                      <div>
+                                        <p className="font-semibold text-sm">{order.id}</p>
+                                        <p className="text-xs text-muted-foreground">
+                                          {new Date(order.created_at || order.date).toLocaleDateString()}
+                                        </p>
+                                      </div>
+                                      <Badge variant={
+                                        (order.status || '').toLowerCase() === "delivered" ? "default" :
+                                        (order.status || '').toLowerCase() === "shipped" ? "secondary" :
+                                        (order.status || '').toLowerCase() === "processing" ? "outline" : "destructive"
+                                      }>
+                                        {order.status}
+                                      </Badge>
+                                    </div>
+                                    <div className="flex justify-between items-center">
+                                      <p className="text-sm font-medium">₹{order.total_amount ?? order.total}</p>
+                                      <Button asChild variant="ghost" size="sm">
+                                        <RouterLink to={`/order/${order.id}`}>View</RouterLink>
+                                      </Button>
+                                    </div>
+                                    {order.order_items && order.order_items.length > 0 && (
+                                      <div className="mt-2 pt-2 border-t">
+                                        <p className="text-xs text-muted-foreground mb-2">Items:</p>
+                                        <div className="space-y-1">
+                                          {order.order_items.slice(0, 3).map((item: any) => (
+                                            <div key={item.id} className="flex items-center gap-2">
+                                              <img 
+                                                src={item.product?.images?.[0] || '/placeholder.svg'} 
+                                                alt={item.product?.name} 
+                                                className="w-8 h-8 rounded object-cover"
+                                              />
+                                              <div className="flex-1 min-w-0">
+                                                <p className="text-xs truncate">{item.product?.name || 'Product'}</p>
+                                                <p className="text-xs text-muted-foreground">Qty: {item.quantity}</p>
+                                              </div>
+                                            </div>
+                                          ))}
+                                          {order.order_items.length > 3 && (
+                                            <p className="text-xs text-muted-foreground">+{order.order_items.length - 3} more</p>
+                                          )}
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                ))
+                              ) : (
+                                <p className="text-muted-foreground text-center py-4 text-sm">
+                                  No orders found
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
+                  </div>
                 </div>
-              </div>
+              );
+            })()}
+
+            {activeSection === "reviews" && (
+              <AdminReviewsPage />
+            )}
+
+            {activeSection === "coupons" && (
+              <AdminCouponsPage />
             )}
 
             {activeSection === "analytics" && (
