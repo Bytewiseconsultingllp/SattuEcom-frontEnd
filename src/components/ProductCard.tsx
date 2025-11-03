@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/carousel";
 
 export interface Product {
-  id: string;
+  _id: string;
   name: string;
   price: number;
   originalPrice?: number;
@@ -71,7 +71,7 @@ export const ProductCard = ({ product }: ProductCardProps) => {
       return;
     }
     try {
-      const res = await apiAddToWishlist(product.id);
+      const res = await apiAddToWishlist(product._id);
       if (res?.success) {
         toast.success(res.message || "Added to wishlist!");
       }
@@ -87,7 +87,7 @@ export const ProductCard = ({ product }: ProductCardProps) => {
       e.preventDefault();
       return;
     }
-    navigate(`/product/${product.id}`);
+    navigate(`/product/${product._id}`);
   };
 
   return (
@@ -180,10 +180,10 @@ export const ProductCard = ({ product }: ProductCardProps) => {
             disabled={!product.in_stock}
             onClick={(e) => {
               e.stopPropagation();
-              handleAddToCart(e, product.id, 1);
+              handleAddToCart(e, product._id, 1);
             }}
           >
-            {loadingState?.type === 'add' && loadingState.itemId === product.id ? (
+            {loadingState?.type === 'add' && loadingState.itemId === product._id ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : (
               <ShoppingCart className="mr-2 h-4 w-4" />

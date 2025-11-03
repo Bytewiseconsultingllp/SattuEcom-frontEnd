@@ -42,8 +42,10 @@ const ProductDetail = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    getAllProducts();
-  }, []);
+    if (id) {
+      getAllProducts();
+    }
+  }, [id]);
 
   async function getAllProducts() {
     try {
@@ -51,10 +53,10 @@ const ProductDetail = () => {
       const response = await getProductById(id);
       if (response.success) {
         setProduct(response.data);
-        console.log(product);
       }
     } catch (error: any) {
-      toast.error("Error Fetching the Products");
+      toast.error("Error fetching product details");
+      console.error(error);
     } finally {
       setIsLoading(false);
     }

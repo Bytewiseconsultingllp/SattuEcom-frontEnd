@@ -358,17 +358,28 @@ const UserDashboard = () => {
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full bg-muted/30">
-        <Sidebar className="border-r border-sidebar-border">
-          <div className="p-4 border-b border-sidebar-border">
-            <h2 className="text-lg font-bold text-sidebar-foreground">
-              {profile?.name || 'My Account'}
-            </h2>
-            <p className="text-sm text-muted-foreground">{profile?.email || ''}</p>
+      <div className="min-h-screen flex w-full bg-background">
+        {/* Sidebar - Admin Style */}
+        <Sidebar className="border-r border-border">
+          {/* Sidebar Header with Logo/Branding */}
+          <div className="p-4 border-b border-border">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-purple-600 to-indigo-600 flex items-center justify-center text-white font-bold text-sm">
+                U
+              </div>
+              <div className="flex-1 min-w-0">
+                <h2 className="text-sm font-bold text-foreground truncate">
+                  {profile?.name || 'My Account'}
+                </h2>
+                <p className="text-xs text-muted-foreground truncate">{profile?.email || ''}</p>
+              </div>
+            </div>
           </div>
+
           <SidebarContent>
+            {/* Shopping Section */}
             <SidebarGroup>
-              <SidebarGroupLabel>Dashboard</SidebarGroupLabel>
+              <SidebarGroupLabel>Shopping</SidebarGroupLabel>
               <SidebarGroupContent>
                 <SidebarMenu>
                   <SidebarMenuItem>
@@ -391,15 +402,6 @@ const UserDashboard = () => {
                   </SidebarMenuItem>
                   <SidebarMenuItem>
                     <SidebarMenuButton
-                      onClick={() => setActiveSection("payments")}
-                      isActive={activeSection === "payments"}
-                    >
-                      <CreditCard className="h-4 w-4" />
-                      <span>Payment History</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton
                       onClick={() => setActiveSection("tracking")}
                       isActive={activeSection === "tracking"}
                     >
@@ -407,10 +409,20 @@ const UserDashboard = () => {
                       <span>Track Orders</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      onClick={() => setActiveSection("wishlist")}
+                      isActive={activeSection === "wishlist"}
+                    >
+                      <Heart className="h-4 w-4" />
+                      <span>Wishlist</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
                 </SidebarMenu>
               </SidebarGroupContent>
             </SidebarGroup>
 
+            {/* Account Section */}
             <SidebarGroup>
               <SidebarGroupLabel>Account</SidebarGroupLabel>
               <SidebarGroupContent>
@@ -435,11 +447,11 @@ const UserDashboard = () => {
                   </SidebarMenuItem>
                   <SidebarMenuItem>
                     <SidebarMenuButton
-                      onClick={() => setActiveSection("wishlist")}
-                      isActive={activeSection === "wishlist"}
+                      onClick={() => setActiveSection("payments")}
+                      isActive={activeSection === "payments"}
                     >
-                      <Heart className="h-4 w-4" />
-                      <span>Wishlist</span>
+                      <CreditCard className="h-4 w-4" />
+                      <span>Payment History</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                   <SidebarMenuItem>
@@ -455,7 +467,8 @@ const UserDashboard = () => {
               </SidebarGroupContent>
             </SidebarGroup>
 
-            <SidebarGroup>
+            {/* Logout Section */}
+            <SidebarGroup className="mt-auto">
               <SidebarGroupContent>
                 <SidebarMenu>
                   <SidebarMenuItem>
@@ -471,9 +484,28 @@ const UserDashboard = () => {
         </Sidebar>
 
         <div className="flex-1 flex flex-col">
-          <header className="h-16 border-b border-border bg-background flex items-center px-4 gap-4">
-            <SidebarTrigger />
-            <h1 className="text-xl font-bold">User Dashboard</h1>
+          {/* Header - Admin Style */}
+          <header className="h-16 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
+            <div className="h-full px-4 flex items-center justify-between gap-4">
+              {/* Left Section */}
+              <div className="flex items-center gap-4">
+                <SidebarTrigger />
+                <div className="hidden md:block">
+                  <h1 className="text-lg font-bold">My Dashboard</h1>
+                  <p className="text-xs text-muted-foreground">Welcome back, {profile?.name?.split(' ')[0] || 'User'}</p>
+                </div>
+              </div>
+
+              {/* Right Section */}
+              <div className="flex items-center gap-2">
+                <Button variant="ghost" size="icon">
+                  <Heart className="h-5 w-5" />
+                </Button>
+                <Button variant="ghost" size="icon">
+                  <CreditCard className="h-5 w-5" />
+                </Button>
+              </div>
+            </div>
           </header>
 
           <main className="flex-1 overflow-auto p-6">

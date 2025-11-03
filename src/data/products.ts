@@ -133,7 +133,10 @@ export const products = [
 
 export const categories = [
   "All Products",
-  "Sattu Powder",
-  "Ready to Drink",
-  "Snacks & Ladoo",
+  "Multi Grain Mix",
+  "Pre-mix",
+  "Sweets",
+  "Atta",
+  "Beverages",
+  "Others"
 ];

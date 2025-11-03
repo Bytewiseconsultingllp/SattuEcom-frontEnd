@@ -62,7 +62,7 @@ export function ProductForm({ product, onSuccess, onCancel }: ProductFormProps) 
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,
-    name: "benefits",
+    name: "benefits" as any,
   });
 
   const [categories, setCategories] = useState<ApiCategory[]>([]);
@@ -111,7 +111,12 @@ export function ProductForm({ product, onSuccess, onCancel }: ProductFormProps) 
       };
 
       if (isEdit) {
-        await updateProduct(product.id, productData);
+        // Handle both 'id' and '_id' from backend
+        const productId = product?.id || product?._id;
+        if (!productId) {
+          throw new Error("Product ID is missing");
+        }
+        await updateProduct(productId, productData);
         toast.success("Product updated successfully");
       } else {
         await createProduct(productData);
