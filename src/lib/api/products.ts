@@ -103,8 +103,14 @@ export const getProducts = async (page = 1, limit = 10, filters?: any) => {
     if (filters?.maxPrice !== undefined) {
       params.append('maxPrice', filters.maxPrice.toString());
     }
+    if (filters?.search) {
+      params.append('search', filters.search);
+    }
     if (filters?.inStockOnly) {
       params.append('inStockOnly', 'true');
+    }
+    if (filters?.outOfStockOnly) {
+      params.append('outOfStockOnly', 'true');
     }
 
     const response = await api.get(`/products?${params.toString()}`);

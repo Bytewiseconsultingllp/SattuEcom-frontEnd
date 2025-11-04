@@ -21,11 +21,12 @@ export interface Product {
   name: string;
   price: number;
   originalPrice?: number;
-  images: string[]; // Array of base64 images from backend
+  images: string[]; // Array of image URLs from backend (Cloudinary)
   category: string;
   rating: number;
   reviews_count: number;
   in_stock: boolean;
+  weight?: number; // Weight in kg
 }
 
 interface ProductCardProps {

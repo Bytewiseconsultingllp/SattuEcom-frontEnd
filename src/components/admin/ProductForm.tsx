@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ImageUpload } from "@/components/ui/image-upload";
+import { URLImageUpload } from "@/components/ui/url-image-upload";
 import { toast } from "sonner";
 import { createProduct, updateProduct } from "@/lib/api/products";
 import { useState, useEffect } from "react";
@@ -219,9 +219,9 @@ export function ProductForm({ product, onSuccess, onCancel }: ProductFormProps) 
       <div>
         <Label>Product Images</Label>
         <p className="text-sm text-muted-foreground mb-2">
-          Upload up to 5 images. The first image will be the primary image.
+          Add up to 5 image URLs. The first image will be the primary image.
         </p>
-        <ImageUpload
+        <URLImageUpload
           value={form.watch("images")}
           onChange={(images) => form.setValue("images", images, { shouldValidate: true })}
           maxImages={5}
