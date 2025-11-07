@@ -39,6 +39,9 @@ import {
   Package,
   Calendar,
   Download,
+  ShoppingBasket,
+  Boxes,
+  Store
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -65,9 +68,11 @@ export function ExpenseManagementPage() {
     { value: "packaging", label: "Packaging Materials", icon: Package },
     { value: "maintenance", label: "Maintenance", icon: Wrench },
     { value: "utilities", label: "Utilities", icon: Receipt },
-    { value: "marketing", label: "Marketing", icon: Receipt },
+    { value: "marketing", label: "Marketing", icon: Store },
     { value: "salaries", label: "Salaries", icon: Receipt },
     { value: "rent", label: "Rent", icon: Receipt },
+    { value: "miscellaneous", label: "Miscellaneous", icon: Boxes },
+    { value: "rawMaterials", label: "Raw Materials", icon: ShoppingBasket },
     { value: "other", label: "Other", icon: Receipt },
   ];
 
