@@ -6,17 +6,30 @@ export interface OfflineSaleItem {
   price: number;
 }
 
+export interface OfflineSalesResponse {
+  success: boolean;
+  data: OfflineSale[];
+  count?: number;
+  total?: number;
+  page?: number;
+  limit?: number;
+  totalPages?: number;
+}
+
 export interface OfflineSale {
-  id?: string;
+  _id?: string;
   date: string;
   customerName: string;
   customerPhone: string;
+  customerEmail: string;
   items: OfflineSaleItem[];
   totalAmount: number;
   paymentMethod: string;
-  notes?: string;
+  notes?: string; 
   created_at?: string;
   updated_at?: string;
+  // Optional flags for backend behavior
+  suppressEmail?: boolean;
 }
 
 /**
@@ -26,12 +39,63 @@ export const getOfflineSales = async (filters?: {
   startDate?: string;
   endDate?: string;
   paymentMethod?: string;
-}) => {
+  gstType?: string;
+  q?: string;
+  page?: number;
+  limit?: number;
+}): Promise<OfflineSalesResponse> => {
   try {
     const response = await api.get("/admin/offline-sales", { params: filters });
-    return response.data.data || [];
+    return response.data;
   } catch (error: any) {
     throw new Error(error.response?.data?.message || "Failed to fetch offline sales");
+  }
+};
+
+export const getRegistrationStatus = async (emails: string[]): Promise<Record<string, boolean>> => {
+  try {
+    if (!emails || emails.length === 0) return {};
+    const response = await api.get(`/admin/offline-sales/registered-status`, {
+      params: { emails: emails.join(',') },
+    });
+    return response.data?.data || {};
+  } catch (error: any) {
+    throw new Error(error.response?.data?.message || 'Failed to fetch registration status');
+  }
+};
+
+export const sendCredentialForSale = async (id: string) => {
+  try {
+    const response = await api.post(`/admin/offline-sales/${id}/send-credential`);
+    return response.data;
+  } catch (error: any) {
+    throw new Error(error.response?.data?.message || "Failed to send credential");
+  }
+};
+
+export const sendCredentialsBulk = async (payload: {
+  emails?: string[];
+  startDate?: string;
+  endDate?: string;
+  ratePerMinute?: number;
+}) => {
+  try {
+    const response = await api.post(`/admin/offline-sales/send-credentials`, payload);
+    return response.data?.data;
+  } catch (error: any) {
+    throw new Error(error.response?.data?.message || "Failed to send credentials");
+  }
+};
+
+export const exportOfflineSales = async (period: 'weekly' | 'monthly' | 'quarterly' | 'annually'): Promise<Blob> => {
+  try {
+    const response = await api.get(`/admin/offline-sales/export`, {
+      params: { period },
+      responseType: 'blob',
+    });
+    return response.data as Blob;
+  } catch (error: any) {
+    throw new Error(error.response?.data?.message || 'Export failed');
   }
 };
 
@@ -46,6 +110,7 @@ export const getOfflineSalesStats = async () => {
     throw new Error(error.response?.data?.message || "Failed to fetch sales statistics");
   }
 };
+
 
 /**
  * Get single offline sale by ID

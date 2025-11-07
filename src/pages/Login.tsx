@@ -48,7 +48,7 @@ const Login = () => {
         toast.success("Logged in successfully!");
         
         // Check if admin email (simple check - you can enhance this)
-        if (email === "admin@sattustore.com") {
+        if (email === "agarwalasish567@gmail.com") {
           setUserCookie(response);
           navigate("/admin/dashboard");
         } else {
