@@ -80,7 +80,7 @@ export function ModernOrdersPage() {
         return;
       }
       
-      await updateOrderStatus(orderId, newStatus);
+      await updateOrderStatus(orderId, newStatus as 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled');
       toast.success("Order status updated");
       setShowOrderDialog(false);
       fetchOrders();
@@ -97,7 +97,8 @@ export function ModernOrdersPage() {
 
     try {
       // Update order with shipment details
-      await updateOrderStatus(selectedOrder.id, "shipped", shipmentDetails);
+      const orderId = selectedOrder._id || selectedOrder.id;
+      await updateOrderStatus(orderId, "shipped", shipmentDetails);
       toast.success("Order marked as shipped");
       setShowShipmentForm(false);
       setShowOrderDialog(false);
@@ -404,9 +405,9 @@ export function ModernOrdersPage() {
       <Dialog open={showOrderDialog} onOpenChange={setShowOrderDialog}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Order Details - {selectedOrder?.id}</DialogTitle>
+            <DialogTitle>Order Details - {selectedOrder?._id || selectedOrder?.id}</DialogTitle>
           </DialogHeader>
-          {selectedOrder && (
+          {selectedOrder ? (
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -491,7 +492,7 @@ export function ModernOrdersPage() {
                 <Select
                   value={selectedOrder.status}
                   onValueChange={(value) =>
-                    handleStatusChange(selectedOrder.id, value)
+                    handleStatusChange(selectedOrder._id || selectedOrder.id, value)
                   }
                 >
                   <SelectTrigger>
@@ -506,6 +507,10 @@ export function ModernOrdersPage() {
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              <p>No order data available</p>
             </div>
           )}
         </DialogContent>

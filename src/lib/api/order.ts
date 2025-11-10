@@ -52,9 +52,17 @@ export async function createOrder(payload: {
   }
 }
 
-export async function updateOrderStatus(id: string, status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled') {
+export async function updateOrderStatus(
+  id: string, 
+  status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled',
+  shipmentDetails?: { deliveryPartner?: string; trackingNumber?: string; estimatedDelivery?: string }
+) {
   try {
-    const res = await api.patch(`/orders/${id}/status`, { status });
+    const payload: any = { status };
+    if (shipmentDetails) {
+      payload.shipment = shipmentDetails;
+    }
+    const res = await api.patch(`/orders/${id}/status`, payload);
     return res.data;
   } catch (err: any) {
     if (axios.isAxiosError(err)) {

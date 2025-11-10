@@ -109,10 +109,12 @@ export function ModernCustomersPage() {
       setShowOrdersDialog(true);
       const response = await getOrders();
       const allOrders = Array.isArray(response) ? response : response?.data || [];
-      // Filter orders for this customer
-      const filteredOrders = allOrders.filter(
-        (order: any) => order.user_id === customer.id || order.user === customer.id
-      );
+      // Filter orders for this customer - handle both _id and id
+      const customerId = customer._id || customer.id;
+      const filteredOrders = allOrders.filter((order: any) => {
+        const orderUserId = order.user_id || order.user?._id || order.user?.id || order.user;
+        return orderUserId === customerId || orderUserId?.toString() === customerId?.toString();
+      });
       setCustomerOrders(filteredOrders);
     } catch (error: any) {
       toast.error(error.message || "Failed to load customer orders");

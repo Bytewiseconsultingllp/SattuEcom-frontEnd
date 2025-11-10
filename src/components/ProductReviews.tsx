@@ -120,7 +120,13 @@ export default function ProductReviews({ productId }: Props) {
           // Reset to first page to ensure the newest shows up depending on sort
           setPage(1);
           await fetchReviews();
+          // Set the review ID so user can edit/delete
+          const reviewData = res.data as any;
+          if (reviewData?.reviewId || reviewData?._id || reviewData?.id) {
+            setMyReviewId(reviewData?.reviewId || reviewData?._id || reviewData?.id);
+          }
           toast.success(res.message || 'Review posted');
+          // Don't reset form so user can see their submitted review
         }
       }
     } catch (e: any) {
@@ -353,27 +359,4 @@ export default function ProductReviews({ productId }: Props) {
       </CardContent>
     </Card>
   );
-}
-
-// Helpers
-async function toBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
-
-// Roughly estimate total bytes of an array of base64 data URLs
-function estimateTotalBase64Bytes(images: string[]): number {
-  let total = 0;
-  for (const s of images) {
-    if (!s) continue;
-    const idx = s.indexOf(',');
-    const base64 = idx >= 0 ? s.slice(idx + 1) : s;
-    // 4 base64 chars encode 3 bytes → multiply by 0.75
-    total += Math.floor(base64.length * 0.75);
-  }
-  return total;
 }
