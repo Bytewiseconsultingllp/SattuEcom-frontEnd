@@ -86,6 +86,8 @@ import { Textarea } from "@/components/ui/textarea";
 import AdminProductsPage from "@/components/admin/AdminProductsPage";
 import AdminReviewsPage from "@/components/admin/AdminReviewsPage";
 import AdminCouponsPage from "@/components/admin/AdminCouponsPage";
+import AdminGiftDesignPage from "@/components/admin/AdminGiftDesignPage";
+import AdminCustomGiftRequestsPage from "@/components/admin/AdminCustomGiftRequestsPage";
 import { PaymentManagement } from "@/components/admin/PaymentManagement";
 import { ProductCataloguePage } from "@/components/admin/ProductCataloguePage";
 import { BannersManagementPage } from "@/components/admin/BannersManagementPage";
@@ -441,6 +443,25 @@ const AdminDashboard = () => {
                                               ₹{order.total_amount ?? order.total}
                                             </p>
                                           </div>
+                                          {(order.gift_design_id || order.gift_price || order.gift_card_message) && (
+                                            <div className="space-y-1">
+                                              <Label>Gift Details</Label>
+                                              <div className="text-sm text-muted-foreground">
+                                                {order.gift_wrapping_type && (
+                                                  <p>Type: <span className="capitalize">{String(order.gift_wrapping_type).replace('_',' ')}</span></p>
+                                                )}
+                                                {order.gift_design_id && (
+                                                  <p>Design ID: <span className="font-mono">{order.gift_design_id}</span></p>
+                                                )}
+                                                {order.gift_price != null && (
+                                                  <p>Gift Price: ₹{order.gift_price}</p>
+                                                )}
+                                                {order.gift_card_message && (
+                                                  <p>Card Message: <span className="italic">"{order.gift_card_message}"</span></p>
+                                                )}
+                                              </div>
+                                            </div>
+                                          )}
                                           <div>
                                             <Label>Order Status</Label>
                                             <Select
@@ -579,6 +600,10 @@ const AdminDashboard = () => {
 
             {/* Modern Customers Page */}
             {activeSection === "customers" && <ModernCustomersPage />}
+
+            {/* Gift Management */}
+            {activeSection === "gift-designs" && <AdminGiftDesignPage />}
+            {activeSection === "custom-gifts" && <AdminCustomGiftRequestsPage />}
 
             {/* Old Customers Section - Removed, using ModernCustomersPage now */}
             {activeSection === "customers-old" && (() => {

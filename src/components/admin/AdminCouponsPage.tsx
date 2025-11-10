@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import { Plus, Edit, Trash2, Tag, Percent, Gift } from "lucide-react";
 import { toast } from "sonner";
 import { createCoupon, updateCoupon, deleteCoupon, toggleCouponStatus, type Coupon, type CouponType, getAllAdminCoupons } from "@/lib/api/coupons";
+import { getProducts } from "@/lib/api/products";
 import { Textarea } from "../ui/textarea";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "../ui/form";
 import { Switch } from "../ui/switch";
@@ -80,6 +81,16 @@ function AdminCouponsPage() {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [selectedCoupon, setSelectedCoupon] = useState<Coupon | null>(null);
 
+  // Filters/searching for coupons grid
+  const [searchCode, setSearchCode] = useState("");
+  const [filterType, setFilterType] = useState<"all" | CouponType>("all");
+  const [filterStatus, setFilterStatus] = useState<"all" | "active" | "inactive">("all");
+
+  // Product selection state for product-wise coupons
+  const [productQuery, setProductQuery] = useState("");
+  const [productResults, setProductResults] = useState<Array<{ id: string; name: string; price?: number }>>([]);
+  const [selectedProducts, setSelectedProducts] = useState<Array<{ id: string; name: string }>>([]);
+
   const form = useForm<CouponFormData>({
     resolver: zodResolver(couponSchema),
     defaultValues,
@@ -125,6 +136,36 @@ function AdminCouponsPage() {
       usage_limit: coupon.usage_limit != null ? String(coupon.usage_limit) : "",
       is_active: coupon.is_active,
     });
+    // Load selected product names for applicable_products
+    const ids = coupon.applicable_products || [];
+    if (ids.length > 0) {
+      (async () => {
+        try {
+          const names: Array<{ id: string; name: string }> = [];
+          // Limit to first 10 to avoid too many requests
+          const subset = ids.slice(0, 10);
+          const { getProductById } = await import("@/lib/api/products");
+          for (const pid of subset) {
+            try {
+              const res: any = await getProductById(pid);
+              const p = res?.data || res;
+              if (p?.id || p?._id) names.push({ id: p.id || p._id, name: p.name || p.title || p.slug || p.id || pid });
+            } catch {
+              names.push({ id: pid, name: pid });
+            }
+          }
+          // If more than subset, keep remaining as IDs for now
+          if (ids.length > subset.length) {
+            for (const pid of ids.slice(subset.length)) names.push({ id: pid, name: pid });
+          }
+          setSelectedProducts(names);
+        } catch {
+          setSelectedProducts(ids.map((id: string) => ({ id, name: id })));
+        }
+      })();
+    } else {
+      setSelectedProducts([]);
+    }
     setIsEditOpen(true);
   }
 
@@ -161,6 +202,8 @@ function AdminCouponsPage() {
       if (values.type === "buy_x_get_y") {
         payload.buy_quantity = buyQty;
         payload.get_quantity = getQty;
+        // Ensure discount_value is not sent for buy_x_get_y
+        delete payload.discount_value;
       }
 
       if (minPurchase && minPurchase > 0) {
@@ -177,6 +220,14 @@ function AdminCouponsPage() {
 
       if (usageLimit && usageLimit > 0) {
         payload.usage_limit = usageLimit;
+      }
+
+      // Attach applicable products if any selected
+      if (selectedProducts && selectedProducts.length > 0) {
+        payload.applicable_products = selectedProducts.map(p => p.id);
+      } else {
+        // If none selected, omit field (means applicable to all)
+        delete payload.applicable_products;
       }
 
       if (selectedCoupon) {
@@ -322,6 +373,86 @@ function AdminCouponsPage() {
               )}
             />
           )}
+
+          {/* Applicable Products - optional product-wise targeting */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <FormLabel>Applicable Products (optional)</FormLabel>
+              {selectedProducts.length > 0 && (
+                <span className="text-xs text-muted-foreground">{selectedProducts.length} selected</span>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <Input
+                placeholder="Search product by name..."
+                value={productQuery}
+                onChange={(e) => setProductQuery(e.target.value)}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                onClick={async () => {
+                  try {
+                    const res: any = await getProducts(1, 10, { search: productQuery });
+                    const items = (res?.data || res?.products || res || []).map((p: any) => ({
+                      id: p?.id || p?._id || p?.product?._id || p?.product?.id,
+                      name: p?.name || p?.product?.name,
+                      price: p?.price || p?.product?.price,
+                    })).filter((p: any) => p.id && p.name);
+                    setProductResults(items);
+                  } catch (_) {
+                    setProductResults([]);
+                  }
+                }}
+              >
+                Search
+              </Button>
+            </div>
+            {productResults.length > 0 && (
+              <div className="border rounded p-2 max-h-48 overflow-auto space-y-1">
+                {productResults.map((p) => {
+                  const checked = selectedProducts.some(sp => sp.id === p.id);
+                  return (
+                    <div key={p.id} className="flex items-center justify-between text-sm">
+                      <div className="truncate mr-2">
+                        <span className="font-medium">{p.name}</span>
+                        {p.price != null && <span className="text-muted-foreground ml-2">₹{p.price}</span>}
+                      </div>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant={checked ? "secondary" : "outline"}
+                        onClick={() => {
+                          setSelectedProducts((prev) =>
+                            checked ? prev.filter((x) => x.id !== p.id) : [...prev, { id: p.id, name: p.name }]
+                          );
+                        }}
+                      >
+                        {checked ? "Selected" : "Select"}
+                      </Button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {selectedProducts.length > 0 && (
+              <div className="flex flex-wrap gap-2 pt-1">
+                {selectedProducts.map((p) => (
+                  <Badge key={p.id} variant="secondary" className="px-2 py-1">
+                    <span className="mr-1">{p.name}</span>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedProducts((prev) => prev.filter((x) => x.id !== p.id))}
+                      className="text-xs text-muted-foreground hover:text-foreground"
+                    >
+                      ×
+                    </button>
+                  </Badge>
+                ))}
+              </div>
+            )}
+          </div>
 
           {couponType === "buy_x_get_y" && (
             <div className="grid grid-cols-2 gap-4">
@@ -475,13 +606,23 @@ function AdminCouponsPage() {
     }
   };
 
+  // Derived filtered coupons
+  const filteredCoupons = useMemo(() => {
+    return coupons.filter((c) => {
+      const matchesCode = searchCode.trim() ? c.code.toLowerCase().includes(searchCode.trim().toLowerCase()) : true;
+      const matchesType = filterType === "all" ? true : c.type === filterType;
+      const matchesStatus = filterStatus === "all" ? true : filterStatus === "active" ? c.is_active : !c.is_active;
+      return matchesCode && matchesType && matchesStatus;
+    });
+  }, [coupons, searchCode, filterType, filterStatus]);
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-2xl font-bold">Coupon Management</h2>
           <p className="text-sm text-muted-foreground mt-1">
-            {coupons.length} coupon{coupons.length !== 1 ? 's' : ''} created
+            {filteredCoupons.length} coupon{filteredCoupons.length !== 1 ? 's' : ''} found
           </p>
         </div>
         <Button onClick={() => {
@@ -494,16 +635,51 @@ function AdminCouponsPage() {
         </Button>
       </div>
 
+      {/* Search & Filters */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+        <Input
+          placeholder="Search by code"
+          value={searchCode}
+          onChange={(e) => setSearchCode(e.target.value)}
+        />
+        <Select value={filterType} onValueChange={(v) => setFilterType(v as any)}>
+          <SelectTrigger>
+            <SelectValue placeholder="Type" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All types</SelectItem>
+            <SelectItem value="percentage">Percentage</SelectItem>
+            <SelectItem value="fixed">Fixed</SelectItem>
+            <SelectItem value="buy_x_get_y">Buy X Get Y</SelectItem>
+            <SelectItem value="free_shipping">Free Shipping</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={filterStatus} onValueChange={(v) => setFilterStatus(v as any)}>
+          <SelectTrigger>
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All statuses</SelectItem>
+            <SelectItem value="active">Active</SelectItem>
+            <SelectItem value="inactive">Inactive</SelectItem>
+          </SelectContent>
+        </Select>
+        <div className="flex gap-2">
+          <Button variant="outline" className="flex-1" onClick={() => { setSearchCode(""); setFilterType("all"); setFilterStatus("all"); }}>Reset</Button>
+          <Button variant="outline" className="flex-1" onClick={fetchCoupons}>Refresh</Button>
+        </div>
+      </div>
+
       {/* Coupons Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {loading ? (
           <p className="text-sm text-muted-foreground col-span-full text-center py-8">Loading coupons...</p>
-        ) : coupons.length === 0 ? (
+        ) : filteredCoupons.length === 0 ? (
           <p className="text-sm text-muted-foreground col-span-full text-center py-8">
             No coupons created yet. Create your first coupon!
           </p>
         ) : (
-          coupons.map((coupon) => (
+          filteredCoupons.map((coupon) => (
             <Card key={coupon.id} className="hover:shadow-lg transition-shadow">
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
@@ -532,6 +708,12 @@ function AdminCouponsPage() {
                 {coupon.usage_limit && coupon.usage_limit > 0 && (
                   <p className="text-xs text-muted-foreground">
                     Used: {coupon.usage_count || 0} / {coupon.usage_limit}
+                  </p>
+                )}
+
+                {coupon.applicable_products && coupon.applicable_products.length > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    Applies to {coupon.applicable_products.length} product(s)
                   </p>
                 )}
 

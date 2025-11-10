@@ -33,7 +33,9 @@ import VerifyLogin from "./pages/VerifyLogin";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import PaymentFailed from "./pages/PaymentFailed";
 import PaymentPending from "./pages/PaymentPending";
-import  ContactUs  from "./pages/ContactUs";
+import OrderConfirmation from "./pages/OrderConfirmation";
+import ContactUs from "./pages/ContactUs";
+import CustomGiftRequest from "./pages/CustomGiftRequest";
 
 const queryClient = new QueryClient();
 
@@ -71,11 +73,13 @@ const App = () => (
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/contact-us" element={<ContactUs />} />
+            <Route path="/custom-gift-request" element={<CustomGiftRequest />} />
             
             {/* Payment Routes */}
             <Route path="/payment-success" element={<PaymentSuccess />} />
             <Route path="/payment-failed" element={<PaymentFailed />} />
             <Route path="/payment-pending" element={<PaymentPending />} />
+            <Route path="/order-confirmation" element={<OrderConfirmation />} />
 
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />

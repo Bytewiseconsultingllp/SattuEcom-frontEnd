@@ -1,20 +1,48 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Header } from "@/components/Header";
-import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Clock, RefreshCw, Package, Home, AlertCircle } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
+import { Clock, RefreshCw, Package, Home, AlertCircle, MapPin, Gift, Loader2 } from "lucide-react";
+import { getOrderById } from "@/lib/api/order";
+import { getPaymentById } from "@/lib/api/payments";
+import { useRazorpay } from "@/hooks/useRazorpay.production";
+import { getUserCookie } from "@/utils/cookie";
+import { toast } from "sonner";
 
 const PaymentPending = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { initiatePayment, isProcessing } = useRazorpay();
   const [timeElapsed, setTimeElapsed] = useState(0);
 
   const orderId = searchParams.get("order_id");
   const paymentId = searchParams.get("payment_id");
+  const cancelled = searchParams.get("cancelled") === "true";
+  const timeout = searchParams.get("timeout") === "true";
+  const verificationTimeout = searchParams.get("verification_timeout") === "true";
 
+  const [loading, setLoading] = useState(true);
+  const [order, setOrder] = useState<any>(null);
+  const [payment, setPayment] = useState<any>(null);
+  const [user, setUser] = useState<any>(null);
+  const [retrying, setRetrying] = useState(false);
+  const [autoCheckCount, setAutoCheckCount] = useState(0);
+
+  useEffect(() => {
+    const userCookie = getUserCookie();
+    setUser(userCookie);
+
+    if (orderId) {
+      fetchOrderDetails();
+    } else {
+      setLoading(false);
+    }
+  }, [orderId]);
+
+  // Timer effect
   useEffect(() => {
     const interval = setInterval(() => {
       setTimeElapsed((prev) => prev + 1);
@@ -23,17 +51,129 @@ const PaymentPending = () => {
     return () => clearInterval(interval);
   }, []);
 
+  // Auto-check payment status every 10 seconds for first 5 minutes
+  useEffect(() => {
+    if (!orderId || autoCheckCount >= 30) return; // Stop after 30 checks (5 minutes)
+
+    const checkInterval = setInterval(async () => {
+      try {
+        const orderRes = await getOrderById(orderId);
+        if (orderRes?.success && orderRes.data) {
+          const orderData = orderRes.data;
+          
+          // If payment is successful, redirect to success page
+          if (orderData.payment_status === 'paid') {
+            toast.success("Payment confirmed!");
+            window.location.href = `/order-confirmation?order_id=${orderId}`;
+            return;
+          }
+          
+          // If payment failed, redirect to failed page
+          if (orderData.payment_status === 'failed') {
+            toast.error("Payment failed");
+            window.location.href = `/payment-failed?order_id=${orderId}`;
+            return;
+          }
+        }
+        
+        setAutoCheckCount(prev => prev + 1);
+      } catch (error) {
+        console.error("Auto-check failed:", error);
+      }
+    }, 10000); // Check every 10 seconds
+
+    return () => clearInterval(checkInterval);
+  }, [orderId, autoCheckCount]);
+
+  const fetchOrderDetails = async () => {
+    try {
+      setLoading(true);
+      const orderRes = await getOrderById(orderId!);
+      if (orderRes?.success) {
+        setOrder(orderRes.data);
+        
+        // If payment is already successful, redirect
+        if (orderRes.data.payment_status === 'paid') {
+          toast.success("Payment already confirmed!");
+          navigate(`/order-confirmation?order_id=${orderId}`);
+          return;
+        }
+      }
+
+      // Try to fetch payment details if payment ID is provided
+      if (paymentId) {
+        try {
+          const paymentRes = await getPaymentById(paymentId);
+          if (paymentRes?.success) {
+            setPayment(paymentRes.data);
+          }
+        } catch (err) {
+          console.error("Failed to fetch payment details:", err);
+        }
+      }
+    } catch (error: any) {
+      console.error("Failed to fetch order details:", error);
+      toast.error("Failed to load order details");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
-  const handleCheckStatus = () => {
-    if (orderId) {
-      navigate(`/orders/${orderId}`);
-    } else {
-      navigate("/dashboard", { state: { tab: "orders" } });
+  const handleCheckStatus = async () => {
+    if (!orderId) {
+      navigate("/dashboard?tab=orders");
+      return;
+    }
+
+    try {
+      toast.info("Checking payment status...");
+      const orderRes = await getOrderById(orderId);
+      
+      if (orderRes?.success && orderRes.data) {
+        const orderData = orderRes.data;
+        
+        if (orderData.payment_status === 'paid') {
+          toast.success("Payment confirmed!");
+          navigate(`/order-confirmation?order_id=${orderId}`);
+        } else if (orderData.payment_status === 'failed') {
+          toast.error("Payment failed");
+          navigate(`/payment-failed?order_id=${orderId}`);
+        } else {
+          toast.info("Payment is still pending. Please wait...");
+          setOrder(orderData);
+        }
+      }
+    } catch (error: any) {
+      console.error("Status check failed:", error);
+      toast.error("Failed to check status");
+    }
+  };
+
+  const handleRetryPayment = async () => {
+    if (!orderId || !order) {
+      toast.error("Order information not available");
+      return;
+    }
+
+    try {
+      setRetrying(true);
+      toast.info("Initiating payment...");
+
+      await initiatePayment(orderId, {
+        name: user?.name || order.shipping_address?.full_name || "",
+        email: user?.email || "",
+        contact: order.shipping_address?.phone || user?.phone || "",
+      });
+    } catch (error: any) {
+      console.error("Payment retry failed:", error);
+      toast.error(error.message || "Failed to retry payment");
+      setRetrying(false);
     }
   };
 
@@ -230,7 +370,6 @@ const PaymentPending = () => {
         </div>
       </main>
 
-      <Footer />
     </div>
   );
 };

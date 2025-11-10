@@ -19,6 +19,8 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { getCompanySettings, updateCompanySettings } from "@/lib/api/companySettings";
+import { uploadCompanyLogo, uploadCompanySignature } from "@/lib/api/upload";
+import { Loader2 } from "lucide-react";
 
 export function CompanySettingsPage() {
   const [formData, setFormData] = useState({
@@ -38,6 +40,8 @@ export function CompanySettingsPage() {
   });
   const [loading, setLoading] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [uploadingSignature, setUploadingSignature] = useState(false);
 
   // Fetch company settings on component mount
   useEffect(() => {
@@ -80,6 +84,44 @@ export function CompanySettingsPage() {
   const handleCancel = () => {
     setIsEditMode(false);
     fetchSettings();
+  };
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setUploadingLogo(true);
+      const result = await uploadCompanyLogo(file);
+      if (result.success && result.data) {
+        setFormData({ ...formData, logo: result.data.url });
+        toast.success("Logo uploaded successfully");
+      }
+    } catch (error: any) {
+      toast.error(error.message || "Failed to upload logo");
+    } finally {
+      setUploadingLogo(false);
+      e.target.value = ""; // Reset input
+    }
+  };
+
+  const handleSignatureUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setUploadingSignature(true);
+      const result = await uploadCompanySignature(file);
+      if (result.success && result.data) {
+        setFormData({ ...formData, signature: result.data.url });
+        toast.success("Signature uploaded successfully");
+      }
+    } catch (error: any) {
+      toast.error(error.message || "Failed to upload signature");
+    } finally {
+      setUploadingSignature(false);
+      e.target.value = ""; // Reset input
+    }
   };
 
   return (
@@ -347,20 +389,53 @@ export function CompanySettingsPage() {
               Company Logo
             </Label>
             <div className="flex items-center gap-4">
-              <div className="h-24 w-24 border-2 border-dashed rounded-lg flex items-center justify-center bg-muted">
+              <div className="h-24 w-24 border-2 border-dashed rounded-lg flex items-center justify-center bg-muted overflow-hidden">
                 {formData.logo ? (
                   <img src={formData.logo} alt="Logo" className="h-full w-full object-contain" />
                 ) : (
                   <ImageIcon className="h-8 w-8 text-muted-foreground" />
                 )}
               </div>
-              <Button variant="outline">
-                <Upload className="h-4 w-4 mr-2" />
-                Upload Logo
-              </Button>
+              <div className="flex flex-col gap-2">
+                <input
+                  type="file"
+                  id="logo-upload"
+                  accept="image/*"
+                  onChange={handleLogoUpload}
+                  className="hidden"
+                  disabled={uploadingLogo || !isEditMode}
+                />
+                <Button
+                  variant="outline"
+                  onClick={() => document.getElementById('logo-upload')?.click()}
+                  disabled={uploadingLogo || !isEditMode}
+                >
+                  {uploadingLogo ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Uploading...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="h-4 w-4 mr-2" />
+                      Upload Logo
+                    </>
+                  )}
+                </Button>
+                {formData.logo && isEditMode && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setFormData({ ...formData, logo: "" })}
+                  >
+                    <X className="h-4 w-4 mr-1" />
+                    Remove
+                  </Button>
+                )}
+              </div>
             </div>
             <p className="text-xs text-muted-foreground">
-              Recommended size: 200x200px, PNG or JPG
+              Max 2MB • PNG, JPG, GIF, WEBP • Recommended: 200x200px
             </p>
           </div>
 
@@ -370,20 +445,53 @@ export function CompanySettingsPage() {
               Digital Signature
             </Label>
             <div className="flex items-center gap-4">
-              <div className="h-24 w-48 border-2 border-dashed rounded-lg flex items-center justify-center bg-muted">
+              <div className="h-24 w-48 border-2 border-dashed rounded-lg flex items-center justify-center bg-muted overflow-hidden">
                 {formData.signature ? (
                   <img src={formData.signature} alt="Signature" className="h-full w-full object-contain" />
                 ) : (
                   <FileSignature className="h-8 w-8 text-muted-foreground" />
                 )}
               </div>
-              <Button variant="outline">
-                <Upload className="h-4 w-4 mr-2" />
-                Upload Signature
-              </Button>
+              <div className="flex flex-col gap-2">
+                <input
+                  type="file"
+                  id="signature-upload"
+                  accept="image/*"
+                  onChange={handleSignatureUpload}
+                  className="hidden"
+                  disabled={uploadingSignature || !isEditMode}
+                />
+                <Button
+                  variant="outline"
+                  onClick={() => document.getElementById('signature-upload')?.click()}
+                  disabled={uploadingSignature || !isEditMode}
+                >
+                  {uploadingSignature ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Uploading...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="h-4 w-4 mr-2" />
+                      Upload Signature
+                    </>
+                  )}
+                </Button>
+                {formData.signature && isEditMode && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setFormData({ ...formData, signature: "" })}
+                  >
+                    <X className="h-4 w-4 mr-1" />
+                    Remove
+                  </Button>
+                )}
+              </div>
             </div>
             <p className="text-xs text-muted-foreground">
-              Recommended size: 400x150px, PNG with transparent background
+              Max 2MB • PNG, JPG, GIF, WEBP • Recommended: 400x150px with transparent background
             </p>
           </div>
         </CardContent>

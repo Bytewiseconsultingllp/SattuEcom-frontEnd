@@ -14,6 +14,10 @@ import { useCart } from "@/contexts/CartContext";
 import { createOrder, OrderItemInput } from "@/lib/api/order";
 import { useRazorpay } from "@/hooks/useRazorpay.production";
 import { getUserCookie } from "@/utils/cookie";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { getActiveCoupons, applyCoupon, type Coupon } from "@/lib/api/coupons";
+import { getActiveGiftDesigns, submitCustomGiftRequest, type GiftDesign } from "@/lib/api/gifts";
 
 
 // Order review uses the actual items from CartContext
@@ -24,13 +28,34 @@ const OrderReview = () => {
   const addressId = location.state?.addressId || (() => {
     try { return sessionStorage.getItem('selected_address_id') || undefined; } catch { return undefined; }
   })();
-  const deliveryOptions = location.state?.deliveryOptions || {};
+  const deliveryOptions =
+    location.state?.deliveryOptions ||
+    JSON.parse(sessionStorage.getItem("delivery_options") || "{}");
+
+  const customGiftRequest = location.state?.customGiftRequest || null;
   
   const { cartItems, updateQuantity, removeFromCart, refreshCart } = useCart();
   const [isBillOpen, setIsBillOpen] = useState(false);
   const [selectedAddress, setSelectedAddress] = useState<any | null>(null);
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
   const { initiatePayment, isProcessing } = useRazorpay();
+
+  // Coupon state
+  const [availableCoupons, setAvailableCoupons] = useState<Coupon[]>([]);
+  const [couponCode, setCouponCode] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(null);
+  const [couponDiscount, setCouponDiscount] = useState(0);
+  const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
+
+  // Get gift selection from delivery options
+  const selectedGiftId = deliveryOptions.selectedGiftId || null;
+  const giftMessage = deliveryOptions.giftMessage || "";
+  const giftName = deliveryOptions.giftName || "";
+  const giftPrice = Number(deliveryOptions.giftPrice || 0);
+  const [giftDesigns, setGiftDesigns] = useState<GiftDesign[]>([]);
+
+  // Debug log
+  console.log('Gift Details:', { selectedGiftId, giftName, giftPrice, giftMessage });
 
   useEffect(() => {
     (async () => {
@@ -44,6 +69,58 @@ const OrderReview = () => {
       }
     })();
   }, [addressId]);
+
+  // Fetch and filter active coupons for checkout visibility
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await getActiveCoupons();
+        if (res?.success) {
+          const now = Date.now();
+          const filtered = (res.data || []).filter(c => {
+            if (!c.is_active) return false;
+            if (c.usage_limit && c.usage_limit > 0 && (c.usage_count || 0) >= c.usage_limit) return false;
+            if (c.start_date && new Date(c.start_date).getTime() > now) return false;
+            if (c.end_date && new Date(c.end_date).getTime() < now) return false;
+            return true;
+          });
+          setAvailableCoupons(filtered);
+        }
+      } catch (_) {
+        // silent
+      }
+    })();
+  }, []);
+
+  // Optionally fetch active gift designs (not required for price; kept for future needs)
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await getActiveGiftDesigns();
+        if (res?.success) setGiftDesigns(res.data || []);
+      } catch {
+        // silent
+      }
+    })();
+  }, []);
+
+  // Re-apply coupon when cart changes, to keep discount consistent
+  useEffect(() => {
+    (async () => {
+      if (!appliedCoupon) return;
+      try {
+        const res = await applyCoupon(appliedCoupon.code, cartForCoupon);
+        if (res?.success) {
+          setCouponDiscount(res.data?.discount_amount || 0);
+        }
+      } catch {
+        // If coupon no longer valid, remove it silently
+        setAppliedCoupon(null);
+        setCouponDiscount(0);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cartItems]);
 
   const handleQtyChange = async (itemId: string, change: number, currentQty: number) => {
     const newQty = Math.max(1, currentQty + change);
@@ -62,12 +139,48 @@ const OrderReview = () => {
   const deliveryCharges = deliveryOptions.deliverySpeed === "express" ? 50 : 
                           deliveryOptions.deliverySpeed === "overnight" ? 150 : 0;
   
-  const giftCharges = deliveryOptions.isGift ? 30 : 0;
-  
   const taxRate = 0.05; // 5% tax
   const taxAmount = Math.round(subtotal * taxRate);
   
-  const total = subtotal + deliveryCharges + giftCharges + taxAmount;
+  // Use giftPrice directly from deliveryOptions
+  const giftDesignPrice = giftPrice;
+
+  const preDiscountTotal = subtotal + deliveryCharges + taxAmount + giftDesignPrice;
+  const total = Math.max(0, preDiscountTotal - couponDiscount);
+
+  const cartForCoupon = cartItems.map(ci => ({
+    product_id: ci.product?.id || ci.product_id,
+    quantity: ci.quantity,
+    price: ci.product?.price || 0,
+  }));
+
+  const onApplyCoupon = async (code?: string) => {
+    const theCode = (code || couponCode || '').trim().toUpperCase();
+    if (!theCode) { toast.error('Enter a coupon code'); return; }
+    if (cartItems.length === 0) { toast.error('Your cart is empty'); return; }
+    setIsApplyingCoupon(true);
+    try {
+      const res = await applyCoupon(theCode, cartForCoupon);
+      if (res?.success && res.data?.coupon) {
+        setAppliedCoupon(res.data.coupon);
+        setCouponDiscount(res.data.discount_amount || 0);
+        setCouponCode(theCode);
+        toast.success(`Applied ${theCode}`);
+      } else {
+        toast.error('Invalid coupon');
+      }
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to apply coupon');
+    } finally {
+      setIsApplyingCoupon(false);
+    }
+  };
+
+  const onRemoveCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponDiscount(0);
+    // keep code input for convenience
+  };
 
   const handlePlaceOrder = async () => {
     if (cartItems.length === 0) {
@@ -97,6 +210,12 @@ const OrderReview = () => {
         total_amount: total,
         shipping_address_id: (selectedAddress?.id || addressId) as string,
         items,
+        coupon_code: appliedCoupon?.code,
+        discount_amount: couponDiscount || undefined,
+        gift_design_id: selectedGiftId || undefined,
+        gift_price: giftDesignPrice || undefined,
+        gift_card_message: giftMessage || undefined,
+        gift_wrapping_type: undefined,
       });
 
       if (!orderRes?.success || !orderRes?.data?.id) {
@@ -114,10 +233,22 @@ const OrderReview = () => {
       });
 
       if (paymentResult.success) {
-        // Payment successful - clear cart and redirect
+        // Payment successful - clear cart
         await refreshCart();
+        
+        // Submit custom gift request if provided
+        if (customGiftRequest && (customGiftRequest.title || customGiftRequest.description)) {
+          try {
+            await submitCustomGiftRequest(customGiftRequest);
+            toast.success("Custom gift request submitted!");
+          } catch (e: any) {
+            console.error("Failed to submit custom gift request:", e);
+            // Don't fail the order if custom gift request fails
+          }
+        }
+        
         toast.success("Payment successful! Order placed.");
-        navigate(`/orders/${orderId}`, { replace: true });
+        navigate(`/order-confirmation?order_id=${orderId}`, { replace: true });
       } else {
         // Payment failed or cancelled
         toast.error("Payment was not completed. Order is pending payment.");
@@ -200,13 +331,13 @@ const OrderReview = () => {
                           {deliveryCharges > 0 && ` (+₹${deliveryCharges})`}
                         </span>
                       </div>
-                      {deliveryOptions.isGift && (
+                      {giftDesignPrice > 0 && (
                         <div className="flex items-start gap-2 text-sm bg-accent/5 p-3 rounded-lg">
                           <Gift className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
                           <div className="flex-1">
-                            <p className="font-semibold mb-1">Gift Packaging (+₹30)</p>
-                            {deliveryOptions.giftMessage && (
-                              <p className="text-muted-foreground italic">"{deliveryOptions.giftMessage}"</p>
+                            <p className="font-semibold mb-1">{giftName || 'Selected Gift'} (+₹{giftDesignPrice})</p>
+                            {giftMessage && (
+                              <p className="text-muted-foreground italic">"{giftMessage}"</p>
                             )}
                           </div>
                         </div>
@@ -328,18 +459,27 @@ const OrderReview = () => {
                               </span>
                             </div>
                             
-                            {deliveryOptions.isGift && (
-                              <div className="flex justify-between text-sm pl-3">
-                                <span className="text-muted-foreground">Gift Packaging</span>
-                                <span className="font-semibold">₹{giftCharges}</span>
-                              </div>
-                            )}
-                            
                             <div className="flex justify-between text-sm pl-3">
                               <span className="text-muted-foreground">Tax (5%)</span>
                               <span className="font-semibold">₹{taxAmount}</span>
                             </div>
+                            {giftDesignPrice > 0 && (
+                              <div className="flex justify-between text-sm pl-3">
+                                <span className="text-muted-foreground">Gift Design ({giftName || 'Selected Gift'})</span>
+                                <span className="font-semibold">₹{giftDesignPrice}</span>
+                              </div>
+                            )}
                           </div>
+
+                          {couponDiscount > 0 && (
+                            <>
+                              <Separator />
+                              <div className="flex justify-between text-sm text-green-700">
+                                <span>Coupon Discount {appliedCoupon ? `(${appliedCoupon.code})` : ''}</span>
+                                <span className="font-semibold">-₹{couponDiscount}</span>
+                              </div>
+                            </>
+                          )}
                           
                           <Separator />
                           
@@ -350,6 +490,42 @@ const OrderReview = () => {
                         </div>
                       </CollapsibleContent>
                     </Collapsible>
+
+                    {/* Coupon Application */}
+                    <div className="mt-6 space-y-3">
+                      <div>
+                        <h3 className="text-sm font-semibold mb-2">Apply Coupon</h3>
+                        <div className="flex gap-2">
+                          <Input placeholder="Enter code" value={couponCode} onChange={(e) => setCouponCode(e.target.value)} />
+                          {appliedCoupon ? (
+                            <Button variant="outline" onClick={onRemoveCoupon}>Remove</Button>
+                          ) : (
+                            <Button onClick={() => onApplyCoupon()} disabled={isApplyingCoupon || cartItems.length === 0}>
+                              {isApplyingCoupon ? 'Applying...' : 'Apply'}
+                            </Button>
+                          )}
+                        </div>
+                        {appliedCoupon && (
+                          <div className="mt-2 text-xs text-green-700 flex items-center gap-2">
+                            <Badge variant="secondary">{appliedCoupon.code}</Badge>
+                            <span>applied.</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {availableCoupons.length > 0 && !appliedCoupon && (
+                        <div>
+                          <p className="text-xs text-muted-foreground mb-2">Available coupons for you</p>
+                          <div className="flex flex-wrap gap-2">
+                            {availableCoupons.map(c => (
+                              <Button key={c.id} variant="outline" size="sm" onClick={() => onApplyCoupon(c.code)}>
+                                {c.code}
+                              </Button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
 
                     <div className="mt-6 space-y-3">
                       <Button 

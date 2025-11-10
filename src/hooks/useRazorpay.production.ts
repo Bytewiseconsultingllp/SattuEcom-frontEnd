@@ -251,8 +251,8 @@ export const useRazorpay = () => {
             if (verifyResponse.success) {
               toast.success('Payment successful!');
               cleanup();
-              // Redirect to success page
-              window.location.href = `/payment-success?order_id=${orderId}&payment_id=${response.razorpay_payment_id}`;
+              // Redirect to order confirmation page
+              window.location.href = `/order-confirmation?order_id=${orderId}&payment_id=${response.razorpay_payment_id}`;
               return { success: true, paymentId: verifyResponse.data.payment_id };
             } else {
               toast.error('Payment verification failed. Please contact support.');

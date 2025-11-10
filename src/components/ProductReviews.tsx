@@ -8,6 +8,8 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { getUserCookie } from '@/utils/cookie';
 import { createReview, deleteReview, getProductReviewSummary, getProductReviews, hasUserReviewed, updateReview, type Review } from '@/lib/api/reviews';
+import { uploadReviewImages } from '@/lib/api/upload';
+import { Loader2 } from 'lucide-react';
 
 type Props = { productId: string };
 
@@ -37,9 +39,9 @@ export default function ProductReviews({ productId }: Props) {
   const [dragOver, setDragOver] = useState<boolean>(false);
   const fileInputId = 'review-images-input';
   const [imageAction, setImageAction] = useState<'append' | 'replace'>('append');
-  const MAX_IMAGES = 4;
-  const MAX_SIZE_BYTES = 500 * 1024; // 500KB per image
-  const MAX_TOTAL_BYTES = Math.floor(3.5 * 1024 * 1024); // ~3.5MB total payload budget
+  const [uploadingImages, setUploadingImages] = useState<boolean>(false);
+  const MAX_IMAGES = 5;
+  const MAX_SIZE_MB = 3; // 3MB per image
 
   // Helpers to fetch summary and reviews so we can call them after mutations too
   async function fetchSummary() {
@@ -147,6 +149,49 @@ export default function ProductReviews({ productId }: Props) {
     }
   }
 
+  async function handleImageUpload(files: File[]) {
+    const validFiles: File[] = [];
+    const maxSizeBytes = MAX_SIZE_MB * 1024 * 1024;
+
+    // Validate files
+    for (const file of files) {
+      if (!file.type.startsWith('image/')) {
+        toast.error(`${file.name} is not an image`);
+        continue;
+      }
+      if (file.size > maxSizeBytes) {
+        toast.error(`${file.name} exceeds ${MAX_SIZE_MB}MB limit`);
+        continue;
+      }
+      validFiles.push(file);
+    }
+
+    if (validFiles.length === 0) return;
+
+    // Check remaining slots
+    const remaining = Math.max(0, MAX_IMAGES - form.images.length);
+    const filesToUpload = validFiles.slice(0, remaining);
+    
+    if (validFiles.length > filesToUpload.length) {
+      toast.info(`Only ${remaining} images allowed (max ${MAX_IMAGES})`);
+    }
+
+    try {
+      setUploadingImages(true);
+      const result = await uploadReviewImages(filesToUpload);
+      
+      if (result.success && result.data) {
+        const newUrls = result.data.map(img => img.url);
+        setForm(f => ({ ...f, images: [...f.images, ...newUrls] }));
+        toast.success(`${filesToUpload.length} image(s) uploaded successfully`);
+      }
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to upload images');
+    } finally {
+      setUploadingImages(false);
+    }
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -210,26 +255,7 @@ export default function ProductReviews({ productId }: Props) {
               setDragOver(false);
               let files = Array.from(e.dataTransfer.files || []).filter(f => f.type.startsWith('image/'));
               if (files.length === 0) return;
-              const valid: File[] = [];
-              for (const file of files) {
-                if (file.size > MAX_SIZE_BYTES) {
-                  toast.error(`${file.name} exceeds ${(MAX_SIZE_BYTES/1024).toFixed(0)}KB limit`);
-                  continue;
-                }
-                valid.push(file);
-              }
-              const remaining = Math.max(0, MAX_IMAGES - form.images.length);
-              const clipped = valid.slice(0, remaining);
-              if (valid.length > clipped.length) toast.info(`Only ${remaining} images allowed (max ${MAX_IMAGES})`);
-              const base64s = await Promise.all(clipped.map(file => toBase64(file)));
-              // Check total size with new images
-              const next = [...form.images, ...base64s];
-              const bytes = estimateTotalBase64Bytes(next);
-              if (bytes > MAX_TOTAL_BYTES) {
-                toast.error(`Total images payload too large (~${(bytes/1024/1024).toFixed(2)}MB). Max ${(MAX_TOTAL_BYTES/1024/1024).toFixed(1)}MB.`);
-              } else {
-                setForm(f => ({ ...f, images: next }));
-              }
+              await handleImageUpload(files);
             }}
             className={`border-2 border-dashed rounded p-4 text-sm ${dragOver ? 'border-primary bg-primary/5' : 'border-muted'}`}
           >
@@ -238,28 +264,15 @@ export default function ProductReviews({ productId }: Props) {
             <input id={fileInputId} type="file" multiple accept="image/*" className="hidden" onChange={async (e) => {
               let files = Array.from(e.target.files || []);
               if (files.length === 0) return;
-              const valid: File[] = [];
-              for (const file of files) {
-                if (!file.type.startsWith('image/')) continue;
-                if (file.size > MAX_SIZE_BYTES) {
-                  toast.error(`${file.name} exceeds ${(MAX_SIZE_BYTES/1024).toFixed(0)}KB limit`);
-                  continue;
-                }
-                valid.push(file);
-              }
-              const remaining = Math.max(0, MAX_IMAGES - form.images.length);
-              const clipped = valid.slice(0, remaining);
-              if (valid.length > clipped.length) toast.info(`Only ${remaining} images allowed (max ${MAX_IMAGES})`);
-              const base64s = await Promise.all(clipped.map(file => toBase64(file)));
-              const next = [...form.images, ...base64s];
-              const bytes = estimateTotalBase64Bytes(next);
-              if (bytes > MAX_TOTAL_BYTES) {
-                toast.error(`Total images payload too large (~${(bytes/1024/1024).toFixed(2)}MB). Max ${(MAX_TOTAL_BYTES/1024/1024).toFixed(1)}MB.`);
-              } else {
-                setForm(f => ({ ...f, images: next }));
-              }
+              await handleImageUpload(files);
               (e.target as HTMLInputElement).value = '';
             }} />
+            {uploadingImages && (
+              <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Uploading images to Cloudinary...
+              </div>
+            )}
           </div>
           {form.images.length > 0 && (
             <div className="flex gap-2 mt-2 flex-wrap">
@@ -281,11 +294,14 @@ export default function ProductReviews({ productId }: Props) {
               <span>When updating images:</span>
               <Button type="button" size="sm" variant={imageAction === 'append' ? 'default' : 'outline'} onClick={() => setImageAction('append')}>Append</Button>
               <Button type="button" size="sm" variant={imageAction === 'replace' ? 'default' : 'outline'} onClick={() => setImageAction('replace')}>Replace</Button>
-              <span className="text-muted-foreground">(Max {MAX_IMAGES} images, {(MAX_SIZE_BYTES/1024).toFixed(0)}KB each)</span>
+              <span className="text-muted-foreground">(Max {MAX_IMAGES} images, {MAX_SIZE_MB}MB each)</span>
             </div>)
           }
           <div className="flex items-center gap-2">
-            <Button onClick={handleSubmit} disabled={submitting}>{myReviewId ? 'Update Review' : 'Post Review'}</Button>
+            <Button onClick={handleSubmit} disabled={submitting || uploadingImages}>
+              {submitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {myReviewId ? 'Update Review' : 'Post Review'}
+            </Button>
             {myReviewId && (
               <Button variant="outline" onClick={handleDelete} disabled={submitting}>Delete</Button>
             )}

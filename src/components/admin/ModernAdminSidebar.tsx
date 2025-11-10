@@ -5,6 +5,7 @@ import {
   Users,
   MessageSquare,
   Tag,
+  Gift,
   DollarSign,
   TrendingUp,
   Grid3x3,
@@ -143,6 +144,18 @@ export function ModernAdminSidebar({
           label: "Coupons",
           icon: Tag,
           section: "coupons",
+        },
+        {
+          id: "gift-designs",
+          label: "Gift Designs",
+          icon: Gift,
+          section: "gift-designs",
+        },
+        {
+          id: "custom-gifts",
+          label: "Custom Gift Requests",
+          icon: Gift,
+          section: "custom-gifts",
         },
         {
           id: "reviews",

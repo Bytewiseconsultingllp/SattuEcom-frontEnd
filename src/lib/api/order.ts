@@ -29,7 +29,17 @@ export async function getOrderById(id: string) {
   }
 }
 
-export async function createOrder(payload: { total_amount: number; shipping_address_id: string; items: OrderItemInput[] }) {
+export async function createOrder(payload: {
+  total_amount: number;
+  shipping_address_id: string;
+  items: OrderItemInput[];
+  coupon_code?: string;
+  discount_amount?: number;
+  gift_design_id?: string;
+  gift_price?: number;
+  gift_card_message?: string;
+  gift_wrapping_type?: string;
+}) {
   try {
     const res = await api.post('/orders', payload);
     return res.data;

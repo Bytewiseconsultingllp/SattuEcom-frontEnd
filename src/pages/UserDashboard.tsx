@@ -13,6 +13,7 @@ import {
   FileText,
   Truck,
   Calendar,
+  Gift,
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -57,6 +58,7 @@ import { AddressesPage } from "@/components/user/AddressesPage";
 import { ProfilePage } from "@/components/user/ProfilePage";
 import { WishlistPage } from "@/components/user/WishlistPage";
 import { MyReviewsPage } from "@/components/user/MyReviewsPage";
+import { getUserCustomGiftRequests, type CustomGiftRequest } from "@/lib/api/gifts";
 
 const UserDashboard = () => {
   const [activeSection, setActiveSection] = useState("overview");
@@ -90,6 +92,8 @@ const UserDashboard = () => {
   const [cancelOrderId, setCancelOrderId] = useState<string | null>(null);
   const [cancelReasonKey, setCancelReasonKey] = useState<string>("");
   const [cancelReasonText, setCancelReasonText] = useState<string>("");
+  const [customGiftRequests, setCustomGiftRequests] = useState<CustomGiftRequest[]>([]);
+  const [customGiftLoading, setCustomGiftLoading] = useState<boolean>(false);
   const cancelReasons = [
     { key: 'ordered_by_mistake', label: 'Ordered by mistake' },
     { key: 'found_better_price', label: 'Found a better price elsewhere' },
@@ -280,6 +284,21 @@ const UserDashboard = () => {
     toast.success("Added to cart");
   }
 
+  useEffect(() => {
+    if (activeSection !== 'custom-gifts') return;
+    (async () => {
+      try {
+        setCustomGiftLoading(true);
+        const res = await getUserCustomGiftRequests();
+        if (res?.success) setCustomGiftRequests(res.data || []);
+      } catch (e: any) {
+        toast.error(e.message || "Failed to load custom gift requests");
+      } finally {
+        setCustomGiftLoading(false);
+      }
+    })();
+  }, [activeSection]);
+
   async function handleAddAddress() {
     const phoneOk = /^\+?\d{10,15}$/.test(newAddress.phone);
     const pinOk = /^\d{5,6}$/.test(newAddress.postal_code);
@@ -463,6 +482,15 @@ const UserDashboard = () => {
                       <span>My Reviews</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      onClick={() => setActiveSection("custom-gifts")}
+                      isActive={activeSection === "custom-gifts"}
+                    >
+                      <Gift className="h-4 w-4" />
+                      <span>Custom Gift Requests</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
                 </SidebarMenu>
               </SidebarGroupContent>
             </SidebarGroup>
@@ -515,6 +543,107 @@ const UserDashboard = () => {
 
             {activeSection === "my-reviews" && (
               <MyReviewsPage />
+            )}
+
+            {activeSection === "custom-gifts" && (
+              <div className="space-y-6 animate-fade-in">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-2xl font-bold">Custom Gift Requests</h2>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {customGiftRequests.length} request{customGiftRequests.length !== 1 ? "s" : ""} submitted
+                    </p>
+                  </div>
+                  <Button onClick={() => navigate("/custom-gift-request")}>
+                    <Gift className="mr-2 h-4 w-4" />
+                    New Request
+                  </Button>
+                </div>
+
+                {customGiftLoading ? (
+                  <div className="space-y-3">
+                    {[1, 2, 3].map((i) => (
+                      <Skeleton key={i} className="h-24 w-full" />
+                    ))}
+                  </div>
+                ) : customGiftRequests.length === 0 ? (
+                  <Card>
+                    <CardContent className="p-12 text-center">
+                      <Gift className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                      <p className="text-muted-foreground mb-4">No custom gift requests yet</p>
+                      <Button onClick={() => navigate("/custom-gift-request")}>
+                        Submit Your First Request
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <div className="grid gap-4">
+                    {customGiftRequests.map((req) => (
+                      <Card key={req.id}>
+                        <CardContent className="p-6">
+                          <div className="flex items-start justify-between mb-3">
+                            <div>
+                              <h3 className="font-semibold text-lg">{req.title}</h3>
+                              <p className="text-sm text-muted-foreground">{req.recipient_name || "No recipient specified"}</p>
+                            </div>
+                            <Badge className={
+                              req.status === "completed" ? "bg-green-100 text-green-800" :
+                              req.status === "approved" ? "bg-blue-100 text-blue-800" :
+                              req.status === "under_review" ? "bg-yellow-100 text-yellow-800" :
+                              req.status === "rejected" ? "bg-red-100 text-red-800" :
+                              "bg-gray-100 text-gray-800"
+                            }>
+                              {req.status.replace("_", " ").charAt(0).toUpperCase() + req.status.replace("_", " ").slice(1)}
+                            </Badge>
+                          </div>
+
+                          <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{req.description}</p>
+
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                            {req.occasion && (
+                              <div>
+                                <p className="text-muted-foreground">Occasion</p>
+                                <p className="font-medium capitalize">{req.occasion}</p>
+                              </div>
+                            )}
+                            {(req.budget_min || req.budget_max) && (
+                              <div>
+                                <p className="text-muted-foreground">Budget</p>
+                                <p className="font-medium">₹{req.budget_min || "0"} - ₹{req.budget_max || "∞"}</p>
+                              </div>
+                            )}
+                            {req.estimated_price != null && (
+                              <div>
+                                <p className="text-muted-foreground">Est. Price</p>
+                                <p className="font-medium">₹{req.estimated_price}</p>
+                              </div>
+                            )}
+                            {req.estimated_completion_date && (
+                              <div>
+                                <p className="text-muted-foreground">Est. Date</p>
+                                <p className="font-medium">{new Date(req.estimated_completion_date).toLocaleDateString()}</p>
+                              </div>
+                            )}
+                          </div>
+
+                          {req.admin_notes && (
+                            <div className="mt-3 p-3 bg-accent/5 rounded text-sm">
+                              <p className="font-medium mb-1">Admin Notes:</p>
+                              <p className="text-muted-foreground">{req.admin_notes}</p>
+                            </div>
+                          )}
+
+                          <div className="flex gap-2 mt-4">
+                            <Button variant="outline" size="sm" onClick={() => navigate(`/custom-gift-request?id=${req.id}`)}>
+                              View Details
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </div>
             )}
 
             {activeSection === "orders" && (
