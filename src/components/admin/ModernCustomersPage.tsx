@@ -115,7 +115,14 @@ export function ModernCustomersPage() {
         const orderUserId = order.user_id || order.user?._id || order.user?.id || order.user;
         return orderUserId === customerId || orderUserId?.toString() === customerId?.toString();
       });
-      setCustomerOrders(filteredOrders);
+      // Normalize differing API fields so UI can rely on consistent keys
+      const normalizedOrders = filteredOrders.map((o: any) => ({
+        ...o,
+        totalAmount: o.totalAmount ?? o.total_amount ?? o.total ?? o.amount ?? 0,
+        createdAt: o.createdAt ?? o.created_at ?? o.date ?? null,
+        items: o.items ?? o.order_items ?? [],
+      }));
+      setCustomerOrders(normalizedOrders);
     } catch (error: any) {
       toast.error(error.message || "Failed to load customer orders");
     } finally {
@@ -454,7 +461,10 @@ export function ModernCustomersPage() {
                       <p className="text-sm text-muted-foreground">Total Spent</p>
                       <p className="text-2xl font-bold text-green-600">
                         {formatCurrency(
-                          customerOrders.reduce((sum, order) => sum + (order.totalAmount || 0), 0)
+                          customerOrders.reduce(
+                            (sum, order) => sum + (order.totalAmount ?? order.total_amount ?? order.total ?? 0),
+                            0
+                          )
                         )}
                       </p>
                     </div>
@@ -466,8 +476,10 @@ export function ModernCustomersPage() {
                       <p className="text-sm text-muted-foreground">Avg Order Value</p>
                       <p className="text-2xl font-bold text-blue-600">
                         {formatCurrency(
-                          customerOrders.reduce((sum, order) => sum + (order.totalAmount || 0), 0) /
-                            customerOrders.length
+                          customerOrders.reduce(
+                            (sum, order) => sum + (order.totalAmount ?? order.total_amount ?? order.total ?? 0),
+                            0
+                          ) / customerOrders.length
                         )}
                       </p>
                     </div>
@@ -496,7 +508,7 @@ export function ModernCustomersPage() {
                         </div>
                         <div className="text-right">
                           <p className="font-bold text-lg">
-                            {formatCurrency(order.totalAmount || 0)}
+                            {formatCurrency(order.totalAmount ?? order.total_amount ?? order.total ?? 0)}
                           </p>
                           <Badge
                             variant={
