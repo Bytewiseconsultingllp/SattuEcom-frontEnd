@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Header } from "@/components/Header";
 import { getOrderById } from "@/lib/api/order";
 import { getPaymentById } from "@/lib/api/payments";
+import { downloadInvoicePDF } from "@/lib/api/invoice";
 import { toast } from "sonner";
 import { getUserCookie } from "@/utils/cookie";
 
@@ -66,9 +67,18 @@ const OrderConfirmation = () => {
     }
   };
 
-  const downloadInvoice = () => {
-    toast.info("Invoice download feature coming soon!");
-    // TODO: Implement invoice download
+  const downloadInvoice = async () => {
+    if (!order?.invoice_id || !order?.invoice_number) {
+      toast.error("Invoice not available for this order");
+      return;
+    }
+
+    try {
+      await downloadInvoicePDF(order.invoice_id, order.invoice_number);
+      toast.success("Invoice downloaded successfully");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to download invoice");
+    }
   };
 
   if (loading) {

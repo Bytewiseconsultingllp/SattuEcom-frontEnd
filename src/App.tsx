@@ -36,6 +36,8 @@ import PaymentPending from "./pages/PaymentPending";
 import OrderConfirmation from "./pages/OrderConfirmation";
 import ContactUs from "./pages/ContactUs";
 import CustomGiftRequest from "./pages/CustomGiftRequest";
+import { InvoicesPage } from "./pages/InvoicesPage";
+import { AdminInvoicesPage } from "./components/admin/AdminInvoicesPage";
 
 const queryClient = new QueryClient();
 
@@ -62,7 +64,9 @@ const App = () => (
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/user/dashboard" element={<UserDashboard />} />
+            <Route path="/invoices" element={<InvoicesPage />} />
             <Route path="/admin/dashboard" element={<AdminDashboard />} />
+            <Route path="/admin/invoices" element={<AdminInvoicesPage />} />
             <Route path="/order/:id" element={<OrderDetails />} />
             <Route path="/about" element={<About />} />
             <Route path="/contact" element={<Contact />} />

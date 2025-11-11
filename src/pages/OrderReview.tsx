@@ -216,6 +216,9 @@ const OrderReview = () => {
         gift_price: giftDesignPrice || undefined,
         gift_card_message: giftMessage || undefined,
         gift_wrapping_type: undefined,
+        delivery_charges: deliveryCharges || undefined,
+        delivery_type: deliveryOptions.deliverySpeed || 'standard',
+        tax_amount: taxAmount || undefined,
       });
 
       if (!orderRes?.success || !orderRes?.data?.id) {

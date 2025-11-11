@@ -7,12 +7,16 @@ export interface CompanySettings {
   email: string;
   phone: string;
   address: string;
+  website?: string;
   gstNumber?: string;
   panNumber?: string;
+  placeOfSupply?: string;
   bankName?: string;
   accountNumber?: string;
   ifscCode?: string;
+  branchName?: string;
   accountHolderName?: string;
+  upiId?: string;
   logo?: string;
   signature?: string;
   created_at?: string;

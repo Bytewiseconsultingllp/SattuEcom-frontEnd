@@ -39,6 +39,9 @@ export async function createOrder(payload: {
   gift_price?: number;
   gift_card_message?: string;
   gift_wrapping_type?: string;
+  delivery_charges?: number;
+  delivery_type?: string;
+  tax_amount?: number;
 }) {
   try {
     const res = await api.post('/orders', payload);

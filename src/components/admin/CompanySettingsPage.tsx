@@ -29,12 +29,16 @@ export function CompanySettingsPage() {
     email: "",
     phone: "",
     address: "",
+    website: "",
     gstNumber: "",
     panNumber: "",
+    placeOfSupply: "",
     bankName: "",
     accountNumber: "",
     ifscCode: "",
+    branchName: "",
     accountHolderName: "",
+    upiId: "",
     logo: "",
     signature: "",
   });
@@ -300,6 +304,38 @@ export function CompanySettingsPage() {
                 <p className="text-base font-medium py-2">{formData.panNumber || "Not set"}</p>
               )}
             </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="placeOfSupply">Place of Supply</Label>
+              {isEditMode ? (
+                <Input
+                  id="placeOfSupply"
+                  placeholder="29-KARNATAKA"
+                  value={formData.placeOfSupply}
+                  onChange={(e) =>
+                    setFormData({ ...formData, placeOfSupply: e.target.value })
+                  }
+                />
+              ) : (
+                <p className="text-base font-medium py-2">{formData.placeOfSupply || "Not set"}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="website">Website</Label>
+              {isEditMode ? (
+                <Input
+                  id="website"
+                  placeholder="https://yourwebsite.com"
+                  value={formData.website}
+                  onChange={(e) =>
+                    setFormData({ ...formData, website: e.target.value })
+                  }
+                />
+              ) : (
+                <p className="text-base font-medium py-2">{formData.website || "Not set"}</p>
+              )}
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -371,6 +407,37 @@ export function CompanySettingsPage() {
                 />
               ) : (
                 <p className="text-base font-medium py-2">{formData.ifscCode || "Not set"}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="branchName">Branch Name</Label>
+              {isEditMode ? (
+                <Input
+                  id="branchName"
+                  value={formData.branchName}
+                  onChange={(e) =>
+                    setFormData({ ...formData, branchName: e.target.value })
+                  }
+                />
+              ) : (
+                <p className="text-base font-medium py-2">{formData.branchName || "Not set"}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="upiId">UPI ID (for QR codes) ⭐</Label>
+              {isEditMode ? (
+                <Input
+                  id="upiId"
+                  placeholder="yourstore@upi"
+                  value={formData.upiId}
+                  onChange={(e) =>
+                    setFormData({ ...formData, upiId: e.target.value })
+                  }
+                />
+              ) : (
+                <p className="text-base font-medium py-2">{formData.upiId || "Not set"}</p>
               )}
             </div>
           </div>

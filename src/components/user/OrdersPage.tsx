@@ -43,6 +43,7 @@ import {
   X,
 } from "lucide-react";
 import { getOrders as apiGetOrders, cancelOrder as apiCancelOrder } from "@/lib/api/order";
+import { downloadInvoicePDF } from "@/lib/api/invoice";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { Link } from "react-router-dom";
@@ -113,6 +114,15 @@ export function OrdersPage() {
   const openCancelDialog = (orderId: string) => {
     setSelectedOrderId(orderId);
     setCancelDialogOpen(true);
+  };
+
+  const handleDownloadInvoice = async (invoiceId: string, invoiceNumber: string) => {
+    try {
+      await downloadInvoicePDF(invoiceId, invoiceNumber);
+      toast.success("Invoice downloaded successfully");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to download invoice");
+    }
   };
 
   const getStatusConfig = (status: string | undefined) => {
@@ -412,6 +422,12 @@ export function OrdersPage() {
                             <CreditCard className="h-4 w-4" />
                             {formatCurrency(order.total_amount)}
                           </span>
+                          {order.invoice_number && (
+                            <span className="flex items-center gap-1">
+                              <FileText className="h-4 w-4" />
+                              {order.invoice_number}
+                            </span>
+                          )}
                         </div>
                       </div>
 
@@ -424,6 +440,16 @@ export function OrdersPage() {
                           >
                             <X className="h-4 w-4 mr-1" />
                             Cancel
+                          </Button>
+                        )}
+                        {order.invoice_id && order.invoice_number && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDownloadInvoice(order.invoice_id, order.invoice_number)}
+                          >
+                            <Download className="h-4 w-4 mr-1" />
+                            Invoice
                           </Button>
                         )}
                         <Button asChild variant="outline" size="sm">
