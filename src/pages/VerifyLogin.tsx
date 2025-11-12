@@ -59,8 +59,23 @@ const VerifyLogin = () => {
       const response = await verifySignIn(verificationData);
       if (response.success) {
         toast.success("OTP verified successfully!");
-        // Go back to home and reload to ensure header picks up cookie state
-        window.location.href = "/";
+        // Cookie is set inside verifySignIn
+        // Redirect based on role from cookie
+        try {
+          const { getUserCookie } = await import('@/utils/cookie');
+          const session = getUserCookie();
+          const rawRole = (session?.user?.role || session?.role || session?.data?.role) as string | undefined;
+          const role = rawRole ? String(rawRole).toLowerCase() : '';
+          if (role === 'admin') {
+            navigate('/admin/dashboard', { replace: true });
+          } else if (role === 'user') {
+            navigate('/user/dashboard', { replace: true });
+          } else {
+            navigate('/', { replace: true });
+          }
+        } catch {
+          navigate('/', { replace: true });
+        }
       }
     } catch (error: any) {
       toast.error(error.message || "Failed to verify OTP");

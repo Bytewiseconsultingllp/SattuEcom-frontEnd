@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 
-import { signIn } from "@/lib/api/auth";
+import { signIn, resendOTP } from "@/lib/api/auth";
 import { setUserCookie, getUserCookie } from "@/utils/cookie";
 
 const Login = () => {
@@ -18,15 +18,6 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-
-
-  // useEffect(() => {
-  //   // Redirect if already logged in
-  //   if (getUserCookie) {
-  //     // Check if admin (you can add admin role check here)
-  //     navigate("/user/dashboard");
-  //   }
-  // }, [getUserCookie, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,15 +36,21 @@ const Login = () => {
       }
 
       if (response?.success) {
-        toast.success("Logged in successfully!");
-        
-        // Check if admin email (simple check - you can enhance this)
-        if (email === "agarwalasish567@gmail.com") {
-          setUserCookie(response);
-          navigate("/admin/dashboard");
-        } else {
-          navigate("/verify-login", { state: { formData } }); 
-        } 
+        // If backend didn't already send OTP (common for admin flow), trigger it here
+        try {
+          const msg: string = response?.message || "";
+          const otpMentioned = /otp/i.test(msg);
+          const requiresOtp = response?.data?.requiresOtp;
+          if (!otpMentioned && requiresOtp !== true) {
+            await resendOTP(email, 'login');
+          }
+        } catch (_) {
+          // non-fatal: still navigate to OTP screen
+        }
+
+        toast.success("Login OTP sent. Please verify.");
+        // Do NOT set cookie here. Tokens are issued after OTP verification.
+        navigate("/verify-login", { state: { formData } });
       }
     } catch (error: any) {
       toast.error(error.message || "An error occurred");

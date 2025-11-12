@@ -24,7 +24,6 @@ import OrderDetails from "./pages/OrderDetails";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
 import FAQ from "./pages/FAQ";
-import Privacy from "./pages/Privacy";
 import NotFound from "./pages/NotFound";
 import VerifyRegistration from "./pages/verifyRegistration";
 import ForgotPassword from "./pages/ForgotPassword";
@@ -38,6 +37,12 @@ import ContactUs from "./pages/ContactUs";
 import CustomGiftRequest from "./pages/CustomGiftRequest";
 import { InvoicesPage } from "./pages/InvoicesPage";
 import { AdminInvoicesPage } from "./components/admin/AdminInvoicesPage";
+import TermsAndConditions from "./pages/TermsAndConditions";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import CookiePolicy from "./pages/CookiePolicy";
+import CancellationPolicy from "./pages/CancellationPolicy";
+import { ProtectedRoute } from "./components/ProtectedRoute";
+import { Unauthorized } from "./pages/Unauthorized";
 
 const queryClient = new QueryClient();
 
@@ -63,15 +68,51 @@ const App = () => (
             <Route path="/wishlist" element={<Wishlist />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
-            <Route path="/user/dashboard" element={<UserDashboard />} />
-            <Route path="/invoices" element={<InvoicesPage />} />
-            <Route path="/admin/dashboard" element={<AdminDashboard />} />
-            <Route path="/admin/invoices" element={<AdminInvoicesPage />} />
+            <Route path="/unauthorized" element={<Unauthorized />} />
+            
+            {/* Protected User Routes */}
+            <Route 
+              path="/user/dashboard" 
+              element={
+                <ProtectedRoute requiredRole="user">
+                  <UserDashboard />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/invoices" 
+              element={
+                <ProtectedRoute requiredRole="user">
+                  <InvoicesPage />
+                </ProtectedRoute>
+              } 
+            />
+            
+            {/* Protected Admin Routes */}
+            <Route 
+              path="/admin/dashboard" 
+              element={
+                <ProtectedRoute requiredRole="admin">
+                  <AdminDashboard />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin/invoices" 
+              element={
+                <ProtectedRoute requiredRole="admin">
+                  <AdminInvoicesPage />
+                </ProtectedRoute>
+              } 
+            />
             <Route path="/order/:id" element={<OrderDetails />} />
             <Route path="/about" element={<About />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/faq" element={<FAQ />} />
-            <Route path="/privacy" element={<Privacy />} />
+            <Route path="/privacy" element={<PrivacyPolicy />} />
+            <Route path="/terms" element={<TermsAndConditions />} />
+            <Route path="/cancellation-policy" element={<CancellationPolicy />} />
+            <Route path="/cookie-policy" element={<CookiePolicy />} />
             <Route path="/verify-login" element={<VerifyLogin />} />
             <Route path="/verify-registration" element={<VerifyRegistration />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
