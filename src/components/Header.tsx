@@ -35,6 +35,11 @@ export const Header = () => {
     return Boolean(uc && (uc.token || uc?.data?.token));
   }, [userData]);
 
+  const userRole = useMemo(() => {
+    const rawRole = userData?.role || userData?.data?.role || userData?.user?.role;
+    return rawRole ? String(rawRole).toLowerCase() : undefined;
+  }, [userData]);
+
   useEffect(() => {
     const fetchWishlistCount = async () => {
       try {
@@ -64,6 +69,20 @@ export const Header = () => {
       navigate("/login");
       return;
     }
+  };
+
+  const handleDashboardNavigate = () => {
+    if (!isLoggedIn) {
+      navigate("/login");
+      return;
+    }
+
+    if (userRole === "admin") {
+      navigate("/admin/dashboard");
+      return;
+    }
+
+    navigate("/user/dashboard");
   };
 
   const handleLogout = () => {
@@ -120,7 +139,7 @@ export const Header = () => {
                 <DropdownMenuContent align="end" className="w-56">
                   <DropdownMenuLabel>My Account</DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => navigate("/user/dashboard")}>My Dashboard</DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleDashboardNavigate}>My Dashboard</DropdownMenuItem>
                   <DropdownMenuItem onClick={handleLogout}>Logout</DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
