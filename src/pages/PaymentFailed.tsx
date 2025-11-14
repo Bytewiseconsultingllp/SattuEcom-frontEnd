@@ -120,7 +120,8 @@ const PaymentFailed = () => {
     );
   }
 
-  const subtotal = order?.items?.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0) || 0;
+  const itemsForDisplay = order?.order_items || order?.items || [];
+  const subtotal = itemsForDisplay.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0) || 0;
   const deliveryCharges = order?.delivery_charges || 0;
   const taxAmount = order?.tax_amount || 0;
   const giftPrice = order?.gift_price || 0;
@@ -128,157 +129,211 @@ const PaymentFailed = () => {
   const total = order?.total_amount || 0;
 
   return (
-    <div className="min-h-screen flex flex-col bg-gradient-to-b from-red-50 to-white">
+    <div className="min-h-screen flex flex-col bg-background">
       <Header />
 
-      <main className="flex-1 py-12">
-        <div className="container mx-auto px-4">
-          <div className="max-w-6xl mx-auto">
-            {/* Error Icon */}
-            <div className="text-center mb-8 animate-fade-in">
-              <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-red-100 mb-6">
-                <XCircle className="h-16 w-16 text-red-600" />
+      <main className="flex-1">
+        {/* Error Icon */}
+        <div className="bg-gradient-to-r from-red-500 to-rose-600 py-12 mb-8">
+          <div className="container mx-auto px-4">
+            <div className="max-w-3xl mx-auto text-center text-white animate-fade-in">
+              <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-white/10 mb-6">
+                <XCircle className="h-16 w-16 text-red-100" />
               </div>
-              <h1 className="text-4xl font-bold text-red-600 mb-2">Payment Failed</h1>
-              <p className="text-xl text-muted-foreground">
-                We couldn't process your payment. Please try again.
+              <h1 className="text-4xl font-bold mb-2">Payment Failed</h1>
+              <p className="text-lg text-white/80 mb-4">
+                We couldn't process your payment. You can retry or choose a different payment method.
               </p>
+              {orderId && (
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 border border-white/20 text-sm">
+                  <span className="font-semibold">Order ID:</span>
+                  <span className="font-mono">{orderId}</span>
+                </div>
+              )}
             </div>
+          </div>
+        </div>
 
-            {/* Error Details Card */}
-            {(orderId || errorCode || errorDescription) && (
-              <Card className="mb-6 animate-slide-up">
-                <CardContent className="p-6">
-                  <h2 className="text-xl font-bold mb-4">Transaction Details</h2>
-
-                  <div className="space-y-3">
-                    {orderId && (
-                      <div className="flex justify-between items-center py-2 border-b">
-                        <span className="text-muted-foreground">Order ID</span>
-                        <span className="font-mono font-semibold">{orderId}</span>
-                      </div>
-                    )}
-
-                    {errorCode && (
-                      <div className="flex justify-between items-center py-2 border-b">
-                        <span className="text-muted-foreground">Error Code</span>
-                        <span className="font-mono text-sm text-red-600">{errorCode}</span>
-                      </div>
-                    )}
-
-                    <div className="flex justify-between items-center py-2">
-                      <span className="text-muted-foreground">Status</span>
-                      <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-red-100 text-red-700">
-                        <XCircle className="h-4 w-4 mr-1" />
-                        Failed
-                      </span>
-                    </div>
-                  </div>
-
-                  {errorDescription && (
-                    <Alert className="mt-4 border-red-200 bg-red-50">
-                      <AlertDescription className="text-red-800">
-                        <strong>Error:</strong> {errorDescription}
-                      </AlertDescription>
-                    </Alert>
-                  )}
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Troubleshooting Card */}
-            <Card className="mb-6 animate-slide-up" style={{ animationDelay: "0.1s" }}>
-              <CardContent className="p-6">
-                <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-                  <HelpCircle className="h-5 w-5 text-primary" />
-                  Common Issues & Solutions
-                </h2>
-
-                <div className="space-y-4">
-                  {troubleshootingTips.map((tip, index) => (
-                    <div key={index} className="flex items-start gap-3 p-3 bg-accent/5 rounded-lg">
-                      <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-primary text-sm font-bold">
-                        {index + 1}
-                      </div>
-                      <div>
-                        <h3 className="font-semibold mb-1">{tip.title}</h3>
-                        <p className="text-sm text-muted-foreground">{tip.description}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* What You Can Do Card */}
-            <Card className="mb-6 animate-slide-up" style={{ animationDelay: "0.2s" }}>
-              <CardContent className="p-6">
-                <h2 className="text-xl font-bold mb-4">What You Can Do</h2>
-                <div className="space-y-3">
-                  <div className="flex items-start gap-3">
-                    <CreditCard className="h-5 w-5 text-primary mt-0.5" />
-                    <div>
-                      <h3 className="font-semibold mb-1">Try a Different Payment Method</h3>
-                      <p className="text-sm text-muted-foreground">
-                        Use another card, UPI, or net banking to complete your purchase.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-3">
-                    <RefreshCw className="h-5 w-5 text-primary mt-0.5" />
-                    <div>
-                      <h3 className="font-semibold mb-1">Retry Payment</h3>
-                      <p className="text-sm text-muted-foreground">
-                        Sometimes a simple retry can resolve temporary issues.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-3">
-                    <HelpCircle className="h-5 w-5 text-primary mt-0.5" />
-                    <div>
-                      <h3 className="font-semibold mb-1">Contact Support</h3>
-                      <p className="text-sm text-muted-foreground">
-                        Our team is here to help if you continue facing issues.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Order Details Section */}
-            {order && (
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-                {/* Order Items */}
-                <div className="lg:col-span-2 space-y-6">
-                  <Card>
+        <div className="container mx-auto px-4 pb-12">
+          <div className="max-w-6xl mx-auto space-y-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2 space-y-6">
+                {/* Error Details Card */}
+                {(orderId || errorCode || errorDescription) && (
+                  <Card className="animate-slide-up">
                     <CardContent className="p-6">
-                      <h2 className="text-xl font-bold mb-4">Order Items</h2>
-                      <div className="space-y-4">
-                        {order.items?.map((item: any, index: number) => (
-                          <div key={index} className="flex items-start gap-4 pb-4 border-b last:border-0">
-                            <div className="w-16 h-16 rounded-lg overflow-hidden bg-accent flex-shrink-0">
-                              {item.product?.image_url ? (
-                                <img src={item.product.image_url} alt={item.product?.name} className="w-full h-full object-cover" />
-                              ) : (
-                                <div className="w-full h-full flex items-center justify-center">
-                                  <Package className="h-6 w-6 text-muted-foreground" />
-                                </div>
-                              )}
-                            </div>
-                            <div className="flex-1">
-                              <h3 className="font-semibold mb-1">{item.product?.name || 'Product'}</h3>
-                              <p className="text-sm text-muted-foreground">Qty: {item.quantity} × ₹{item.price}</p>
-                              <p className="font-semibold mt-1">₹{item.price * item.quantity}</p>
-                            </div>
+                      <h2 className="text-xl font-bold mb-4">Transaction Details</h2>
+
+                      <div className="space-y-3">
+                        {orderId && (
+                          <div className="flex justify-between items-center py-2 border-b">
+                            <span className="text-muted-foreground">Order ID</span>
+                            <span className="font-mono font-semibold">{orderId}</span>
                           </div>
-                        ))}
+                        )}
+
+                        <div className="flex justify-between items-center py-2">
+                          <span className="text-muted-foreground">Status</span>
+                          <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold bg-red-100 text-red-700">
+                            <XCircle className="h-4 w-4 mr-1" />
+                            Failed
+                          </span>
+                        </div>
+                      </div>
+
+                      {errorDescription && (
+                        <Alert className="mt-4 border-red-200 bg-red-50">
+                          <AlertDescription className="text-red-800">
+                            <strong>Error:</strong> {errorDescription}
+                          </AlertDescription>
+                        </Alert>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Troubleshooting Card */}
+                <Card className="animate-slide-up" style={{ animationDelay: "0.1s" }}>
+                  <CardContent className="p-6">
+                    <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+                      <HelpCircle className="h-5 w-5 text-primary" />
+                      Common Issues & Solutions
+                    </h2>
+
+                    <div className="space-y-4">
+                      {troubleshootingTips.map((tip, index) => (
+                        <div key={index} className="flex items-start gap-3 p-3 bg-accent/5 rounded-lg">
+                          <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-primary text-sm font-bold">
+                            {index + 1}
+                          </div>
+                          <div>
+                            <h3 className="font-semibold mb-1">{tip.title}</h3>
+                            <p className="text-sm text-muted-foreground">{tip.description}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* What You Can Do Card */}
+                <Card className="animate-slide-up" style={{ animationDelay: "0.2s" }}>
+                  <CardContent className="p-6">
+                    <h2 className="text-xl font-bold mb-4">What You Can Do</h2>
+                    <div className="space-y-3">
+                      <div className="flex items-start gap-3">
+                        <CreditCard className="h-5 w-5 text-primary mt-0.5" />
+                        <div>
+                          <h3 className="font-semibold mb-1">Try a Different Payment Method</h3>
+                          <p className="text-sm text-muted-foreground">
+                            Use another card, UPI, or net banking to complete your purchase.
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start gap-3">
+                        <RefreshCw className="h-5 w-5 text-primary mt-0.5" />
+                        <div>
+                          <h3 className="font-semibold mb-1">Retry Payment</h3>
+                          <p className="text-sm text-muted-foreground">
+                            Sometimes a simple retry can resolve temporary issues.
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start gap-3">
+                        <HelpCircle className="h-5 w-5 text-primary mt-0.5" />
+                        <div>
+                          <h3 className="font-semibold mb-1">Contact Support</h3>
+                          <p className="text-sm text-muted-foreground">
+                            Our team is here to help if you continue facing issues.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Order Summary Sidebar */}
+              {order && (
+                <div className="lg:col-span-1">
+                  <Card className="sticky top-4 animate-slide-up" style={{ animationDelay: "0.15s" }}>
+                    <CardContent className="p-6">
+                      <h2 className="text-xl font-bold mb-4">Order Summary</h2>
+                      <div className="space-y-3">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">Subtotal</span>
+                          <span className="font-semibold">₹{subtotal}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">Delivery</span>
+                          <span className={deliveryCharges === 0 ? "text-green-600 font-semibold" : "font-semibold"}>
+                            {deliveryCharges === 0 ? "FREE" : `₹${deliveryCharges}`}
+                          </span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">Tax</span>
+                          <span className="font-semibold">₹{taxAmount}</span>
+                        </div>
+                        {giftPrice > 0 && (
+                          <div className="flex justify-between text-sm">
+                            <span className="text-muted-foreground">Gift</span>
+                            <span className="font-semibold">₹{giftPrice}</span>
+                          </div>
+                        )}
+                        {discountAmount > 0 && (
+                          <>
+                            <Separator />
+                            <div className="flex justify-between text-sm text-green-700">
+                              <span>Discount</span>
+                              <span className="font-semibold">-₹{discountAmount}</span>
+                            </div>
+                          </>
+                        )}
+                        <Separator />
+                        <div className="flex justify-between font-bold text-lg">
+                          <span>Total</span>
+                          <span className="text-primary">₹{total}</span>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
+                </div>
+              )}
+            </div>
 
+            {/* Order Details Section */}
+            {order && (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Order Items */}
+                <Card>
+                  <CardContent className="p-6">
+                    <h2 className="text-xl font-bold mb-4">Order Items</h2>
+                    <div className="space-y-4">
+                      {itemsForDisplay.map((item: any, index: number) => (
+                        <div key={index} className="flex items-start gap-4 pb-4 border-b last:border-0">
+                          <div className="w-16 h-16 rounded-lg overflow-hidden bg-accent flex-shrink-0">
+                            {item.product?.image_url ? (
+                              <img src={item.product.image_url} alt={item.product?.name} className="w-full h-full object-cover" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center">
+                                <Package className="h-6 w-6 text-muted-foreground" />
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex-1">
+                            <h3 className="font-semibold mb-1">{item.product?.name || 'Product'}</h3>
+                            <p className="text-sm text-muted-foreground">Qty: {item.quantity} × ₹{item.price}</p>
+                            <p className="font-semibold mt-1">₹{item.price * item.quantity}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <div className="space-y-6">
                   {/* Shipping Address */}
                   {order.shipping_address && (
                     <Card>
@@ -326,59 +381,14 @@ const PaymentFailed = () => {
                     </Card>
                   )}
                 </div>
-
-                {/* Order Summary Sidebar */}
-                <div className="lg:col-span-1">
-                  <Card className="sticky top-4">
-                    <CardContent className="p-6">
-                      <h2 className="text-xl font-bold mb-4">Order Summary</h2>
-                      <div className="space-y-3">
-                        <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">Subtotal</span>
-                          <span className="font-semibold">₹{subtotal}</span>
-                        </div>
-                        <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">Delivery</span>
-                          <span className={deliveryCharges === 0 ? "text-green-600 font-semibold" : "font-semibold"}>
-                            {deliveryCharges === 0 ? "FREE" : `₹${deliveryCharges}`}
-                          </span>
-                        </div>
-                        <div className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">Tax</span>
-                          <span className="font-semibold">₹{taxAmount}</span>
-                        </div>
-                        {giftPrice > 0 && (
-                          <div className="flex justify-between text-sm">
-                            <span className="text-muted-foreground">Gift</span>
-                            <span className="font-semibold">₹{giftPrice}</span>
-                          </div>
-                        )}
-                        {discountAmount > 0 && (
-                          <>
-                            <Separator />
-                            <div className="flex justify-between text-sm text-green-700">
-                              <span>Discount</span>
-                              <span className="font-semibold">-₹{discountAmount}</span>
-                            </div>
-                          </>
-                        )}
-                        <Separator />
-                        <div className="flex justify-between font-bold text-lg">
-                          <span>Total</span>
-                          <span className="text-primary">₹{total}</span>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
               </div>
             )}
 
             {/* Action Buttons */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 animate-slide-up mb-6" style={{ animationDelay: "0.3s" }}>
-              <Button 
-                size="lg" 
-                onClick={handleRetryPayment} 
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 animate-slide-up" style={{ animationDelay: "0.3s" }}>
+              <Button
+                size="lg"
+                onClick={handleRetryPayment}
                 className="w-full"
                 disabled={retrying || isProcessing || !orderId}
               >
@@ -409,7 +419,7 @@ const PaymentFailed = () => {
             {/* Help Section */}
             <div className="mt-8 p-4 bg-blue-50 rounded-lg border border-blue-200 animate-fade-in" style={{ animationDelay: "0.4s" }}>
               <p className="text-sm text-blue-800 text-center">
-                <strong>💡 Note:</strong> Your order has been created but payment is pending. 
+                <strong>💡 Note:</strong> Your order has been created but payment is pending.
                 You can retry payment from your orders page or contact support for assistance.
               </p>
             </div>
@@ -419,6 +429,6 @@ const PaymentFailed = () => {
 
     </div>
   );
-};
+}
 
 export default PaymentFailed;

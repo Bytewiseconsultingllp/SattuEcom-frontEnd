@@ -228,36 +228,17 @@ const OrderReview = () => {
       const orderId = orderRes.data.id;
       toast.success("Order created! Proceeding to payment...");
 
-      // Step 2: Initiate Razorpay payment with user details from cookie and selected address
-      const paymentResult = await initiatePayment(orderId, {
+      // Step 2: Initiate Razorpay payment with user details from cookie and selected address.
+      // NOTE: The Razorpay hook itself handles all redirects:
+      //  - /order-confirmation on success
+      //  - /payment-failed on failure
+      //  - /payment-pending on timeout/cancellation
+      // So we do not navigate here based on the return value.
+      await initiatePayment(orderId, {
         name: user?.name || selectedAddress?.full_name || "",
         email: user?.email || "",
         contact: selectedAddress?.phone || user?.phone || "",
       });
-
-      if (paymentResult.success) {
-        // Payment successful - clear cart
-        await refreshCart();
-        
-        // Submit custom gift request if provided
-        if (customGiftRequest && (customGiftRequest.title || customGiftRequest.description)) {
-          try {
-            await submitCustomGiftRequest(customGiftRequest);
-            toast.success("Custom gift request submitted!");
-          } catch (e: any) {
-            console.error("Failed to submit custom gift request:", e);
-            // Don't fail the order if custom gift request fails
-          }
-        }
-        
-        toast.success("Payment successful! Order placed.");
-        console.log({ paymentResult}); 
-        navigate(`/order-confirmation?order_id=${orderId}`, { replace: true });
-      } else {
-        // Payment failed or cancelled
-        toast.error("Payment was not completed. Order is pending payment.");
-        navigate("/dashboard", { state: { tab: "orders" } });
-      }
     } catch (e: any) {
       toast.error(e.message || "Failed to place order");
     } finally {
