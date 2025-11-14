@@ -136,8 +136,11 @@ const OrderReview = () => {
   // Calculate costs
   const subtotal = cartItems.reduce((sum, item) => sum + ((item.product?.price || 0) * item.quantity), 0);
   
-  const deliveryCharges = deliveryOptions.deliverySpeed === "express" ? 50 : 
-                          deliveryOptions.deliverySpeed === "overnight" ? 150 : 0;
+  const baseDeliveryCharges = deliveryOptions.deliverySpeed === "express" ? 50 : 
+                              deliveryOptions.deliverySpeed === "overnight" ? 150 : 0;
+
+  const hasFreeShippingCoupon = appliedCoupon?.type === "free_shipping";
+  const deliveryCharges = hasFreeShippingCoupon ? 0 : baseDeliveryCharges;
   
   const taxRate = 0.05; // 5% tax
   const taxAmount = Math.round(subtotal * taxRate);
