@@ -24,8 +24,11 @@ export interface OfflineSale {
   customerEmail: string;
   items: OfflineSaleItem[];
   totalAmount: number;
+  finalAmount?: number;
   paymentMethod: string;
   notes?: string; 
+  gstType?: string;
+  discount?: number;
   created_at?: string;
   updated_at?: string;
   // Optional flags for backend behavior

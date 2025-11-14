@@ -251,6 +251,7 @@ const OrderReview = () => {
         }
         
         toast.success("Payment successful! Order placed.");
+        console.log({ paymentResult}); 
         navigate(`/order-confirmation?order_id=${orderId}`, { replace: true });
       } else {
         // Payment failed or cancelled

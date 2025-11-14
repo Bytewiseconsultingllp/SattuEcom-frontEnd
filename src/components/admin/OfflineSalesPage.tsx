@@ -58,7 +58,6 @@ export function OfflineSalesPage() {
     paymentMethod: "cash",
     notes: "",
     gstType: "non-gst",
-    invoiceNumber: "",
     discount: 0,
   });
   const [exportPeriod, setExportPeriod] = useState<"weekly" | "monthly" | "quarterly" | "annually">("weekly");
@@ -128,7 +127,6 @@ export function OfflineSalesPage() {
         paymentMethod: sale.paymentMethod,
         notes: sale.notes || "",
         gstType: (sale as any).gstType || "non-gst",
-        invoiceNumber: (sale as any).invoiceNumber || "",
         discount: (sale as any).discount || 0,
       });
       setItems(sale.items);
@@ -142,7 +140,6 @@ export function OfflineSalesPage() {
         paymentMethod: "cash",
         notes: "",
         gstType: "non-gst",
-        invoiceNumber: "",
         discount: 0,
       });
       setItems([{ product: "", quantity: 1, price: 0 }]);
@@ -176,11 +173,6 @@ export function OfflineSalesPage() {
   const handleSave = async () => {
     if (!formData.customerName || !formData.customerPhone || !formData.customerEmail || items.some((i) => !i.product || i.price === 0)) {
       toast.error("Please fill in all required fields including customer email");
-      return;
-    }
-
-    if (formData.gstType === "gst" && !formData.invoiceNumber) {
-      toast.error("Invoice number is required for GST sales");
       return;
     }
 
@@ -732,20 +724,6 @@ export function OfflineSalesPage() {
                   </SelectContent>
                 </Select>
               </div>
-
-              {formData.gstType === "gst" && (
-                <div className="space-y-2">
-                  <Label htmlFor="invoiceNumber">Invoice Number *</Label>
-                  <Input
-                    id="invoiceNumber"
-                    placeholder="Invoice number"
-                    value={formData.invoiceNumber}
-                    onChange={(e) =>
-                      setFormData({ ...formData, invoiceNumber: e.target.value })
-                    }
-                  />
-                </div>
-              )}
             </div>
 
             <div className="space-y-2">
