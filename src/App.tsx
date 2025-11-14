@@ -36,7 +36,6 @@ import OrderConfirmation from "./pages/OrderConfirmation";
 import ContactUs from "./pages/ContactUs";
 import CustomGiftRequest from "./pages/CustomGiftRequest";
 import { InvoicesPage } from "./pages/InvoicesPage";
-import { AdminInvoicesPage } from "./components/admin/AdminInvoicesPage";
 import TermsAndConditions from "./pages/TermsAndConditions";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import CookiePolicy from "./pages/CookiePolicy";
@@ -101,7 +100,7 @@ const App = () => (
               path="/admin/invoices" 
               element={
                 <ProtectedRoute requiredRole="admin">
-                  <AdminInvoicesPage />
+                  <AdminDashboard forceSection="invoices" />
                 </ProtectedRoute>
               } 
             />

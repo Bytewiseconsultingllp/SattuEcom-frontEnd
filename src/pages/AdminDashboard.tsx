@@ -88,6 +88,7 @@ import AdminReviewsPage from "@/components/admin/AdminReviewsPage";
 import AdminCouponsPage from "@/components/admin/AdminCouponsPage";
 import AdminGiftDesignPage from "@/components/admin/AdminGiftDesignPage";
 import AdminCustomGiftRequestsPage from "@/components/admin/AdminCustomGiftRequestsPage";
+import { AdminInvoicesPage } from "@/components/admin/AdminInvoicesPage";
 import { PaymentManagement } from "@/components/admin/PaymentManagement";
 import { ProductCataloguePage } from "@/components/admin/ProductCataloguePage";
 import { BannersManagementPage } from "@/components/admin/BannersManagementPage";
@@ -105,8 +106,12 @@ import { ModernOrdersPage } from "@/components/admin/ModernOrdersPage";
 import { ModernCustomersPage } from "@/components/admin/ModernCustomersPage";
 import { ModernAnalyticsPage } from "@/components/admin/ModernAnalyticsPage";
 
-const AdminDashboard = () => {
-  const [activeSection, setActiveSection] = useState("dashboard");
+interface AdminDashboardProps {
+  forceSection?: string;
+}
+
+const AdminDashboard = ({ forceSection }: AdminDashboardProps) => {
+  const [activeSection, setActiveSection] = useState(forceSection || "dashboard");
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
   const [orderStatusFilter, setOrderStatusFilter] = useState("all");
@@ -141,12 +146,17 @@ const AdminDashboard = () => {
 
   // Persist/restore active tab
   useEffect(() => {
+    if (forceSection) {
+      setActiveSection(forceSection);
+      return;
+    }
     const tab = localStorage.getItem('admin_dashboard_tab');
     if (tab) setActiveSection(tab);
-  }, []);
+  }, [forceSection]);
   useEffect(() => {
+    if (forceSection) return;
     try { localStorage.setItem('admin_dashboard_tab', activeSection); } catch { }
-  }, [activeSection]);
+  }, [activeSection, forceSection]);
 
   useEffect(() => {
     console.log(getUserCookie());
@@ -897,6 +907,10 @@ const AdminDashboard = () => {
               <div className="animate-fade-in">
                 <PaymentManagement />
               </div>
+            )}
+
+            {activeSection === "invoices" && (
+              <AdminInvoicesPage />
             )}
 
             {/* Modern Analytics Page */}
