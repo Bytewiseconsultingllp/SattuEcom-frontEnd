@@ -42,6 +42,7 @@ import {
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { getOfflineSales, createOfflineSale, updateOfflineSale, deleteOfflineSale, sendCredentialForSale, exportOfflineSales, getOfflineSalesStats, OfflineSale } from "@/lib/api/offlineSales";
+import { getProducts } from "@/lib/api/products";
 import { Loader2 } from "lucide-react";
 
 
@@ -61,9 +62,7 @@ export function OfflineSalesPage() {
     discount: 0,
   });
   const [exportPeriod, setExportPeriod] = useState<"weekly" | "monthly" | "quarterly" | "annually">("weekly");
-  const [items, setItems] = useState<{ product: string; quantity: number; price: number }[]>([
-    { product: "", quantity: 1, price: 0 },
-  ]);
+  const [items, setItems] = useState<{ product: string; quantity: number; price: number }[]>([]);
   const [excelImportOpen, setExcelImportOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [filterGST, setFilterGST] = useState<string>("all");
@@ -76,6 +75,9 @@ export function OfflineSalesPage() {
   const [saving, setSaving] = useState(false);
   const [sendingEmailId, setSendingEmailId] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
+  const [productSearchQuery, setProductSearchQuery] = useState("");
+  const [productSearchResults, setProductSearchResults] = useState<{ id: string; name: string; price?: number }[]>([]);
+  const [searchingProducts, setSearchingProducts] = useState(false);
 
 
   // Fetch sales on mount and when filters change
@@ -142,13 +144,9 @@ export function OfflineSalesPage() {
         gstType: "non-gst",
         discount: 0,
       });
-      setItems([{ product: "", quantity: 1, price: 0 }]);
+      setItems([]);
     }
     setDialogOpen(true);
-  };
-
-  const addItem = () => {
-    setItems([...items, { product: "", quantity: 1, price: 0 }]);
   };
 
   const removeItem = (index: number) => {
@@ -161,6 +159,52 @@ export function OfflineSalesPage() {
     setItems(newItems);
   };
 
+  const handleSearchProducts = async () => {
+    const query = productSearchQuery.trim();
+    if (!query) {
+      toast.info("Type a product name to search");
+      return;
+    }
+
+    try {
+      setSearchingProducts(true);
+      const res: any = await getProducts(1, 10, { search: query });
+      const results = (res?.data || res?.products || res || [])
+        .map((p: any) => ({
+          id: p?.id || p?._id || p?.product?._id || p?.product?.id,
+          name: p?.name || p?.product?.name,
+          price: p?.price ?? p?.product?.price,
+        }))
+        .filter((p: any) => p.id && p.name);
+
+      if (!results.length) {
+        toast.info("No products found for this search");
+      }
+
+      setProductSearchResults(results);
+    } catch (error: any) {
+      toast.error(error.message || "Failed to search products");
+      setProductSearchResults([]);
+    } finally {
+      setSearchingProducts(false);
+    }
+  };
+
+  const handleAddProductFromSearch = (
+    product: { id: string; name: string; price?: number }
+  ) => {
+    setItems((prev) => [
+      ...prev,
+      {
+        product: product.name,
+        quantity: 1,
+        price: product.price != null ? product.price : 0,
+      },
+    ]);
+    setProductSearchResults([]);
+    setProductSearchQuery("");
+  };
+
   const calculateTotal = () => {
     return items.reduce((sum, item) => sum + item.quantity * item.price, 0);
   };
@@ -171,8 +215,14 @@ export function OfflineSalesPage() {
   };
 
   const handleSave = async () => {
-    if (!formData.customerName || !formData.customerPhone || !formData.customerEmail || items.some((i) => !i.product || i.price === 0)) {
-      toast.error("Please fill in all required fields including customer email");
+    if (
+      !formData.customerName ||
+      !formData.customerPhone ||
+      !formData.customerEmail ||
+      items.length === 0 ||
+      items.some((i) => !i.product || i.price === 0)
+    ) {
+      toast.error("Please fill in all required fields, add at least one item, and ensure each item has a price");
       return;
     }
 
@@ -726,59 +776,110 @@ export function OfflineSalesPage() {
               </div>
             </div>
 
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
+            <div className="space-y-3">
+              <div className="space-y-2">
                 <Label>Items *</Label>
-                <Button type="button" variant="outline" size="sm" onClick={addItem}>
-                  <Plus className="h-4 w-4 mr-1" />
-                  Add Item
-                </Button>
+                <div className="flex gap-2 items-center">
+                  <div className="flex-1 relative">
+                    <Input
+                      placeholder="Search product by name..."
+                      value={productSearchQuery}
+                      onChange={(e) => setProductSearchQuery(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          handleSearchProducts();
+                        }
+                      }}
+                      className="pl-8"
+                    />
+                    <Search className="h-4 w-4 text-muted-foreground absolute left-2 top-1/2 -translate-y-1/2" />
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleSearchProducts}
+                    disabled={searchingProducts}
+                  >
+                    {searchingProducts ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Searching
+                      </>
+                    ) : (
+                      "Search"
+                    )}
+                  </Button>
+                </div>
+                {productSearchResults.length > 0 && (
+                  <div className="border rounded p-2 max-h-40 overflow-auto space-y-1 bg-muted/40">
+                    {productSearchResults.map((p) => (
+                      <div
+                        key={p.id}
+                        className="flex items-center justify-between text-xs md:text-sm cursor-pointer hover:bg-accent hover:text-accent-foreground rounded px-2 py-1"
+                        onClick={() => handleAddProductFromSearch(p)}
+                      >
+                        <div className="truncate mr-2">
+                          <span className="font-medium">{p.name}</span>
+                          {p.price != null && (
+                            <span className="text-muted-foreground ml-2">₹{p.price}</span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
-              <div className="space-y-2">
-                {items.map((item, index) => (
-                  <div key={index} className="flex gap-2 items-end">
-                    <div className="flex-1">
-                      <Input
-                        placeholder="Product name"
-                        value={item.product}
-                        onChange={(e) =>
-                          updateItem(index, "product", e.target.value)
-                        }
-                      />
+              {items.length > 0 && (
+                <div className="space-y-2">
+                  {items.map((item, index) => (
+                    <div key={index} className="flex gap-2 items-end">
+                      <div className="flex-1">
+                        <Label className="sr-only">Product</Label>
+                        <Input
+                          placeholder="Product name"
+                          value={item.product}
+                          onChange={(e) =>
+                            updateItem(index, "product", e.target.value)
+                          }
+                        />
+                      </div>
+                      <div className="w-24">
+                        <Label className="sr-only">Quantity</Label>
+                        <Input
+                          type="number"
+                          placeholder="Qty"
+                          value={item.quantity}
+                          onChange={(e) =>
+                            updateItem(index, "quantity", parseInt(e.target.value))
+                          }
+                        />
+                      </div>
+                      <div className="w-32">
+                        <Label className="sr-only">Price</Label>
+                        <Input
+                          type="number"
+                          placeholder="Price"
+                          value={item.price}
+                          onChange={(e) =>
+                            updateItem(index, "price", parseFloat(e.target.value))
+                          }
+                        />
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={() => removeItem(index)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
                     </div>
-                    <div className="w-24">
-                      <Input
-                        type="number"
-                        placeholder="Qty"
-                        value={item.quantity}
-                        onChange={(e) =>
-                          updateItem(index, "quantity", parseInt(e.target.value))
-                        }
-                      />
-                    </div>
-                    <div className="w-32">
-                      <Input
-                        type="number"
-                        placeholder="Price"
-                        value={item.price}
-                        onChange={(e) =>
-                          updateItem(index, "price", parseFloat(e.target.value))
-                        }
-                      />
-                    </div>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon"
-                      onClick={() => removeItem(index)}
-                      disabled={items.length === 1}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="space-y-2">
