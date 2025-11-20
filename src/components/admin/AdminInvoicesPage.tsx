@@ -31,7 +31,6 @@ import {
   Search,
   Filter,
   Eye,
-  Trash2,
   RefreshCw,
   Calendar,
   DollarSign,
@@ -42,7 +41,6 @@ import {
   getAllInvoices,
   downloadInvoicePDF,
   updateInvoiceStatus,
-  deleteInvoice,
 } from '@/lib/api/invoice';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -126,19 +124,6 @@ export function AdminInvoicesPage() {
       setDetailsDialogOpen(false);
     } catch (error: any) {
       toast.error(error.message || 'Failed to update invoice status');
-    }
-  };
-
-  const handleDeleteInvoice = async (invoiceId: string) => {
-    if (!confirm('Are you sure you want to delete this invoice?')) return;
-
-    try {
-      await deleteInvoice(invoiceId);
-      toast.success('Invoice deleted successfully');
-      fetchInvoices();
-      setDetailsDialogOpen(false);
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to delete invoice');
     }
   };
 
@@ -360,13 +345,6 @@ export function AdminInvoicesPage() {
                               onClick={() => handleDownloadInvoice(invoice.id, invoice.invoiceNumber)}
                             >
                               <Download className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDeleteInvoice(invoice.id)}
-                            >
-                              <Trash2 className="h-4 w-4 text-red-600" />
                             </Button>
                           </div>
                         </TableCell>
