@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -10,9 +11,84 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Leaf, Zap, Heart, Award } from "lucide-react";
 import heroImage from "@/assets/hero-sattu.jpg";
+import { Carousel, CarouselContent, CarouselItem, type CarouselApi } from "@/components/ui/carousel";
+import { getBanners, type Banner } from "@/lib/api/banners";
 
 const Index = () => {
   const featuredProducts = products.slice(0, 3);
+  const [banners, setBanners] = useState<Banner[]>([]);
+  const [carouselApi, setCarouselApi] = useState<CarouselApi | null>(null);
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [slideCount, setSlideCount] = useState(0);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadBanners = async () => {
+      try {
+        const data = await getBanners({ isActive: true });
+        if (!mounted) return;
+
+        const now = new Date();
+        const filtered = (data || [])
+          .filter((banner: Banner) => {
+            const isActive = banner.isActive ?? true;
+            const hasStart = !!banner.startDate;
+            const hasEnd = !!banner.endDate;
+            const startDate = hasStart ? new Date(banner.startDate) : null;
+            const endDate = hasEnd ? new Date(banner.endDate) : null;
+
+            const startOk = !startDate || isNaN(startDate.getTime()) || startDate <= now;
+            const endOk = !endDate || isNaN(endDate.getTime()) || endDate >= now;
+
+            return isActive && startOk && endOk;
+          })
+          .sort((a, b) => (a.position ?? 999) - (b.position ?? 999));
+
+        setBanners(filtered);
+      } catch {
+        if (mounted) {
+          setBanners([]);
+        }
+      }
+    };
+
+    loadBanners();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!carouselApi) return;
+
+    const onSelect = () => {
+      setCurrentSlide(carouselApi.selectedScrollSnap());
+    };
+
+    setSlideCount(carouselApi.scrollSnapList().length || 0);
+    onSelect();
+
+    carouselApi.on("select", onSelect);
+    return () => {
+      carouselApi.off("select", onSelect);
+    };
+  }, [carouselApi]);
+
+  useEffect(() => {
+    if (!carouselApi || slideCount <= 1) return;
+
+    const interval = setInterval(() => {
+      const api = carouselApi;
+      if (!api) return;
+      const current = api.selectedScrollSnap();
+      const nextIndex = current + 1 >= slideCount ? 0 : current + 1;
+      api.scrollTo(nextIndex);
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [carouselApi, slideCount]);
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -51,6 +127,76 @@ const Index = () => {
             </div>
           </div>
         </section>
+
+        {banners.length > 0 && (
+          <section className="py-8 bg-background w-full overflow-hidden">
+            <Carousel
+              className="relative w-full overflow-hidden"
+              setApi={setCarouselApi}
+              opts={{ align: "start" }}
+            >
+              <CarouselContent className="w-full ml-0">
+                  {banners.map((banner) => {
+                    const isExternal = banner.linkUrl && banner.linkUrl.startsWith("http");
+
+                    const content = (
+                      <div className="relative overflow-hidden">
+                        <img
+                          src={banner.imageUrl}
+                          alt={banner.title}
+                          className="w-full h-[260px] md:h-[360px] lg:h-[420px] object-cover"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-r from-black/50 via-black/30 to-black/10" />
+                        <div className="absolute inset-0 flex items-center">
+                          <div className="px-6 md:px-10 max-w-xl text-white space-y-3">
+                            <h3 className="text-2xl md:text-3xl font-bold">{banner.title}</h3>
+                            {banner.description && (
+                              <p className="text-sm md:text-base text-white/90">
+                                {banner.description}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+
+                    return (
+                      <CarouselItem key={banner.id || banner.imageUrl} className="pl-0">
+                        {banner.linkUrl ? (
+                          isExternal ? (
+                            <a href={banner.linkUrl} target="_blank" rel="noreferrer">
+                              {content}
+                            </a>
+                          ) : (
+                            <Link to={banner.linkUrl}>
+                              {content}
+                            </Link>
+                          )
+                        ) : (
+                          content
+                        )}
+                      </CarouselItem>
+                    );
+                  })}
+              </CarouselContent>
+
+              {slideCount > 1 && (
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+                  {banners.map((_, index) => (
+                    <button
+                      key={index}
+                      type="button"
+                      onClick={() => carouselApi?.scrollTo(index)}
+                      className={`h-[3px] w-8 rounded-full border border-white/60 bg-white/20 transition-all ${
+                        currentSlide === index ? "bg-white border-white w-10" : ""
+                      }`}
+                    />
+                  ))}
+                </div>
+              )}
+            </Carousel>
+          </section>
+        )}
 
         {/* Benefits Section */}
         <section className="py-20 bg-muted/30">
