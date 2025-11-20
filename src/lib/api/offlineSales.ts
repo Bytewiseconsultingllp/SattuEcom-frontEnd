@@ -31,6 +31,7 @@ export interface OfflineSale {
   discount?: number;
   created_at?: string;
   updated_at?: string;
+  invoiceNumber?: string;
   // Optional flags for backend behavior
   suppressEmail?: boolean;
 }

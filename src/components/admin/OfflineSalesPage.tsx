@@ -561,6 +561,7 @@ export function OfflineSalesPage() {
                     <TableHead>Customer</TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead>Phone</TableHead>
+                    <TableHead>Invoice</TableHead>
                     <TableHead>Items</TableHead>
                     <TableHead>GST</TableHead>
                     <TableHead>Payment</TableHead>
@@ -580,6 +581,15 @@ export function OfflineSalesPage() {
                         {(sale as any).customerEmail}
                       </TableCell>
                       <TableCell>{sale.customerPhone}</TableCell>
+                      <TableCell>
+                        {sale.invoiceNumber ? (
+                          <span className="text-xs font-mono bg-muted px-2 py-1 rounded">
+                            {sale.invoiceNumber}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">-</span>
+                        )}
+                      </TableCell>
                       <TableCell>
                         <Badge variant="secondary">{sale.items.length} items</Badge>
                       </TableCell>
