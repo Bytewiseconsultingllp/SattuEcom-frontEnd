@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import {
   Select,
   SelectContent,
@@ -47,16 +48,33 @@ export function ProductCataloguePage() {
   const fetchProducts = async () => {
     try {
       setLoading(true);
-      const response = await getProducts();
-      // Handle different response structures
-      const productsData = Array.isArray(response) 
-        ? response 
-        : response?.data 
-        ? Array.isArray(response.data) 
-          ? response.data 
-          : []
-        : [];
-      setProducts(productsData);
+      const allProducts: any[] = [];
+      let page = 1;
+      const limit = 100;
+      let totalPages = 1;
+
+      do {
+        const response: any = await getProducts(page, limit);
+
+        if (response?.success) {
+          const pageData = Array.isArray(response.data) ? response.data : [];
+          allProducts.push(...pageData);
+          totalPages = response.totalPages || 1;
+        } else if (Array.isArray(response)) {
+          // Fallback in case API returns a bare array (legacy behavior)
+          allProducts.push(...response);
+          totalPages = 1;
+        } else if (response?.data && Array.isArray(response.data)) {
+          allProducts.push(...response.data);
+          totalPages = 1;
+        } else {
+          totalPages = 1;
+        }
+
+        page += 1;
+      } while (page <= totalPages);
+
+      setProducts(allProducts);
     } catch (error: any) {
       console.error("Failed to fetch products:", error);
       toast.error(error.message || "Failed to load products");
@@ -92,7 +110,7 @@ export function ProductCataloguePage() {
           Name: product.name,
           Category: product.category,
           Price: product.price,
-          Stock: product.stock,
+          
           Description: product.description || "",
         });
       });
@@ -102,10 +120,10 @@ export function ProductCataloguePage() {
       
       Object.keys(categorizedData).forEach((category) => {
         csvContent += `\n${category}\n`;
-        csvContent += "ID,Name,Category,Price,Stock,Description\n";
+        csvContent += "ID,Name,Category,Price,Description\n";
         
         categorizedData[category].forEach((product: any) => {
-          csvContent += `${product.ID},"${product.Name}",${product.Category},${product.Price},${product.Stock},"${product.Description}"\n`;
+          csvContent += `${product.ID},"${product.Name}",${product.Category},${product.Price},"${product.Description}"\n`;
         });
       });
 
@@ -152,7 +170,31 @@ export function ProductCataloguePage() {
     return stats;
   };
 
+  const getPriceStats = () => {
+    if (!Array.isArray(products) || products.length === 0) {
+      return { average: 0, min: 0, max: 0 };
+    }
+
+    let sum = 0;
+    let min = Number(products[0]?.price) || 0;
+    let max = Number(products[0]?.price) || 0;
+
+    products.forEach((product) => {
+      const price = Number(product.price) || 0;
+      sum += price;
+      if (price < min) min = price;
+      if (price > max) max = price;
+    });
+
+    return {
+      average: sum / products.length,
+      min,
+      max,
+    };
+  };
+
   const categoryStats = getCategoryStats();
+  const priceStats = getPriceStats();
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-IN", {
@@ -219,9 +261,9 @@ export function ProductCataloguePage() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">In Stock</p>
-                <p className="text-2xl font-bold text-green-600">
-                  {Array.isArray(products) ? products.filter((p) => p.stock > 0).length : 0}
+                <p className="text-sm text-muted-foreground">Average Price</p>
+                <p className="text-2xl font-bold">
+                  {formatCurrency(priceStats.average || 0)}
                 </p>
               </div>
               <Package className="h-10 w-10 text-green-600 opacity-20" />
@@ -233,9 +275,9 @@ export function ProductCataloguePage() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-muted-foreground">Out of Stock</p>
-                <p className="text-2xl font-bold text-red-600">
-                  {Array.isArray(products) ? products.filter((p) => p.stock === 0).length : 0}
+                <p className="text-sm text-muted-foreground">Highest Price</p>
+                <p className="text-2xl font-bold">
+                  {formatCurrency(priceStats.max || 0)}
                 </p>
               </div>
               <Package className="h-10 w-10 text-red-600 opacity-20" />
@@ -322,77 +364,87 @@ export function ProductCataloguePage() {
                       {category}
                       <Badge variant="secondary">{categoryProducts.length}</Badge>
                     </CardTitle>
-                    <Button variant="ghost" size="sm">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setSelectedCategory(category)}
+                    >
                       View All
                     </Button>
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                    {categoryProducts.slice(0, 4).map((product) => (
-                      <Card key={product.id} className="overflow-hidden group">
-                        <div className="aspect-square overflow-hidden bg-muted">
-                          <img
-                            src={
-                              product.images?.[0] ||
-                              product.thumbnail ||
-                              "/placeholder.svg"
-                            }
-                            alt={product.name}
-                            className="w-full h-full object-cover group-hover:scale-110 transition-transform"
-                          />
-                        </div>
-                        <CardContent className="p-3">
-                          <h3 className="font-semibold text-sm line-clamp-2 mb-1">
-                            {product.name}
-                          </h3>
-                          <p className="text-lg font-bold text-primary mb-2">
-                            {formatCurrency(product.price)}
-                          </p>
-                          <div className="flex items-center justify-between text-xs text-muted-foreground mb-3">
-                            <span>Stock: {product.stock}</span>
-                            {product.stock === 0 && (
-                              <Badge variant="destructive" className="text-xs">
-                                Out of Stock
-                              </Badge>
-                            )}
-                          </div>
-                          <div className="flex gap-1">
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
-                              className="flex-1"
-                              onClick={() => {
-                                setSelectedProduct(product);
-                                setShowProductDialog(true);
-                              }}
-                            >
-                              <Eye className="h-3 w-3" />
-                            </Button>
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
-                              className="flex-1"
-                              onClick={() => {
-                                setEditingProduct(product);
-                                setShowProductForm(true);
-                              }}
-                            >
-                              <Edit className="h-3 w-3" />
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="flex-1"
-                              onClick={() => handleDeleteProduct(product.id)}
-                            >
-                              <Trash2 className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
+                  <Carousel className="w-full" opts={{ align: "start" }}>
+                    <CarouselContent>
+                      {categoryProducts.map((product) => (
+                        <CarouselItem
+                          key={product.id}
+                          className="basis-full md:basis-1/2 lg:basis-1/4"
+                        >
+                          <Card className="overflow-hidden group h-full flex flex-col">
+                            <div className="aspect-square overflow-hidden bg-muted">
+                              <img
+                                src={
+                                  product.images?.[0] ||
+                                  product.thumbnail ||
+                                  "/placeholder.svg"
+                                }
+                                alt={product.name}
+                                className="w-full h-full object-cover group-hover:scale-110 transition-transform"
+                              />
+                            </div>
+                            <CardContent className="p-3 flex-1 flex flex-col">
+                              <h3 className="font-semibold text-sm line-clamp-2 mb-1">
+                                {product.name}
+                              </h3>
+                              <p className="text-lg font-bold text-primary mb-2">
+                                {formatCurrency(product.price)}
+                              </p>
+                              
+                              <div className="mt-auto flex gap-1">
+                                <Button 
+                                  variant="outline" 
+                                  size="sm" 
+                                  className="flex-1"
+                                  onClick={() => {
+                                    setSelectedProduct(product);
+                                    setShowProductDialog(true);
+                                  }}
+                                >
+                                  <Eye className="h-3 w-3" />
+                                </Button>
+                                <Button 
+                                  variant="outline" 
+                                  size="sm" 
+                                  className="flex-1"
+                                  onClick={() => {
+                                    setEditingProduct(product);
+                                    setShowProductForm(true);
+                                  }}
+                                >
+                                  <Edit className="h-3 w-3" />
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="flex-1"
+                                  onClick={() => handleDeleteProduct(product.id)}
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        </CarouselItem>
+                      ))}
+                    </CarouselContent>
+                    {categoryProducts.length > 1 && (
+                      <>
+                        <CarouselPrevious className="left-2" />
+                        <CarouselNext className="right-2" />
+                      </>
+                    )}
+                  </Carousel>
                 </CardContent>
               </Card>
             );
@@ -408,10 +460,10 @@ export function ProductCataloguePage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
               {filteredProducts.map((product) => (
                 <Card key={product.id} className="overflow-hidden group">
-                  <div className="aspect-square overflow-hidden bg-muted">
+                  <div className="aspect-[3/4] overflow-hidden bg-muted">
                     <img
                       src={
                         product.images?.[0] ||
@@ -422,26 +474,19 @@ export function ProductCataloguePage() {
                       className="w-full h-full object-cover group-hover:scale-110 transition-transform"
                     />
                   </div>
-                  <CardContent className="p-3">
-                    <h3 className="font-semibold text-sm line-clamp-2 mb-1">
+                  <CardContent className="p-2">
+                    <h3 className="font-semibold text-xs line-clamp-2 mb-1">
                       {product.name}
                     </h3>
-                    <p className="text-lg font-bold text-primary mb-2">
+                    <p className="text-sm font-bold text-primary mb-1">
                       {formatCurrency(product.price)}
                     </p>
-                    <div className="flex items-center justify-between text-xs text-muted-foreground mb-3">
-                      <span>Stock: {product.stock}</span>
-                      {product.stock === 0 && (
-                        <Badge variant="destructive" className="text-xs">
-                          Out of Stock
-                        </Badge>
-                      )}
-                    </div>
+                    
                     <div className="flex gap-1">
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="flex-1"
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1 h-7 px-1"
                         onClick={() => {
                           setSelectedProduct(product);
                           setShowProductDialog(true);
@@ -449,10 +494,10 @@ export function ProductCataloguePage() {
                       >
                         <Eye className="h-3 w-3" />
                       </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="flex-1"
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1 h-7 px-1"
                         onClick={() => {
                           setEditingProduct(product);
                           setShowProductForm(true);
@@ -460,10 +505,10 @@ export function ProductCataloguePage() {
                       >
                         <Edit className="h-3 w-3" />
                       </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="flex-1"
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1 h-7 px-1"
                         onClick={() => handleDeleteProduct(product.id)}
                       >
                         <Trash2 className="h-3 w-3" />
@@ -504,10 +549,7 @@ export function ProductCataloguePage() {
                     <p className="text-sm text-muted-foreground">Price</p>
                     <p className="text-2xl font-bold">{formatCurrency(selectedProduct.price)}</p>
                   </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Stock</p>
-                    <p className="font-semibold">{selectedProduct.stock}</p>
-                  </div>
+                  
                 </div>
               </div>
               <div>

@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { ProductCard } from "@/components/ProductCard";
-import { categories } from "@/data/products";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -56,6 +55,17 @@ const Products = () => {
       setIsLoading(false);
     }
   }
+
+  const derivedCategories = [
+    "All Products",
+    ...Array.from(
+      new Set(
+        allProducts
+          .map((p: any) => p.category)
+          .filter((c: any) => typeof c === "string" && c.trim().length > 0)
+      )
+    ),
+  ];
 
   // Filter products based on all criteria
   const filteredProducts = allProducts.filter(product => {
@@ -148,7 +158,7 @@ const Products = () => {
                 <div className="mb-8">
                   <h3 className="font-semibold mb-4">Categories</h3>
                   <div className="space-y-2 max-h-64 overflow-y-auto">
-                    {categories.map(category => (
+                    {derivedCategories.map(category => (
                       <Button
                         key={category}
                         variant={selectedCategory === category ? "default" : "ghost"}

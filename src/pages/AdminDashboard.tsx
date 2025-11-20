@@ -46,7 +46,6 @@ import {
   Building2,
   Mail,
 } from "lucide-react";
-import { products } from "@/data/products";
 import { toast } from "sonner";
 import {
   Sidebar,

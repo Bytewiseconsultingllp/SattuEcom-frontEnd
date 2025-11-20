@@ -6,16 +6,16 @@ import { ProductCard } from "@/components/ProductCard";
 import { Testimonials } from "@/components/Testimonials";
 import { AboutSection } from "@/components/AboutSection";
 import { ContactSection } from "@/components/ContactSection";
-import { products } from "@/data/products";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Leaf, Zap, Heart, Award } from "lucide-react";
 import heroImage from "@/assets/hero-sattu.jpg";
 import { Carousel, CarouselContent, CarouselItem, type CarouselApi } from "@/components/ui/carousel";
 import { getBanners, type Banner } from "@/lib/api/banners";
+import { getProducts } from "@/lib/api/products";
 
 const Index = () => {
-  const featuredProducts = products.slice(0, 3);
+  const [featuredProducts, setFeaturedProducts] = useState<any[]>([]);
   const [banners, setBanners] = useState<Banner[]>([]);
   const [carouselApi, setCarouselApi] = useState<CarouselApi | null>(null);
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -89,6 +89,35 @@ const Index = () => {
 
     return () => clearInterval(interval);
   }, [carouselApi, slideCount]);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadFeaturedProducts = async () => {
+      try {
+        const res: any = await getProducts(1, 3);
+        if (!mounted) return;
+
+        if (res?.success) {
+          setFeaturedProducts(res.data || []);
+        } else if (Array.isArray(res)) {
+          setFeaturedProducts(res.slice(0, 3));
+        } else if (res?.data && Array.isArray(res.data)) {
+          setFeaturedProducts(res.data.slice(0, 3));
+        }
+      } catch {
+        if (mounted) {
+          setFeaturedProducts([]);
+        }
+      }
+    };
+
+    loadFeaturedProducts();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -259,8 +288,8 @@ const Index = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-8">
-              {featuredProducts.map(product => (
-                <div key={product.id} className="featured-product">
+              {featuredProducts.map((product: any) => (
+                <div key={product._id || product.id} className="featured-product">
                   <ProductCard product={product} />
                 </div>
               ))}
