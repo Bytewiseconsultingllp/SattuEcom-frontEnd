@@ -79,6 +79,8 @@ export function OfflineSalesPage() {
   const [productSearchResults, setProductSearchResults] = useState<{ id: string; name: string; price?: number }[]>([]);
   const [searchingProducts, setSearchingProducts] = useState(false);
 
+  const [lastSaleDate, setLastSaleDate] = useState<string | null>(null);
+
 
   // Fetch sales on mount and when filters change
   useEffect(() => {
@@ -98,6 +100,10 @@ export function OfflineSalesPage() {
     fetchStats();
   }, []);
 
+  useEffect(() => {
+    fetchLastSaleDate();
+  }, []);
+
   const fetchSales = async () => {
     try {
       setLoading(true);
@@ -115,6 +121,24 @@ export function OfflineSalesPage() {
       toast.error(error.message || "Failed to load sales");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchLastSaleDate = async () => {
+    try {
+      const res = await getOfflineSales({
+        page: 1,
+        limit: 1,
+      });
+      const lastSale = res.data && res.data.length > 0 ? res.data[0] : null;
+      if (lastSale && lastSale.date) {
+        const normalized = format(new Date(lastSale.date), "yyyy-MM-dd");
+        setLastSaleDate(normalized);
+      } else {
+        setLastSaleDate(null);
+      }
+    } catch (error) {
+      setLastSaleDate(null);
     }
   };
 
@@ -226,6 +250,15 @@ export function OfflineSalesPage() {
       return;
     }
 
+    if (!editingSale && lastSaleDate) {
+      const selected = new Date(formData.date);
+      const last = new Date(lastSaleDate);
+      if (selected < last) {
+        toast.error(`Sale date cannot be before ${format(last, "dd MMM yyyy")}`);
+        return;
+      }
+    }
+
     const totalAmount = calculateTotal();
     const finalAmount = calculateFinalAmount();
 
@@ -250,6 +283,7 @@ export function OfflineSalesPage() {
       }
       setDialogOpen(false);
       fetchSales();
+      fetchLastSaleDate();
     } catch (error: any) {
       toast.error(error.message || "Failed to save sale");
     } finally {
@@ -285,6 +319,7 @@ export function OfflineSalesPage() {
         await deleteOfflineSale(id);
         toast.success("Sale deleted successfully");
         fetchSales();
+        fetchLastSaleDate();
       } catch (error: any) {
         toast.error(error.message || "Failed to delete sale");
       }
@@ -698,6 +733,7 @@ export function OfflineSalesPage() {
                   id="date"
                   type="date"
                   value={formData.date}
+                  min={!editingSale && lastSaleDate ? lastSaleDate : undefined}
                   onChange={(e) =>
                     setFormData({ ...formData, date: e.target.value })
                   }
