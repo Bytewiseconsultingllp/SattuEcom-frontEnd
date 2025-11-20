@@ -295,16 +295,17 @@ export function OfflineSalesPage() {
   const handleExport = async () => {
     setExporting(true);
     try {
-      const blob = await exportOfflineSales(exportPeriod);
+      const gstFilter = filterGST !== 'all' ? filterGST : undefined;
+      const blob = await exportOfflineSales(exportPeriod, gstFilter);
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `offline-sales-${exportPeriod}-${new Date().toISOString().split("T")[0]}.csv`;
+      a.download = `offline-sales-${exportPeriod}${gstFilter ? `-${gstFilter}` : ''}-${new Date().toISOString().split("T")[0]}.csv`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
-      toast.success(`${exportPeriod.charAt(0).toUpperCase() + exportPeriod.slice(1)} report exported successfully`);
+      toast.success(`${exportPeriod.charAt(0).toUpperCase() + exportPeriod.slice(1)} ${gstFilter ? (gstFilter === 'gst' ? 'GST' : 'Non-GST') + ' ' : ''}report exported successfully`);
     } catch (error: any) {
       toast.error("Failed to export report");
     } finally {

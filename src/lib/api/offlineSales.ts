@@ -91,10 +91,16 @@ export const sendCredentialsBulk = async (payload: {
   }
 };
 
-export const exportOfflineSales = async (period: 'weekly' | 'monthly' | 'quarterly' | 'annually'): Promise<Blob> => {
+export const exportOfflineSales = async (
+  period: 'weekly' | 'monthly' | 'quarterly' | 'annually',
+  gstType?: string,
+): Promise<Blob> => {
   try {
+    const params: any = { period };
+    if (gstType) params.gstType = gstType;
+
     const response = await api.get(`/admin/offline-sales/export`, {
-      params: { period },
+      params,
       responseType: 'blob',
     });
     return response.data as Blob;
