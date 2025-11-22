@@ -40,6 +40,7 @@ import TermsAndConditions from "./pages/TermsAndConditions";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import CookiePolicy from "./pages/CookiePolicy";
 import CancellationPolicy from "./pages/CancellationPolicy";
+import ShippingPolicy from "./pages/ShippingPolicy";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { Unauthorized } from "./pages/Unauthorized";
 
@@ -110,6 +111,7 @@ const App = () => (
             <Route path="/faq" element={<FAQ />} />
             <Route path="/privacy" element={<PrivacyPolicy />} />
             <Route path="/terms" element={<TermsAndConditions />} />
+            <Route path="/shipping" element={<ShippingPolicy />} />
             <Route path="/cancellation-policy" element={<CancellationPolicy />} />
             <Route path="/cookie-policy" element={<CookiePolicy />} />
             <Route path="/verify-login" element={<VerifyLogin />} />
