@@ -212,11 +212,14 @@ export const Footer = () => {
         <div className="border-t border-white/10 pt-6 text-sm text-emerald-100/60">
           <div className="flex flex-col gap-2 text-center sm:flex-row sm:items-center sm:justify-between">
             <p>© {currentYear} Grain Fusion • Swatishree's Innovation Pvt. Ltd. All rights reserved.</p>
-            <div className="flex flex-wrap items-center justify-center gap-4">
-              <Link to="/cookie-policy" className="hover:text-lime-200">Cookie Policy</Link>
-              <Link to="/privacy" className="hover:text-lime-200">Privacy Policy</Link>
-              <Link to="/terms" className="hover:text-lime-200">Terms</Link>
-            </div>
+            <p>Developed By <a
+              href="https://www.bytewiseconsulting.in/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-lime-200 underline"
+            >
+              Bytewise Consulting LLP
+            </a></p>
           </div>
         </div>
       </div>
