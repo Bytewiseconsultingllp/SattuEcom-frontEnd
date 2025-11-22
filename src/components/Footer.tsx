@@ -32,10 +32,10 @@ const exploreLinks = [
   { label: "Products", href: "/products" },
   { label: "About", href: "/about" },
   { label: "Testimonials", href: `/#${HOME_SECTION_IDS.testimonials}` },
-  { label: "Contact", href: "/contact" },
+  { label: "Contact", href: "/contact-us" },
 ];
 
-const supportLinks = [
+const policyLinks = [
   { label: "Orders & Shipping", href: "/shipping" },
   { label: "Returns & Refunds", href: "/cancellation-policy" },
   { label: "Cookie Policy", href: "/cookie-policy"},
@@ -55,19 +55,17 @@ const contactDetails = [
   {
     icon: MapPin,
     label: "Experience Centre",
-    value: "Patia, Bhubaneswar, Odisha 751024",
+    value: "PLOT NO 224,LANE-9 ROAD NO-1,JAGANNATH VIHAR , BHUBANESWAR, Orissa, India - 751003",
   },
   {
     icon: Phone,
     label: "Customer Success",
-    value: "+91 98705 43210",
-    href: "tel:+919870543210",
+    value: "+91 8917291456",
   },
   {
     icon: Mail,
     label: "Email",
-    value: "support@grainfusion.in",
-    href: "mailto:support@grainfusion.in",
+    value: "siplhealthymix@gmail.com",
   },
 ];
 
@@ -93,120 +91,97 @@ export const Footer = () => {
         <div className="absolute -bottom-28 -right-24 h-80 w-80 rounded-full bg-primary/30 blur-3xl" aria-hidden />
         <div className="absolute inset-0 bg-grid-white/[0.04]" aria-hidden />
       </div>
-      <div className="relative container mx-auto px-4 py-16 space-y-16">
+      <div className="relative container mx-auto px-4 py-10">
         {/* Main footer grid */}
-        <div className="grid gap-12 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1fr)]">
-          <div className="space-y-6">
-            <div className="space-y-3">
-              <Link to="/" className="inline-flex items-center gap-3 text-white">
-                <img
-                  src={CompanyLogo}
-                  alt="Grain Fusion Logo"
-                  className="h-14 w-14 rounded-lg border border-white/10 object-cover"
-                />
-                <span className="text-2xl font-semibold">Grain Fusion</span>
-              </Link>
-              <p className="text-sm md:text-base text-emerald-100/80 max-w-lg leading-relaxed">
-                Crafted by Swatishree's Innovation Pvt. Ltd., Grain Fusion is dedicated to reviving ancestral Indian nutrition with modern convenience, delivering truly gluten-free, millet-rich foods you can trust.
-              </p>
-            </div>
-
-            <div className="grid gap-4">
-              {contactDetails.map(({ icon: Icon, label, value, href }) => (
-                <div key={label} className="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur">
-                  <div className="flex items-start gap-3">
-                    <div className="mt-1 h-9 w-9 flex items-center justify-center rounded-full bg-white/10">
-                      <Icon className="h-5 w-5 text-lime-200" />
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-xs uppercase tracking-[0.3em] text-emerald-100/70">{label}</p>
-                      {href ? (
-                        <a
-                          href={href}
-                          className="text-sm font-medium text-white hover:text-lime-200 transition-colors"
-                        >
-                          {value}
-                        </a>
-                      ) : (
-                        <p className="text-sm font-medium text-white">{value}</p>
-                      )}
-                    </div>
-                  </div>
-                </div>
+        <div className="grid gap-8 lg:grid-cols-5 items-start">
+          <div className="lg:col-span-2 space-y-4">
+            <Link to="/" className="inline-flex items-center gap-3 text-white">
+              <img
+                src={CompanyLogo}
+                alt="Grain Fusion Logo"
+                className="h-14 w-14 rounded-lg border border-white/10 object-cover"
+              />
+              <span className="text-2xl font-semibold">Grain Fusion</span>
+            </Link>
+            <p className="text-sm md:text-base text-emerald-100/80 leading-relaxed">
+              Crafted by Swatishree's Innovation Pvt. Ltd., Grain Fusion is dedicated to reviving ancestral Indian nutrition with modern convenience, delivering truly gluten-free, millet-rich foods you can trust.
+            </p>
+            <ul className="mt-2 space-y-2 text-sm text-emerald-100/80">
+              {contactDetails.map(({ icon: Icon, label, value }) => (
+                <li key={label} className="flex items-center gap-2">
+                  <Icon className="h-4 w-4 text-lime-200" />
+                  <span>{value}</span>
+                </li>
               ))}
-            </div>
-
-            <div className="flex flex-wrap items-center gap-3">
+            </ul>
+            <div className="flex flex-wrap items-center gap-2 pt-2 pb-4">
               {socialLinks.map(({ icon: Icon, label, href }) => (
                 <a
                   key={label}
                   href={href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="group flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/0 text-white transition-all hover:-translate-y-1 hover:border-lime-200 hover:bg-lime-200 hover:text-emerald-900"
+                  className="group flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/0 text-white transition-all hover:-translate-y-0.5 hover:border-lime-200 hover:bg-lime-200 hover:text-emerald-900"
                   aria-label={label}
                 >
-                  <Icon className="h-5 w-5" />
+                  <Icon className="h-4 w-4" />
                 </a>
               ))}
             </div>
           </div>
 
-          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-1">
-            <div>
-              <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-emerald-100/80">Explore</h3>
-              <ul className="mt-4 space-y-3 text-sm text-emerald-100/80">
-                {exploreLinks.map(({ label, href }) => (
-                  <li key={label}>
-                    <Link to={href} className="transition-colors hover:text-lime-200">
-                      {label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <div>
-              <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-emerald-100/80">Support</h3>
-              <ul className="mt-4 space-y-3 text-sm text-emerald-100/80">
-                {supportLinks.map(({ label, href }) => (
-                  <li key={label}>
-                    <Link to={href} className="transition-colors hover:text-lime-200">
-                      {label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
+          <div>
+            <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-emerald-100/80">Explore</h3>
+            <ul className="mt-4 space-y-3 text-sm text-emerald-100/80">
+              {exploreLinks.map(({ label, href }) => (
+                <li key={label}>
+                  <Link to={href} className="transition-colors hover:text-lime-200">
+                    {label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
           </div>
 
-          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-1">
-            <div>
-              <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-emerald-100/80">Resources</h3>
-              <ul className="mt-4 space-y-3 text-sm text-emerald-100/80">
-                {resourceLinks.map(({ label, href }) => (
-                  <li key={label}>
-                    <Link to={href} className="transition-colors hover:text-lime-200">
-                      {label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <div className="rounded-2xl border border-lime-400/20 bg-lime-400/10 p-5 backdrop-blur">
-              <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-lime-100">Partner with us</h3>
-              <p className="mt-3 text-sm text-emerald-100/80">
-                From institutional nutrition programmes to white-label offerings, our team crafts solutions tailored for your audience.
-              </p>
-              <Link
-                to="/contact"
-                className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-white underline decoration-lime-200 hover:text-lime-200"
-              >
-                Schedule a discovery call
-              </Link>
-            </div>
+          <div>
+            <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-emerald-100/80">Policies</h3>
+            <ul className="mt-4 space-y-3 text-sm text-emerald-100/80">
+              {policyLinks.map(({ label, href }) => (
+                <li key={label}>
+                  <Link to={href} className="transition-colors hover:text-lime-200">
+                    {label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
           </div>
+
+          <div className="rounded-xl border border-lime-400/20 bg-lime-400/10 p-4 backdrop-blur">
+            <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-lime-100">PARTNER WITH US</h3>
+            <p className="mt-3 text-sm text-emerald-100/80">
+              From institutional nutrition programmes to white-label offerings, our team crafts solutions tailored for your audience.
+            </p>
+            <Link
+              to="/contact"
+              className="mt-3 inline-flex items-center gap-2 text-sm font-semibold text-white underline decoration-lime-200 hover:text-lime-200"
+            >
+              Schedule a discovery call
+            </Link>
+          </div>
+
+
+          {/* <div className="rounded-xl border border-lime-400/20 bg-lime-400/10 p-4 backdrop-blur">
+            <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-lime-100">Partner with us</h3>
+            <p className="mt-3 text-sm text-emerald-100/80">
+              From institutional nutrition programmes to white-label offerings, our team crafts solutions tailored for your audience.
+            </p>
+            <Link
+              to="/contact"
+              className="mt-3 inline-flex items-center gap-2 text-sm font-semibold text-white underline decoration-lime-200 hover:text-lime-200"
+            >
+              Schedule a discovery call
+            </Link>
+          </div> */}
         </div>
 
         <div className="border-t border-white/10 pt-6 text-sm text-emerald-100/60">
