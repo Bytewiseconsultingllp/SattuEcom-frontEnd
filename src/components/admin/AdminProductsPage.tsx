@@ -27,7 +27,6 @@ function AdminProductsPage() {
   // Filters
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
-  const [stockFilter, setStockFilter] = useState("all");
   const [priceSort, setPriceSort] = useState("none");
 
   useEffect(() => {
@@ -80,12 +79,7 @@ function AdminProductsPage() {
     // Category filter
     const matchesCategory = categoryFilter === "all" || product.category === categoryFilter;
     
-    // Stock filter
-    const matchesStock = stockFilter === "all" || 
-                        (stockFilter === "in_stock" && product.in_stock) ||
-                        (stockFilter === "out_of_stock" && !product.in_stock);
-    
-    return matchesSearch && matchesCategory && matchesStock;
+    return matchesSearch && matchesCategory;
   });
 
   // Sort products
@@ -104,7 +98,7 @@ function AdminProductsPage() {
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, categoryFilter, stockFilter, priceSort]);
+  }, [searchQuery, categoryFilter, priceSort]);
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -150,18 +144,6 @@ function AdminProductsPage() {
                     {cat.name}
                   </SelectItem>
                 ))}
-              </SelectContent>
-            </Select>
-
-            {/* Stock Filter */}
-            <Select value={stockFilter} onValueChange={setStockFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder="Stock Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Stock</SelectItem>
-                <SelectItem value="in_stock">In Stock</SelectItem>
-                <SelectItem value="out_of_stock">Out of Stock</SelectItem>
               </SelectContent>
             </Select>
 

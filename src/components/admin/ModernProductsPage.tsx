@@ -51,7 +51,6 @@ export function ModernProductsPage() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("list");
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
-  const [stockFilter, setStockFilter] = useState("all");
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [showProductDialog, setShowProductDialog] = useState(false);
   const [showProductForm, setShowProductForm] = useState(false);
@@ -107,37 +106,27 @@ export function ModernProductsPage() {
   const stats = {
     total: totalProducts,
     inStock: Array.isArray(products)
-      ? products.filter((p) => p.in_stock > 0).length
-      : 0,
-    lowStock: Array.isArray(products)
-      ? products.filter((p) => p.stock > 0 && p.stock <= 10).length
+      ? products.filter((p) => p.in_stock === true).length
       : 0,
     outOfStock: Array.isArray(products)
-      ? products.filter((p) => p.stock === 0).length
+      ? products.filter((p) => p.in_stock === false).length
       : 0,
   };
 
   const filteredProducts = products; // Filtering is now done on backend
 
-  const getStockBadge = (stock: number) => {
-    if (stock === 0) {
+  const getStockBadge = (inStock: boolean) => {
+    if (inStock) {
       return (
-        <Badge variant="destructive" className="gap-1">
-          <AlertCircle className="h-3 w-3" />
-          Out of Stock
-        </Badge>
-      );
-    } else if (stock <= 10) {
-      return (
-        <Badge variant="secondary" className="gap-1 bg-yellow-100 text-yellow-700">
-          <AlertCircle className="h-3 w-3" />
-          Low Stock ({stock})
+        <Badge variant="default" className="gap-1 bg-green-100 text-green-700">
+          In Stock
         </Badge>
       );
     } else {
       return (
-        <Badge variant="default" className="gap-1 bg-green-100 text-green-700">
-          In Stock ({stock})
+        <Badge variant="destructive" className="gap-1">
+          <AlertCircle className="h-3 w-3" />
+          Out of Stock
         </Badge>
       );
     }
@@ -194,23 +183,9 @@ export function ModernProductsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">In Stock</p>
-                <p className="text-2xl font-bold text-green-600">{
-                  products.filter((product) => product.instock > 0).length
-                }</p>
+                <p className="text-2xl font-bold text-green-600">{stats.inStock}</p>
               </div>
               <TrendingUp className="h-10 w-10 text-green-600 opacity-20" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="hover:shadow-lg transition-shadow">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Low Stock</p>
-                <p className="text-2xl font-bold text-yellow-600">{stats.lowStock}</p>
-              </div>
-              <AlertCircle className="h-10 w-10 text-yellow-600 opacity-20" />
             </div>
           </CardContent>
         </Card>
@@ -253,18 +228,6 @@ export function ModernProductsPage() {
                     {cat}
                   </SelectItem>
                 ))}
-              </SelectContent>
-            </Select>
-
-            <Select value={stockFilter} onValueChange={setStockFilter}>
-              <SelectTrigger className="w-full md:w-[200px]">
-                <SelectValue placeholder="Stock Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Stock</SelectItem>
-                <SelectItem value="in-stock">In Stock</SelectItem>
-                <SelectItem value="low-stock">Low Stock</SelectItem>
-                <SelectItem value="out-of-stock">Out of Stock</SelectItem>
               </SelectContent>
             </Select>
 
@@ -315,7 +278,6 @@ export function ModernProductsPage() {
                     <TableHead>Product</TableHead>
                     <TableHead>Category</TableHead>
                     <TableHead>Price</TableHead>
-                    <TableHead>Stock</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
@@ -342,8 +304,7 @@ export function ModernProductsPage() {
                       <TableCell className="font-semibold">
                         ₹{product.price}
                       </TableCell>
-                      <TableCell>{product.stock}</TableCell>
-                      <TableCell>{getStockBadge(product.stock)}</TableCell>
+                      <TableCell>{getStockBadge(product.in_stock)}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
                           <Button
@@ -403,7 +364,7 @@ export function ModernProductsPage() {
                 </p>
                 <div className="flex items-center justify-between mb-3">
                   <p className="text-lg font-bold">₹{product.price}</p>
-                  {getStockBadge(product.stock)}
+                  {getStockBadge(product.in_stock)}
                 </div>
                 <div className="flex gap-2">
                   <Button
@@ -505,7 +466,7 @@ export function ModernProductsPage() {
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Stock</p>
-                    {getStockBadge(selectedProduct.stock)}
+                    {getStockBadge(selectedProduct.in_stock)}
                   </div>
                 </div>
               </div>
