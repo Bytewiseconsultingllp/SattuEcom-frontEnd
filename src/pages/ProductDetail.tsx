@@ -13,6 +13,15 @@ import {
   Shield,
   RefreshCw,
   Loader2,
+  Star,
+  Check,
+  Leaf,
+  Award,
+  Package,
+  Zap,
+  ChevronLeft,
+  Info,
+  Clock,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useEffect, useState } from "react";
@@ -33,10 +42,10 @@ import {
 
 const ProductDetail = () => {
   const { id } = useParams();
-  // const product = products.find(p => p.id === id);
   const [product, setProduct] = useState<any>({});
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [quantity, setQuantity] = useState(1);
+  const [selectedImage, setSelectedImage] = useState(0);
   const { addToCart, loadingState } = useCart();
   const navigate = useNavigate();
 
@@ -86,7 +95,7 @@ const ProductDetail = () => {
     }
   }
 
-  if (!product) {
+  if (!product && !isLoading) {
     return (
       <div className="min-h-screen flex flex-col">
         <Header />
@@ -109,7 +118,6 @@ const ProductDetail = () => {
       )
     : 0;
 
-  // Determine images to display: use images array or fallback to placeholder
   const displayImages = product.images && product.images.length > 0 
     ? product.images 
     : ["/placeholder.svg"];
@@ -117,261 +125,330 @@ const ProductDetail = () => {
   const hasMultipleImages = displayImages.length > 1;
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-gradient-to-b from-emerald-50 via-white to-lime-50/30">
       <Header />
 
       <main className="flex-1">
-        <div className="container mx-auto px-4 py-8">
-          {/* Breadcrumb */}
-          <nav className="mb-8 text-sm text-muted-foreground">
-            <Link to="/" className="hover:text-primary">
-              Home
-            </Link>
-            <span className="mx-2">/</span>
-            <Link to="/products" className="hover:text-primary">
-              Products
-            </Link>
-            <span className="mx-2">/</span>
-            <span className="text-foreground">{isLoading ? "Loading..." : product.name}</span>
-          </nav>
-
-          {isLoading ? (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-12">
-              <div className="space-y-4">
-                <Skeleton className="w-full h-[500px] rounded-lg" />
-              </div>
-              <div className="space-y-6">
-                <Skeleton className="h-6 w-24" />
-                <Skeleton className="h-10 w-2/3" />
-                <div className="flex items-center gap-4 mb-4">
-                  <Skeleton className="h-6 w-32" />
-                  <Skeleton className="h-6 w-24" />
-                  <Skeleton className="h-6 w-20" />
-                </div>
-                <Skeleton className="h-20 w-full" />
-                <Separator />
-                <Skeleton className="h-12 w-48" />
-                <div className="flex items-center gap-4">
-                  <Skeleton className="h-10 w-32" />
-                  <Skeleton className="h-10 w-32" />
-                  <Skeleton className="h-10 w-10" />
-                </div>
-              </div>
-            </div>
-          ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-12">
-            {/* Product Image */}
-            <div className="space-y-4 animate-fade-in">
-              <div className="relative overflow-hidden rounded-lg">
-                {hasMultipleImages ? (
-                  <Carousel className="w-full" opts={{ loop: true }}>
-                    <CarouselContent>
-                      {displayImages.map((imageUrl, index) => (
-                        <CarouselItem key={index}>
-                          <img
-                            src={imageUrl}
-                            alt={`${product.name} - Image ${index + 1}`}
-                            className="w-full h-[500px] object-contain"
-                          />
-                        </CarouselItem>
-                      ))}
-                    </CarouselContent>
-                    <CarouselPrevious className="left-4" />
-                    <CarouselNext className="right-4" />
-                  </Carousel>
-                ) : (
-                  <img
-                    src={displayImages[0]}
-                    alt={product.name}
-                    className="w-full h-[500px] object-contain"
-                  />
-                )}
-                {discount > 0 && (
-                  <Badge className="absolute top-4 left-4 bg-destructive text-destructive-foreground text-lg px-4 py-2 z-10">
-                    {discount}% OFF
+        {/* Hero Banner */}
+        <section className="bg-gradient-to-r from-emerald-600 via-emerald-500 to-lime-500 py-6">
+          <div className="container mx-auto px-4">
+            <nav className="flex items-center text-sm text-white/90 mb-2" data-animate="true">
+              <Link to="/" className="hover:text-white flex items-center gap-1 transition-colors">
+                <ChevronLeft className="h-4 w-4" />
+                Home
+              </Link>
+              <span className="mx-2">/</span>
+              <Link to="/products" className="hover:text-white transition-colors">
+                Products
+              </Link>
+              <span className="mx-2">/</span>
+              <span className="text-white font-semibold">{isLoading ? "Loading..." : product.name}</span>
+            </nav>
+            
+            {!isLoading && (
+              <div className="flex items-center gap-3">
+                <Badge className="bg-white/20 backdrop-blur-sm text-white border-white/30">
+                  {product.category}
+                </Badge>
+                {product.in_stock && (
+                  <Badge className="bg-lime-300 text-emerald-900 border-0">
+                    <Check className="h-3 w-3 mr-1" />
+                    In Stock
                   </Badge>
                 )}
               </div>
-            </div>
-
-            {/* Product Info */}
-            <div className="space-y-6 animate-fade-in">
-              {" "}
-              <div>
-                <Badge className="mb-3">{product.category}</Badge>
-                <h1 className="text-3xl font-bold mb-4">{product.name}</h1>
-
-                <div className="flex items-center gap-4 mb-4">
-                  <div className="flex items-center">
-                      <span className="text-primary text-xl">★</span>
-                      <span className="font-semibold ml-1">{product.rating}</span>
-                    </div>
-                    <span className="text-muted-foreground">
-                      ({product.reviews_count} reviews)
-                    </span>
-                    {product.in_stock ? (
-                      <Badge
-                        variant="outline"
-                        className="text-success border-success"
-                      >
-                        In Stock
-                      </Badge>
-                    ) : (
-                      <Badge
-                        variant="outline"
-                        className="text-destructive border-destructive"
-                      >
-                        Out of Stock
-                      </Badge>
-                    )}
-                </div>
-
-                <p className="text-muted-foreground leading-relaxed">
-                  {product.description}
-                </p>
-              </div>
-              <Separator />
-              {/* Price */}
-              <div className="flex items-baseline gap-4">
-                <span className="text-4xl font-bold text-primary">
-                  ₹{product.price}
-                </span>
-                {product.originalPrice && (
-                  <>
-                    <span className="text-xl text-muted-foreground line-through">
-                      ₹{product.originalPrice}
-                    </span>
-                    <Badge className="bg-success text-success-foreground">
-                      Save ₹{product.originalPrice - product.price}
-                    </Badge>
-                  </>
-                )}
-              </div>
-              {/* Quantity & Actions */}
-              <div className="flex items-center gap-4">
-                <div className="flex items-center border rounded-lg">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                  >
-                    -
-                  </Button>
-                  <span className="px-6 font-semibold">{quantity}</span>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setQuantity(quantity + 1)}
-                  >
-                    +
-                  </Button>
-                </div>
-
-                <Button
-                  size="lg"
-                  className="flex-1"
-                  disabled={!product.in_stock}
-                  onClick={() => handleAddToCart(id, quantity)}
-                >
-                  {loadingState?.type === 'add' && loadingState.itemId === id ? (
-                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  ) : (
-                    <ShoppingCart className="mr-2 h-5 w-5" />
-                  )}
-                  Add to Cart
-                </Button>
-
-                <Button
-                  size="lg"
-                  variant="outline"
-                  onClick={handleAddToWishlist}
-                >
-                  <Heart className="h-5 w-5" />
-                </Button>
-
-                <Button size="lg" variant="outline">
-                  <Share2 className="h-5 w-5" />
-                </Button>
-              </div>
-              <Button
-                size="lg"
-                variant="secondary"
-                className="w-full"
-                disabled={!product.in_stock}
-              >
-                Buy Now
-              </Button>
-              {/* Features */}
-              <div className="grid grid-cols-3 gap-4 pt-6">
-                <Card>
-                  <CardContent className="flex flex-col items-center p-4 text-center">
-                    <Truck className="h-8 w-8 text-primary mb-2" />
-                    <span className="text-sm font-medium">Free Delivery</span>
-                    <span className="text-xs text-muted-foreground">
-                      Above ₹500
-                    </span>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="flex flex-col items-center p-4 text-center">
-                    <Shield className="h-8 w-8 text-primary mb-2" />
-                    <span className="text-sm font-medium">Secure Payment</span>
-                    <span className="text-xs text-muted-foreground">
-                      100% Safe
-                    </span>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardContent className="flex flex-col items-center p-4 text-center">
-                    <RefreshCw className="h-8 w-8 text-primary mb-2" />
-                    <span className="text-sm font-medium">Easy Returns</span>
-                    <span className="text-xs text-muted-foreground">
-                      7 Days
-                    </span>
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
+            )}
           </div>
-          )}
+        </section>
 
-          {/* Product Details Tabs */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <Card>
-              <CardContent className="p-6">
-                <h2 className="text-2xl font-bold mb-4">Benefits</h2>
-                <ul className="space-y-2">
-                  {product.benefits?.map((benefit, index) => (
-                    <li key={index} className="flex items-start">
-                      <span className="text-primary mr-2">✓</span>
-                      <span>{benefit}</span>
-                    </li>
+        <div className="container mx-auto px-4 py-12">
+          {isLoading ? (
+            /* Loading Skeletons */
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-12">
+              <div className="space-y-4">
+                <Skeleton className="w-full h-[600px] rounded-3xl bg-emerald-100" />
+                <div className="flex gap-2">
+                  {[1,2,3,4].map(i => (
+                    <Skeleton key={i} className="w-20 h-20 rounded-2xl bg-emerald-100" />
                   ))}
-                </ul>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-6">
-                <h2 className="text-2xl font-bold mb-4">Product Information</h2>
+                </div>
+              </div>
+              <div className="space-y-6">
+                <Skeleton className="h-12 w-3/4 bg-emerald-100" />
+                <Skeleton className="h-24 w-full bg-emerald-100" />
+                <Skeleton className="h-16 w-1/2 bg-emerald-100" />
+                <Skeleton className="h-12 w-full bg-emerald-100" />
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* Main Product Section */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-16" data-gsap-stagger data-stagger="start">
+                {/* Image Gallery */}
                 <div className="space-y-4">
-                  <div>
-                    <h3 className="font-semibold mb-2">Ingredients</h3>
-                    <p className="text-muted-foreground">
-                      {product.ingredients}
-                    </p>
+                  {/* Main Image */}
+                  <div className="relative overflow-hidden rounded-3xl bg-white shadow-2xl border-2 border-emerald-100">
+                    <div className="aspect-square">
+                      <img
+                        src={displayImages[selectedImage]}
+                        alt={product.name}
+                        className="w-full h-full object-contain p-8"
+                      />
+                    </div>
+                    {discount > 0 && (
+                      <div className="absolute top-6 left-6 z-10">
+                        <div className="bg-gradient-to-r from-red-500 to-red-600 text-white px-4 py-2 rounded-2xl shadow-lg">
+                          <span className="text-2xl font-bold">{discount}%</span>
+                          <span className="text-sm ml-1">OFF</span>
+                        </div>
+                      </div>
+                    )}
+                    {!product.in_stock && (
+                      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center">
+                        <div className="bg-white rounded-3xl px-8 py-4 shadow-2xl">
+                          <p className="text-2xl font-bold text-red-600">Out of Stock</p>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                  <div>
-                    <h3 className="font-semibold mb-2">How to Use</h3>
-                    <p className="text-muted-foreground">{product.usage}</p>
+
+                  {/* Thumbnail Gallery */}
+                  {hasMultipleImages && (
+                    <div className="grid grid-cols-4 gap-3">
+                      {displayImages.map((img, idx) => (
+                        <button
+                          key={idx}
+                          onClick={() => setSelectedImage(idx)}
+                          className={`aspect-square rounded-2xl overflow-hidden border-2 transition-all ${
+                            selectedImage === idx 
+                              ? 'border-emerald-500 ring-4 ring-emerald-100' 
+                              : 'border-emerald-200 hover:border-emerald-400'
+                          }`}
+                        >
+                          <img src={img} alt={`View ${idx + 1}`} className="w-full h-full object-contain p-2" />
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Trust Badges */}
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="bg-white rounded-2xl p-4 border-2 border-emerald-100 text-center">
+                      <Leaf className="h-8 w-8 text-emerald-600 mx-auto mb-2" />
+                      <p className="text-sm font-semibold text-emerald-900">100% Natural</p>
+                    </div>
+                    <div className="bg-white rounded-2xl p-4 border-2 border-emerald-100 text-center">
+                      <Award className="h-8 w-8 text-emerald-600 mx-auto mb-2" />
+                      <p className="text-sm font-semibold text-emerald-900">Certified</p>
+                    </div>
+                    <div className="bg-white rounded-2xl p-4 border-2 border-emerald-100 text-center">
+                      <Package className="h-8 w-8 text-emerald-600 mx-auto mb-2" />
+                      <p className="text-sm font-semibold text-emerald-900">Fresh Stock</p>
+                    </div>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          </div>
-          <div className="mt-8">
-            {id && <ProductReviews productId={id as string} />}
-          </div>
+
+                {/* Product Info */}
+                <div className="space-y-6">
+                  {/* Title & Rating */}
+                  <div>
+                    <h1 className="text-4xl md:text-5xl font-bold text-emerald-900 mb-4 leading-tight">
+                      {product.name}
+                    </h1>
+                    
+                    <div className="flex items-center gap-4 flex-wrap">
+                      <div className="flex items-center gap-2 bg-emerald-50 px-4 py-2 rounded-full">
+                        <div className="flex">
+                          {[1,2,3,4,5].map(star => (
+                            <Star 
+                              key={star} 
+                              className={`h-5 w-5 ${star <= Math.floor(product.rating) ? 'fill-amber-400 text-amber-400' : 'text-gray-300'}`}
+                            />
+                          ))}
+                        </div>
+                        <span className="font-bold text-emerald-900">{product.rating}</span>
+                      </div>
+                      <span className="text-emerald-600">
+                        ({product.reviews_count} reviews)
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Description */}
+                  <p className="text-lg text-emerald-700 leading-relaxed">
+                    {product.description}
+                  </p>
+
+                  <Separator className="bg-emerald-200" />
+
+                  {/* Price Section */}
+                  <div className="bg-gradient-to-br from-emerald-50 to-lime-50 rounded-3xl p-6 border-2 border-emerald-200">
+                    <div className="flex items-baseline gap-4 mb-3">
+                      <span className="text-5xl font-bold text-emerald-900">
+                        ₹{product.price}
+                      </span>
+                      {product.originalPrice && (
+                        <>
+                          <span className="text-2xl text-emerald-600 line-through">
+                            ₹{product.originalPrice}
+                          </span>
+                          <Badge className="bg-gradient-to-r from-emerald-600 to-lime-600 text-white text-base px-3 py-1">
+                            Save ₹{product.originalPrice - product.price}
+                          </Badge>
+                        </>
+                      )}
+                    </div>
+                    <p className="text-sm text-emerald-600">Inclusive of all taxes • Free shipping above ₹500</p>
+                  </div>
+
+                  {/* Quantity Selector */}
+                  <div className="space-y-3">
+                    <label className="text-sm font-semibold text-emerald-900">Quantity:</label>
+                    <div className="flex items-center gap-4">
+                      <div className="flex items-center bg-white border-2 border-emerald-200 rounded-2xl shadow-lg">
+                        <Button
+                          variant="ghost"
+                          size="lg"
+                          onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                          className="text-emerald-700 hover:text-emerald-900 hover:bg-emerald-50"
+                        >
+                          <span className="text-2xl font-bold">−</span>
+                        </Button>
+                        <span className="px-8 font-bold text-2xl text-emerald-900">{quantity}</span>
+                        <Button
+                          variant="ghost"
+                          size="lg"
+                          onClick={() => setQuantity(quantity + 1)}
+                          className="text-emerald-700 hover:text-emerald-900 hover:bg-emerald-50"
+                        >
+                          <span className="text-2xl font-bold">+</span>
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="space-y-3">
+                    <Button
+                      size="lg"
+                      className="w-full h-16 text-lg bg-gradient-to-r from-emerald-600 to-lime-600 hover:from-emerald-700 hover:to-lime-700 shadow-lg hover:shadow-xl transition-all"
+                      disabled={!product.in_stock}
+                      onClick={() => handleAddToCart(id, quantity)}
+                    >
+                      {loadingState?.type === 'add' && loadingState.itemId === id ? (
+                        <>
+                          <Loader2 className="mr-2 h-6 w-6 animate-spin" />
+                          Adding to Cart...
+                        </>
+                      ) : (
+                        <>
+                          <ShoppingCart className="mr-2 h-6 w-6" />
+                          Add to Cart
+                        </>
+                      )}
+                    </Button>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <Button
+                        size="lg"
+                        variant="outline"
+                        className="h-14 border-2 border-emerald-600 text-emerald-700 hover:bg-emerald-50"
+                        onClick={handleAddToWishlist}
+                      >
+                        <Heart className="mr-2 h-5 w-5" />
+                        Wishlist
+                      </Button>
+                      <Button
+                        size="lg"
+                        variant="outline"
+                        className="h-14 border-2 border-emerald-600 text-emerald-700 hover:bg-emerald-50"
+                      >
+                        <Share2 className="mr-2 h-5 w-5" />
+                        Share
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Features Grid */}
+                  <div className="grid grid-cols-3 gap-4 pt-4">
+                    <div className="bg-white rounded-2xl p-4 border-2 border-emerald-100 shadow-sm hover:shadow-lg transition-shadow">
+                      <Truck className="h-8 w-8 text-emerald-600 mb-2" />
+                      <p className="text-sm font-semibold text-emerald-900">Free Delivery</p>
+                      <p className="text-xs text-emerald-600">Above ₹500</p>
+                    </div>
+                    <div className="bg-white rounded-2xl p-4 border-2 border-emerald-100 shadow-sm hover:shadow-lg transition-shadow">
+                      <Shield className="h-8 w-8 text-emerald-600 mb-2" />
+                      <p className="text-sm font-semibold text-emerald-900">Secure Payment</p>
+                      <p className="text-xs text-emerald-600">100% Safe</p>
+                    </div>
+                    <div className="bg-white rounded-2xl p-4 border-2 border-emerald-100 shadow-sm hover:shadow-lg transition-shadow">
+                      <RefreshCw className="h-8 w-8 text-emerald-600 mb-2" />
+                      <p className="text-sm font-semibold text-emerald-900">Easy Returns</p>
+                      <p className="text-xs text-emerald-600">7 Days</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Product Details Sections */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-16" data-gsap-stagger data-stagger="start">
+                {/* Benefits */}
+                <div className="bg-white rounded-3xl p-8 shadow-xl border-2 border-emerald-100">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-emerald-500 to-lime-500 flex items-center justify-center">
+                      <Zap className="h-6 w-6 text-white" />
+                    </div>
+                    <h2 className="text-3xl font-bold text-emerald-900">Benefits</h2>
+                  </div>
+                  <ul className="space-y-3">
+                    {product.benefits?.map((benefit, index) => (
+                      <li key={index} className="flex items-start gap-3">
+                        <div className="h-6 w-6 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <Check className="h-4 w-4 text-emerald-600" />
+                        </div>
+                        <span className="text-emerald-700 text-lg">{benefit}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* Product Information */}
+                <div className="bg-white rounded-3xl p-8 shadow-xl border-2 border-emerald-100">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-emerald-500 to-lime-500 flex items-center justify-center">
+                      <Info className="h-6 w-6 text-white" />
+                    </div>
+                    <h2 className="text-3xl font-bold text-emerald-900">Product Information</h2>
+                  </div>
+                  <div className="space-y-6">
+                    <div>
+                      <h3 className="font-bold text-emerald-900 mb-3 text-xl">Ingredients</h3>
+                      <div className="flex flex-wrap gap-2">
+                        {product.ingredients?.split(',').map((ingredient: string, index: number) => (
+                          <Badge 
+                            key={index}
+                            className="bg-gradient-to-r from-emerald-100 to-lime-100 text-emerald-800 border-2 border-emerald-300 px-3 py-1.5 text-sm font-semibold hover:from-emerald-200 hover:to-lime-200 transition-colors"
+                          >
+                            {ingredient.trim()}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                    <Separator className="bg-emerald-200" />
+                    <div>
+                      <h3 className="font-bold text-emerald-900 mb-3 text-xl">How to Use</h3>
+                      <p className="text-emerald-700 leading-relaxed">{product.usage}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Reviews Section */}
+              <div className="mb-16" data-animate="true">
+                {id && <ProductReviews productId={id as string} />}
+              </div>
+            </>
+          )}
         </div>
       </main>
 
