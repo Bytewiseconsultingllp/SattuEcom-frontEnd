@@ -401,91 +401,235 @@ export function ModernOrdersPage() {
         </Card>
       )}
 
-      {/* Order Details Dialog */}
+      {/* Order Details Dialog - Redesigned */}
       <Dialog open={showOrderDialog} onOpenChange={setShowOrderDialog}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Order Details - {selectedOrder?._id || selectedOrder?.id}</DialogTitle>
+            <div className="flex items-center justify-between">
+              <DialogTitle className="text-2xl font-bold">Order #{selectedOrder?.id?.slice(-8).toUpperCase()}</DialogTitle>
+              <Badge className={`gap-1 ${getStatusColor(selectedOrder?.status)}`}>
+                {getStatusIcon(selectedOrder?.status)}
+                {selectedOrder?.status}
+              </Badge>
+            </div>
           </DialogHeader>
           {selectedOrder ? (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-6">
+              {/* Customer & Order Info */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-muted/50 rounded-lg">
                 <div>
-                  <Label>Customer</Label>
-                  <p className="text-sm">
-                    {selectedOrder.customer ||
-                      selectedOrder.user?.email ||
-                      "N/A"}
+                  <Label className="text-xs text-muted-foreground">Customer</Label>
+                  <p className="text-sm font-medium">
+                    {selectedOrder.user?.full_name || selectedOrder.customer || selectedOrder.user?.email || "N/A"}
                   </p>
                 </div>
                 <div>
-                  <Label>Order Date</Label>
-                  <p className="text-sm">
-                    {new Date(
-                      selectedOrder.created_at || selectedOrder.date
-                    ).toLocaleString()}
+                  <Label className="text-xs text-muted-foreground">Order Date</Label>
+                  <p className="text-sm font-medium">
+                    {new Date(selectedOrder.created_at || selectedOrder.date).toLocaleDateString('en-US', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric'
+                    })}
+                  </p>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Total Amount</Label>
+                  <p className="text-lg font-bold text-primary">
+                    ₹{(selectedOrder.total_amount || selectedOrder.total).toLocaleString()}
                   </p>
                 </div>
               </div>
 
+              {/* Order Items */}
               <div>
-                <Label>Order Items</Label>
-                <div className="mt-2 space-y-3">
-                  {(selectedOrder.order_items || []).map((item: any) => (
-                    <div
-                      key={item.id}
-                      className="flex items-center justify-between p-3 border rounded-lg"
-                    >
-                      <div className="flex items-center gap-3">
-                        <img
-                          src={item.product?.images?.[0] || "/placeholder.svg"}
-                          alt={item.product?.name}
-                          className="h-12 w-12 rounded object-cover"
-                        />
-                        <div>
-                          <p className="font-medium">{item.product?.name}</p>
-                          <p className="text-sm text-muted-foreground">
-                            Qty: {item.quantity} × ₹{item.price}
+                <Label className="text-lg font-semibold mb-3 block">Order Items</Label>
+                <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2">
+                  {(selectedOrder.order_items || []).length > 0 ? (
+                    selectedOrder.order_items.map((item: any, index: number) => (
+                      <div
+                        key={item.id}
+                        className="flex items-center gap-4 p-4 bg-white border border-gray-200 rounded-lg hover:shadow-md transition-shadow"
+                      >
+                        <div className="flex-shrink-0">
+                          <img
+                            src={item.product?.images?.[0] || "/placeholder.svg"}
+                            alt={item.product?.name || "Product"}
+                            className="h-16 w-16 rounded-lg object-cover border"
+                            onError={(e) => {
+                              e.currentTarget.src = "/placeholder.svg";
+                            }}
+                          />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-sm truncate">{item.product?.name || "Unknown Product"}</p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {item.product?.category && <span className="mr-2">📦 {item.product.category}</span>}
+                          </p>
+                          <div className="flex items-center gap-4 mt-2">
+                            <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded">
+                              Qty: {item.quantity}
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              @ ₹{item.price}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          <p className="font-bold text-lg">
+                            ₹{(item.price * item.quantity).toFixed(2)}
                           </p>
                         </div>
                       </div>
-                      <p className="font-semibold">
-                        ₹{item.price * item.quantity}
-                      </p>
-                    </div>
-                  ))}
+                    ))
+                  ) : (
+                    <p className="text-sm text-muted-foreground text-center py-8">No items found</p>
+                  )}
                 </div>
               </div>
 
-              <div className="flex justify-between items-center pt-4 border-t">
-                <p className="font-semibold">Total Amount</p>
-                <p className="text-2xl font-bold">
-                  ₹{selectedOrder.total_amount || selectedOrder.total}
-                </p>
+              {/* Order Summary */}
+              <div className="border-t pt-4">
+                <div className="bg-gradient-to-r from-primary/5 to-primary/10 rounded-lg p-4 space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Subtotal</span>
+                    <span className="font-medium">₹{(selectedOrder.total_amount || selectedOrder.total).toFixed(2)}</span>
+                  </div>
+                  {selectedOrder.discount_amount > 0 && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-muted-foreground">Discount</span>
+                      <span className="font-medium text-green-600">-₹{selectedOrder.discount_amount.toFixed(2)}</span>
+                    </div>
+                  )}
+                  {selectedOrder.delivery_charges > 0 && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-muted-foreground">Delivery Charges</span>
+                      <span className="font-medium">₹{selectedOrder.delivery_charges.toFixed(2)}</span>
+                    </div>
+                  )}
+                  {selectedOrder.tax_amount > 0 && (
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-muted-foreground">Tax</span>
+                      <span className="font-medium">₹{selectedOrder.tax_amount.toFixed(2)}</span>
+                    </div>
+                  )}
+                  <div className="border-t pt-2 mt-2 flex justify-between items-center">
+                    <span className="text-base font-semibold">Total Amount</span>
+                    <span className="text-2xl font-bold text-primary">
+                      ₹{(selectedOrder.total_amount || selectedOrder.total).toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Order Status Timeline */}
+              <div className="border-t pt-4">
+                <Label className="text-lg font-semibold mb-3 block flex items-center gap-2">
+                  <Clock className="h-5 w-5" />
+                  Order Timeline
+                </Label>
+                {selectedOrder.statusHistory && selectedOrder.statusHistory.length > 0 ? (
+                  <div className="relative max-h-[200px] overflow-y-auto pr-2">
+                    {/* Vertical line */}
+                    <div className="absolute left-3 top-0 bottom-0 w-0.5 bg-gray-200"></div>
+                    
+                    <div className="space-y-4">
+                      {selectedOrder.statusHistory.map((historyItem: any, index: number) => {
+                        const statusColors: any = {
+                          pending: 'bg-gray-400',
+                          processing: 'bg-yellow-400',
+                          shipped: 'bg-blue-400',
+                          delivered: 'bg-green-400',
+                          cancelled: 'bg-red-400',
+                        };
+                        
+                        return (
+                          <div key={index} className="relative flex gap-3 items-start">
+                            {/* Timeline dot */}
+                            <div className={`relative z-10 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full border-2 border-white ${statusColors[historyItem.status] || 'bg-gray-400'}`}>
+                              {historyItem.status === 'delivered' && <CheckCircle2 className="h-3 w-3 text-white" />}
+                              {historyItem.status === 'shipped' && <Truck className="h-3 w-3 text-white" />}
+                              {historyItem.status === 'processing' && <Package className="h-3 w-3 text-white" />}
+                              {historyItem.status === 'cancelled' && <XCircle className="h-3 w-3 text-white" />}
+                              {historyItem.status === 'pending' && <Clock className="h-3 w-3 text-white" />}
+                            </div>
+                            
+                            {/* Timeline content */}
+                            <div className="flex-1 min-w-0 pb-4">
+                              <div className="flex items-center justify-between gap-2">
+                                <h4 className="font-medium text-sm capitalize">{historyItem.status}</h4>
+                                <span className="text-xs text-muted-foreground whitespace-nowrap">
+                                  {new Date(historyItem.changedAt).toLocaleString('en-US', {
+                                    month: 'short',
+                                    day: 'numeric',
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                  })}
+                                </span>
+                              </div>
+                              {historyItem.comment && (
+                                <p className="text-xs text-muted-foreground mt-1">{historyItem.comment}</p>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-6 text-sm text-muted-foreground">
+                    No status history available
+                  </div>
+                )}
               </div>
 
               {/* Shipment Details (if shipped) */}
-              {selectedOrder.shipment && (
+              {selectedOrder.status === "shipped" || selectedOrder.status === "delivered" ? (
                 <div className="border-t pt-4">
-                  <Label className="text-lg font-semibold mb-3 block">Shipment Details</Label>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label>Delivery Partner</Label>
-                      <p className="text-sm font-medium">{selectedOrder.shipment.deliveryPartner}</p>
-                    </div>
-                    <div>
-                      <Label>Tracking Number</Label>
-                      <p className="text-sm font-medium">{selectedOrder.shipment.trackingNumber}</p>
-                    </div>
-                    {selectedOrder.shipment.estimatedDelivery && (
-                      <div>
-                        <Label>Estimated Delivery</Label>
-                        <p className="text-sm font-medium">{selectedOrder.shipment.estimatedDelivery}</p>
-                      </div>
-                    )}
+                  <div className="flex items-center gap-2 mb-3">
+                    <Truck className="h-5 w-5 text-blue-600" />
+                    <Label className="text-lg font-semibold">Shipment Details</Label>
                   </div>
+                  {selectedOrder.shipment && (selectedOrder.shipment.deliveryPartner || selectedOrder.shipment.trackingNumber) ? (
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {selectedOrder.shipment.deliveryPartner && (
+                          <div className="space-y-1">
+                            <Label className="text-sm text-muted-foreground">Delivery Partner</Label>
+                            <p className="text-sm font-medium">{selectedOrder.shipment.deliveryPartner}</p>
+                          </div>
+                        )}
+                        {selectedOrder.shipment.trackingNumber && (
+                          <div className="space-y-1">
+                            <Label className="text-sm text-muted-foreground">Tracking Number</Label>
+                            <p className="text-sm font-medium">{selectedOrder.shipment.trackingNumber}</p>
+                          </div>
+                        )}
+                        {selectedOrder.shipment.estimatedDelivery && (
+                          <div className="space-y-1">
+                            <Label className="text-sm text-muted-foreground">Estimated Delivery</Label>
+                            <p className="text-sm font-medium">{selectedOrder.shipment.estimatedDelivery}</p>
+                          </div>
+                        )}
+                        {selectedOrder.shipment.shippedAt && (
+                          <div className="space-y-1">
+                            <Label className="text-sm text-muted-foreground">Shipped At</Label>
+                            <p className="text-sm font-medium">
+                              {new Date(selectedOrder.shipment.shippedAt).toLocaleString()}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                      <p className="text-sm text-yellow-800">
+                        Shipment details have not been added yet. Update the order status to add tracking information.
+                      </p>
+                    </div>
+                  )}
                 </div>
-              )}
+              ) : null}
 
               <div>
                 <Label>Update Status</Label>
@@ -499,13 +643,42 @@ export function ModernOrdersPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="pending">Pending</SelectItem>
-                    <SelectItem value="processing">Processing</SelectItem>
-                    <SelectItem value="shipped">Shipped</SelectItem>
-                    <SelectItem value="delivered">Delivered</SelectItem>
-                    <SelectItem value="cancelled">Cancelled</SelectItem>
+                    {/* Show all statuses if order is pending or processing */}
+                    {(selectedOrder.status === 'pending' || selectedOrder.status === 'processing') && (
+                      <>
+                        <SelectItem value="pending">Pending</SelectItem>
+                        <SelectItem value="processing">Processing</SelectItem>
+                        <SelectItem value="shipped">Shipped</SelectItem>
+                        <SelectItem value="cancelled">Cancelled</SelectItem>
+                      </>
+                    )}
+                    {/* If shipped, only allow delivered */}
+                    {selectedOrder.status === 'shipped' && (
+                      <>
+                        <SelectItem value="shipped" disabled>Shipped (Current)</SelectItem>
+                        <SelectItem value="delivered">Delivered</SelectItem>
+                      </>
+                    )}
+                    {/* If delivered, show as read-only */}
+                    {selectedOrder.status === 'delivered' && (
+                      <SelectItem value="delivered" disabled>Delivered (Current)</SelectItem>
+                    )}
+                    {/* If cancelled, show as read-only */}
+                    {selectedOrder.status === 'cancelled' && (
+                      <SelectItem value="cancelled" disabled>Cancelled (Current)</SelectItem>
+                    )}
                   </SelectContent>
                 </Select>
+                {selectedOrder.status === 'shipped' && (
+                  <p className="text-xs text-muted-foreground mt-2">
+                    ⚠️ Once shipped, order can only be marked as delivered
+                  </p>
+                )}
+                {(selectedOrder.status === 'delivered' || selectedOrder.status === 'cancelled') && (
+                  <p className="text-xs text-muted-foreground mt-2">
+                    ℹ️ Status cannot be changed for {selectedOrder.status} orders
+                  </p>
+                )}
               </div>
             </div>
           ) : (
