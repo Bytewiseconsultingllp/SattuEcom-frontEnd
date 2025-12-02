@@ -120,52 +120,56 @@ export const Header = () => {
 
           {/* Actions */}
           <div className="flex items-center gap-2">
-            {!isLoggedIn ? (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="hidden md:flex"
-                onClick={handleProfileClick}
-              >
-                <User className="h-5 w-5" />
-              </Button>
-            ) : (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="hidden md:flex">
-                    <User className="h-5 w-5" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleDashboardNavigate}>My Dashboard</DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleLogout}>Logout</DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
+            {/* Desktop User Icon */}
+            <div className="hidden md:block">
+              {!isLoggedIn ? (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleProfileClick}
+                >
+                  <User className="h-5 w-5" />
+                </Button>
+              ) : (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon">
+                      <User className="h-5 w-5" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleDashboardNavigate}>My Dashboard</DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleLogout}>Logout</DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+            </div>
             
+            {/* Wishlist Button - Visible on all screens */}
             <Button variant="ghost" size="icon" className="relative" onClick={handleWishlistClick}>
               <Heart className="h-5 w-5" />
               {wishlistCount > 0 && (
-                <Badge className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs">
+                <Badge className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs bg-primary text-primary-foreground">
                   {wishlistCount}
                 </Badge>
               )}
             </Button>
 
+            {/* Cart Button - Visible on all screens */}
             <Link to="/cart">
               <Button variant="ghost" size="icon" className="relative">
                 <ShoppingCart className="h-5 w-5" />
                 {cartCount > 0 && (
-                  <Badge className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs">
+                  <Badge className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs bg-primary text-primary-foreground">
                     {cartCount}
                   </Badge>
                 )}
               </Button>
             </Link>
 
-            {/* Hamburger Button */}
+            {/* Hamburger Button - Mobile only */}
             <Button
               variant="ghost"
               size="icon"
@@ -201,25 +205,55 @@ export const Header = () => {
 
         {/* Mobile Menu */}
         {isMenuOpen && (
-          <div className="md:hidden flex flex-col space-y-2 pb-3">
-            <Link to="/" className="block px-3 py-2 text-sm font-medium text-foreground hover:text-primary">
+          <div className="md:hidden flex flex-col space-y-2 pb-3 border-t pt-3">
+            <Link to="/" className="block px-3 py-2 text-sm font-medium text-foreground hover:text-primary transition-colors">
               Home
             </Link>
-            <Link to="/products" className="block px-3 py-2 text-sm text-muted-foreground hover:text-primary">
+            <Link to="/products" className="block px-3 py-2 text-sm text-muted-foreground hover:text-primary transition-colors">
               All Products
             </Link>
-            <Link to="/sattu-powder" className="block px-3 py-2 text-sm text-muted-foreground hover:text-primary">
+            <Link to="/sattu-powder" className="block px-3 py-2 text-sm text-muted-foreground hover:text-primary transition-colors">
               Sattu Powder
             </Link>
-            <Link to="/ready-to-drink" className="block px-3 py-2 text-sm text-muted-foreground hover:text-primary">
+            <Link to="/ready-to-drink" className="block px-3 py-2 text-sm text-muted-foreground hover:text-primary transition-colors">
               Ready to Drink
             </Link>
-            <Link to="/snacks-ladoo" className="block px-3 py-2 text-sm text-muted-foreground hover:text-primary">
+            <Link to="/snacks-ladoo" className="block px-3 py-2 text-sm text-muted-foreground hover:text-primary transition-colors">
               Snacks & Ladoo
             </Link>
-            <Link to="/custom-sattu" className="block px-3 py-2 text-sm text-muted-foreground hover:text-primary">
+            <Link to="/custom-sattu" className="block px-3 py-2 text-sm text-muted-foreground hover:text-primary transition-colors">
               Custom Sattu
             </Link>
+            
+            {/* Mobile User Actions */}
+            <div className="border-t pt-2 mt-2">
+              {!isLoggedIn ? (
+                <Link to="/login" className="block px-3 py-2 text-sm text-muted-foreground hover:text-primary transition-colors">
+                  <div className="flex items-center gap-2">
+                    <User className="h-4 w-4" />
+                    <span>Login / Sign Up</span>
+                  </div>
+                </Link>
+              ) : (
+                <>
+                  <button
+                    onClick={handleDashboardNavigate}
+                    className="w-full text-left block px-3 py-2 text-sm text-muted-foreground hover:text-primary transition-colors"
+                  >
+                    <div className="flex items-center gap-2">
+                      <User className="h-4 w-4" />
+                      <span>My Dashboard</span>
+                    </div>
+                  </button>
+                  <button
+                    onClick={handleLogout}
+                    className="w-full text-left block px-3 py-2 text-sm text-muted-foreground hover:text-primary transition-colors"
+                  >
+                    Logout
+                  </button>
+                </>
+              )}
+            </div>
           </div>
         )}
 

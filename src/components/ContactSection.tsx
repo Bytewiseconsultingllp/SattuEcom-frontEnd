@@ -3,9 +3,13 @@ import { Mail, Phone, MapPin, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 
-export const ContactSection = () => {
+type ContactSectionProps = {
+  id?: string;
+};
+
+export const ContactSection = ({ id }: ContactSectionProps) => {
   return (
-    <section className="py-20 bg-muted/30 animate-fade-in">
+    <section id={id} className="py-20 bg-muted/30 animate-fade-in">
       <div className="container mx-auto px-4">
         <div className="text-center mb-12">
           <h2 className="text-3xl font-bold mb-4">Get In Touch</h2>

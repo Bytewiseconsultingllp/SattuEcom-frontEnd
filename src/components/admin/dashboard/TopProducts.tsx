@@ -5,12 +5,7 @@ import { Link } from "react-router-dom";
 import { getTopProducts } from "@/lib/api/dashboardStats";
 
 export function TopProducts() {
-  const [topProducts, setTopProducts] = useState<any[]>([
-    { name: "Premium Sattu Powder 1kg", sales: 234, revenue: 23400 },
-    { name: "Sattu Energy Drink Mix", sales: 198, revenue: 19800 },
-    { name: "Roasted Sattu Snacks", sales: 167, revenue: 16700 },
-    { name: "Sattu Gift Hamper", sales: 145, revenue: 14500 },
-  ]);
+  const [topProducts, setTopProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -28,11 +23,14 @@ export function TopProducts() {
     try {
       setLoading(true);
       const response = await getTopProducts(4);
-      if (response?.success) {
+      if (response?.success && Array.isArray(response.data)) {
         setTopProducts(response.data);
+      } else {
+        setTopProducts([]);
       }
     } catch (error) {
       console.error("Failed to fetch top products:", error);
+      setTopProducts([]);
     } finally {
       setLoading(false);
     }
@@ -51,6 +49,8 @@ export function TopProducts() {
           <div className="space-y-4">
             <p className="text-muted-foreground">Loading...</p>
           </div>
+        ) : topProducts.length === 0 ? (
+          <p className="text-muted-foreground">No top products available.</p>
         ) : (
           <div className="space-y-4">
             {topProducts.map((product, index) => (

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   DollarSign,
   ShoppingCart,
@@ -10,6 +11,7 @@ import {
   ArrowDownRight,
   TrendingUp,
 } from "lucide-react";
+import { Link } from "react-router-dom";
 import {
   getAdminDashboardStats,
   getOnlineSalesTotal,
@@ -19,17 +21,17 @@ import {
 
 export function DashboardMetrics() {
   const [stats, setStats] = useState({
-    totalRevenue: 245890,
-    revenueChange: 12.5,
+    totalRevenue: 0,
+    revenueChange: 0,
     onlineSales: 0,
     offlineSales: 0,
     expenses: 0,
-    totalOrders: 1234,
-    ordersChange: 8.2,
-    totalCustomers: 856,
-    customersChange: 15.3,
-    totalProducts: 145,
-    productsChange: 5.1,
+    totalOrders: 0,
+    ordersChange: 0,
+    totalCustomers: 0,
+    customersChange: 0,
+    totalProducts: 0,
+    productsChange: 0,
   });
 
   useEffect(() => {
@@ -77,23 +79,22 @@ export function DashboardMetrics() {
 
       const calculatedRevenue = onlineSalesData + offlineSalesData;
 
-      setStats((prev) => ({
-        ...prev,
+      setStats({
         totalRevenue:
           calculatedRevenue ||
           dashboardData.totalRevenue ||
-          prev.totalRevenue,
-        revenueChange: dashboardData.revenueChange || prev.revenueChange,
+          0,
+        revenueChange: dashboardData.revenueChange ?? 0,
         onlineSales: onlineSalesData || dashboardData.onlineSales || 0,
         offlineSales: offlineSalesData || dashboardData.offlineSales || 0,
         expenses: expensesData || dashboardData.expenses || 0,
-        totalOrders: dashboardData.totalOrders || prev.totalOrders,
-        ordersChange: dashboardData.ordersChange || prev.ordersChange,
-        totalCustomers: dashboardData.totalCustomers || prev.totalCustomers,
-        customersChange: dashboardData.customersChange || prev.customersChange,
-        totalProducts: dashboardData.totalProducts || prev.totalProducts,
-        productsChange: dashboardData.productsChange || prev.productsChange,
-      }));
+        totalOrders: dashboardData.totalOrders || 0,
+        ordersChange: dashboardData.ordersChange ?? 0,
+        totalCustomers: dashboardData.totalCustomers || 0,
+        customersChange: dashboardData.customersChange ?? 0,
+        totalProducts: dashboardData.totalProducts || 0,
+        productsChange: dashboardData.productsChange ?? 0,
+      });
     } catch (error) {
       console.error("Failed to fetch stats:", error);
     }
@@ -153,6 +154,11 @@ export function DashboardMetrics() {
               Here's what's happening with your store today
             </p>
           </div>
+          <div className="hidden md:flex items-center gap-4">
+            <Button variant="secondary" size="lg" asChild>
+              <Link to="/admin/reports">View Reports</Link>
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -170,7 +176,7 @@ export function DashboardMetrics() {
           icon={ShoppingCart}
           label="Online Sales"
           value={stats.onlineSales}
-          change={8.2}
+          change={stats.revenueChange}
           bgColor="bg-blue-100"
           iconColor="text-blue-600"
         />
@@ -178,7 +184,7 @@ export function DashboardMetrics() {
           icon={Package}
           label="Offline Sales"
           value={stats.offlineSales}
-          change={5.1}
+          change={stats.revenueChange}
           bgColor="bg-purple-100"
           iconColor="text-purple-600"
         />
@@ -186,7 +192,7 @@ export function DashboardMetrics() {
           icon={ArrowDownRight}
           label="Expenses"
           value={stats.expenses}
-          change={-3.2}
+          change={-stats.revenueChange}
           bgColor="bg-red-100"
           iconColor="text-red-600"
         />

@@ -31,9 +31,9 @@ const TopProducts = lazy(() =>
   }))
 );
 
-const QuickActions = lazy(() =>
-  import("./dashboard/QuickActions").then((m) => ({
-    default: m.QuickActions,
+const AlertsPanel = lazy(() =>
+  import("./dashboard/AlertsPanel").then((m) => ({
+    default: m.AlertsPanel,
   }))
 );
 
@@ -79,9 +79,9 @@ export function DashboardHome() {
         </Suspense>
       </div>
 
-      {/* Quick Actions */}
+      {/* Alerts & Warnings */}
       <Suspense fallback={<div className="h-32 bg-gray-200 rounded-lg" />}>
-        <QuickActions />
+        <AlertsPanel />
       </Suspense>
     </div>
   );

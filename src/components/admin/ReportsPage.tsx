@@ -132,15 +132,6 @@ export function ReportsPage() {
       formats: ["PDF", "Excel"],
     },
     {
-      id: "inventory",
-      title: "Inventory Report",
-      description: "Stock levels and product availability",
-      icon: FileText,
-      color: "text-indigo-600",
-      bgColor: "bg-indigo-100",
-      formats: ["PDF", "Excel", "CSV"],
-    },
-    {
       id: "revenue",
       title: "Revenue Report",
       description: "Revenue trends and projections",
@@ -334,6 +325,146 @@ export function ReportsPage() {
         printWindow.document.close();
       } catch (error: any) {
         toast.error(error.message || "Failed to generate Profit & Loss PDF");
+      }
+      return;
+    }
+
+    if (reportId === "expenses" && format === "PDF") {
+      try {
+        const company = await getCompanySettings().catch(() => null);
+
+        let expensesByCategory: Record<string, number> = {};
+        let totalExpenses = 0;
+        try {
+          const expenseList = await getExpenses();
+          expensesByCategory = (expenseList || []).reduce((acc: Record<string, number>, e: any) => {
+            const key = e.category || "other";
+            const amount = typeof e.amount === "number" ? e.amount : 0;
+            acc[key] = (acc[key] || 0) + amount;
+            totalExpenses += amount;
+            return acc;
+          }, {});
+        } catch {
+          expensesByCategory = {};
+        }
+
+        const expenseRowsHtml = Object.entries(expensesByCategory)
+          .filter(([, amount]) => amount > 0)
+          .map(([cat, amount]) => {
+            const label = EXPENSE_CATEGORY_LABELS[cat] || cat;
+            return `<tr><td>${label}</td><td class="right">${formatCurrency(amount)}</td></tr>`;
+          })
+          .join("");
+
+        const expenseTableBody = expenseRowsHtml || '<tr><td colspan="2" class="right">No expense data available</td></tr>';
+
+        let periodLabel = "Overall";
+        if (dateRange === "custom" && startDate && endDate) {
+          periodLabel = `${startDate} to ${endDate}`;
+        } else {
+          const map: Record<string, string> = {
+            "today": "Today",
+            "yesterday": "Yesterday",
+            "last-7-days": "Last 7 Days",
+            "last-30-days": "Last 30 Days",
+            "this-month": "This Month",
+            "last-month": "Last Month",
+            "this-quarter": "This Quarter",
+            "this-year": "This Year",
+          };
+          periodLabel = map[dateRange] || "Overall";
+        }
+
+        const now = new Date();
+        const generatedOn = now.toLocaleString();
+        const companyName = company?.companyName || "Company Name";
+        const companyAddress = company?.address || "";
+        const companyEmail = company?.email || "";
+        const companyPhone = company?.phone || "";
+        const gstNumber = company?.gstNumber || "";
+        const companyLogo = company?.logo || "";
+
+        const totalExpensesStr = formatCurrency(totalExpenses || overview.expenses || 0);
+
+        const html = `<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charSet="UTF-8" />
+    <title>Expenses Report</title>
+    <style>
+      body { font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; margin: 0; padding: 40px; background-color: #f3f4f6; color: #111827; }
+      .header { text-align: center; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid #e5e7eb; }
+      .logo { height: 56px; width: auto; object-fit: contain; margin-bottom: 8px; }
+      .company-name { font-size: 24px; font-weight: 700; margin-top: 4px; }
+      .company-meta { font-size: 12px; color: #4b5563; margin-top: 4px; line-height: 1.5; max-width: 520px; margin-left: auto; margin-right: auto; }
+      .title { font-size: 20px; font-weight: 600; margin-top: 24px; margin-bottom: 4px; }
+      .subtitle { font-size: 13px; color: #4b5563; margin-bottom: 16px; }
+      .section { margin-top: 24px; }
+      .section-title { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.12em; color: #6b7280; margin-bottom: 10px; }
+      table { width: 100%; border-collapse: collapse; margin-top: 8px; border-radius: 12px; overflow: hidden; }
+      th, td { padding: 10px 12px; border-bottom: 1px solid #e5e7eb; font-size: 13px; text-align: left; }
+      th { background-color: #f9fafb; font-weight: 600; }
+      tr:nth-child(even) td { background-color: #f9fafb; }
+      .right { text-align: right; }
+      .footer { margin-top: 32px; font-size: 11px; color: #6b7280; text-align: right; border-top: 1px solid #e5e7eb; padding-top: 12px; }
+    </style>
+  </head>
+  <body onload="window.print(); window.close();">
+    <div class="header">
+      ${companyLogo ? `<img src="${companyLogo}" alt="Company Logo" class="logo" />` : ""}
+      <div class="company-name">${companyName}</div>
+      <div class="company-meta">
+        ${companyAddress ? `${companyAddress}<br/>` : ""}
+        ${companyEmail ? `Email: ${companyEmail} | ` : ""}
+        ${companyPhone ? `Phone: ${companyPhone}` : ""}
+        ${gstNumber ? `<br/>GST: ${gstNumber}` : ""}
+      </div>
+    </div>
+
+    <div class="title">Expenses Report</div>
+    <div class="subtitle">Reporting Period: ${periodLabel}</div>
+
+    <div class="section">
+      <div class="section-title">Summary</div>
+      <table>
+        <tr>
+          <th>Description</th>
+          <th class="right">Amount (INR)</th>
+        </tr>
+        <tr>
+          <td>Total Expenses</td>
+          <td class="right">${totalExpensesStr}</td>
+        </tr>
+      </table>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Expense Breakdown</div>
+      <table>
+        <tr>
+          <th>Category</th>
+          <th class="right">Amount (INR)</th>
+        </tr>
+        ${expenseTableBody}
+      </table>
+    </div>
+
+    <div class="footer">
+      Generated on ${generatedOn}
+    </div>
+  </body>
+</html>`;
+
+        const printWindow = window.open("", "_blank", "width=900,height=650");
+        if (!printWindow) {
+          toast.error("Popup blocked. Please allow popups to export the PDF.");
+          return;
+        }
+        printWindow.document.open();
+        printWindow.document.write(html);
+        printWindow.document.close();
+      } catch (error: any) {
+        toast.error(error.message || "Failed to generate Expenses PDF");
       }
       return;
     }

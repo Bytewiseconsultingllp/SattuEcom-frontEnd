@@ -12,12 +12,7 @@ import {
 import { getTopCategories } from "@/lib/api/dashboardStats";
 
 export function TopCategories() {
-  const [categoryData, setCategoryData] = useState<any[]>([
-    { name: "Sattu Powder", sales: 45000, orders: 234 },
-    { name: "Sattu Drinks", sales: 38000, orders: 198 },
-    { name: "Sattu Snacks", sales: 32000, orders: 167 },
-    { name: "Gift Packs", sales: 28000, orders: 145 },
-  ]);
+  const [categoryData, setCategoryData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -35,11 +30,14 @@ export function TopCategories() {
     try {
       setLoading(true);
       const response = await getTopCategories();
-      if (response?.success) {
+      if (response?.success && Array.isArray(response.data)) {
         setCategoryData(response.data);
+      } else {
+        setCategoryData([]);
       }
     } catch (error) {
       console.error("Failed to fetch top categories:", error);
+      setCategoryData([]);
     } finally {
       setLoading(false);
     }
@@ -54,6 +52,10 @@ export function TopCategories() {
         {loading ? (
           <div className="h-[300px] flex items-center justify-center">
             <p className="text-muted-foreground">Loading...</p>
+          </div>
+        ) : categoryData.length === 0 ? (
+          <div className="h-[300px] flex items-center justify-center">
+            <p className="text-muted-foreground">No category data available</p>
           </div>
         ) : (
           <ResponsiveContainer width="100%" height={300}>

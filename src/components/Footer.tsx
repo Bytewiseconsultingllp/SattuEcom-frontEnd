@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import {
   Facebook,
@@ -27,6 +27,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import gsap from "gsap";
 
 const exploreLinks = [
   { label: "Products", href: "/products" },
@@ -79,6 +80,28 @@ const socialLinks = [
 export const Footer = () => {
   const currentYear = new Date().getFullYear();
   const [isNewsletterOpen, setIsNewsletterOpen] = useState(false);
+  const mainRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!mainRef.current) return;
+    const cols = mainRef.current.querySelectorAll('.footer-gsap-col');
+    const tl = gsap.timeline();
+    tl.from(mainRef.current.querySelector('img'), {
+      scale: gsap.utils.random(0.85, 1.05),
+      opacity: 0,
+      y: gsap.utils.random(30, 60),
+      duration: 0.7,
+      ease: "power2.out"
+    }).from(cols, {
+      opacity: 0,
+      y: gsap.utils.random(40,80),
+      scale: gsap.utils.random(0.85,1.1),
+      stagger: 0.1,
+      duration: 0.7,
+      ease: "back.out(2)"
+    }, "<");
+    return () => tl.kill();
+  }, []);
 
   const handleScrollToTop = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -91,10 +114,10 @@ export const Footer = () => {
         <div className="absolute -bottom-28 -right-24 h-80 w-80 rounded-full bg-primary/30 blur-3xl" aria-hidden />
         <div className="absolute inset-0 bg-grid-white/[0.04]" aria-hidden />
       </div>
-      <div className="relative container mx-auto px-4 py-10">
+      <div className="relative container mx-auto px-4 py-10" ref={mainRef}>
         {/* Main footer grid */}
         <div className="grid gap-8 lg:grid-cols-5 items-start">
-          <div className="lg:col-span-2 space-y-4">
+          <div className="lg:col-span-2 space-y-4 footer-gsap-col">
             <Link to="/" className="inline-flex items-center gap-3 text-white">
               <img
                 src={CompanyLogo}
@@ -130,7 +153,7 @@ export const Footer = () => {
             </div>
           </div>
 
-          <div>
+          <div className="footer-gsap-col">
             <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-emerald-100/80">Explore</h3>
             <ul className="mt-4 space-y-3 text-sm text-emerald-100/80">
               {exploreLinks.map(({ label, href }) => (
@@ -143,7 +166,7 @@ export const Footer = () => {
             </ul>
           </div>
 
-          <div>
+          <div className="footer-gsap-col">
             <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-emerald-100/80">Policies</h3>
             <ul className="mt-4 space-y-3 text-sm text-emerald-100/80">
               {policyLinks.map(({ label, href }) => (
@@ -156,7 +179,7 @@ export const Footer = () => {
             </ul>
           </div>
 
-          <div className="rounded-xl border border-lime-400/20 bg-lime-400/10 p-4 backdrop-blur">
+          <div className="rounded-xl border border-lime-400/20 bg-lime-400/10 p-4 backdrop-blur footer-gsap-col">
             <h3 className="text-sm font-semibold uppercase tracking-[0.3em] text-lime-100">PARTNER WITH US</h3>
             <p className="mt-3 text-sm text-emerald-100/80">
               From institutional nutrition programmes to white-label offerings, our team crafts solutions tailored for your audience.

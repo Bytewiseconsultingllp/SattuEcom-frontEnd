@@ -15,6 +15,8 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
+import { useEffect, useRef } from "react";
+import gsap from "gsap";
 
 export interface Product {
   _id: string;
@@ -34,6 +36,21 @@ interface ProductCardProps {
 }
 
 export const ProductCard = ({ product }: ProductCardProps) => {
+  const cardRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!cardRef.current) return;
+    const tl = gsap.timeline();
+    tl.from(cardRef.current, {
+      y: gsap.utils.random(60, 130),
+      rotation: gsap.utils.random(-8, 8),
+      scale: gsap.utils.random(0.88, 1.06),
+      opacity: 0,
+      duration: 0.7,
+      ease: "power2.out"
+    });
+    return () => tl.kill();
+  }, []);
+
   const discount = product.originalPrice 
     ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
     : 0;
@@ -93,6 +110,7 @@ export const ProductCard = ({ product }: ProductCardProps) => {
 
   return (
     <Card 
+      ref={cardRef}
       className="group overflow-hidden transition-all hover:shadow-xl animate-fade-in cursor-pointer"
       onClick={handleCardClick}
     >

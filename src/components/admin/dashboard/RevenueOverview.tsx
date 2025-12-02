@@ -12,14 +12,7 @@ import {
 import { getRevenueOverview } from "@/lib/api/dashboardStats";
 
 export function RevenueOverview() {
-  const [revenueData, setRevenueData] = useState<any[]>([
-    { month: "Jan", revenue: 45000, orders: 120 },
-    { month: "Feb", revenue: 52000, orders: 145 },
-    { month: "Mar", revenue: 48000, orders: 132 },
-    { month: "Apr", revenue: 61000, orders: 168 },
-    { month: "May", revenue: 55000, orders: 152 },
-    { month: "Jun", revenue: 68000, orders: 189 },
-  ]);
+  const [revenueData, setRevenueData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -37,11 +30,14 @@ export function RevenueOverview() {
     try {
       setLoading(true);
       const response = await getRevenueOverview();
-      if (response?.success) {
+      if (response?.success && Array.isArray(response.data)) {
         setRevenueData(response.data);
+      } else {
+        setRevenueData([]);
       }
     } catch (error) {
       console.error("Failed to fetch revenue overview:", error);
+      setRevenueData([]);
     } finally {
       setLoading(false);
     }
@@ -56,6 +52,10 @@ export function RevenueOverview() {
         {loading ? (
           <div className="h-[300px] flex items-center justify-center">
             <p className="text-muted-foreground">Loading...</p>
+          </div>
+        ) : revenueData.length === 0 ? (
+          <div className="h-[300px] flex items-center justify-center">
+            <p className="text-muted-foreground">No revenue data available</p>
           </div>
         ) : (
           <ResponsiveContainer width="100%" height={300}>

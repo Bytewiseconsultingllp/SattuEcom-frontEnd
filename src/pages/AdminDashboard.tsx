@@ -97,7 +97,7 @@ import { OfflineSalesPage } from "@/components/admin/OfflineSalesPage";
 import { SocialMediaPage } from "@/components/admin/SocialMediaPage";
 import { CompanySettingsPage } from "@/components/admin/CompanySettingsPage";
 import { ContactManagementPage } from "@/components/admin/ContactManagementPage";
-import { DashboardHome } from "@/components/admin/DashboardHome";
+import { DashboardHome } from "@/components/admin/DashboardHome-Refactored";
 import { ModernAdminSidebar } from "@/components/admin/ModernAdminSidebar";
 import { ModernAdminHeader } from "@/components/admin/ModernAdminHeader";
 import { ModernProductsPage } from "@/components/admin/ModernProductsPage";

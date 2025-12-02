@@ -13,36 +13,7 @@ import { Link } from "react-router-dom";
 import { getRecentOrders } from "@/lib/api/dashboardStats";
 
 export function RecentOrders() {
-  const [recentOrders, setRecentOrders] = useState<any[]>([
-    {
-      id: "ORD-001",
-      customer: "John Doe",
-      amount: 1250,
-      status: "delivered",
-      time: "2 hours ago",
-    },
-    {
-      id: "ORD-002",
-      customer: "Jane Smith",
-      amount: 890,
-      status: "processing",
-      time: "4 hours ago",
-    },
-    {
-      id: "ORD-003",
-      customer: "Mike Johnson",
-      amount: 2100,
-      status: "shipped",
-      time: "6 hours ago",
-    },
-    {
-      id: "ORD-004",
-      customer: "Sarah Williams",
-      amount: 750,
-      status: "pending",
-      time: "8 hours ago",
-    },
-  ]);
+  const [recentOrders, setRecentOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -59,12 +30,15 @@ export function RecentOrders() {
   const fetchOrders = async () => {
     try {
       setLoading(true);
-      const response = await getRecentOrders(1);
-      if (response?.success) {
+      const response = await getRecentOrders(4);
+      if (response?.success && Array.isArray(response.data)) {
         setRecentOrders(response.data);
+      } else {
+        setRecentOrders([]);
       }
     } catch (error) {
       console.error("Failed to fetch recent orders:", error);
+      setRecentOrders([]);
     } finally {
       setLoading(false);
     }
@@ -113,6 +87,8 @@ export function RecentOrders() {
           <div className="space-y-4">
             <p className="text-muted-foreground">Loading...</p>
           </div>
+        ) : recentOrders.length === 0 ? (
+          <p className="text-muted-foreground">No recent orders found.</p>
         ) : (
           <div className="space-y-4">
             {recentOrders.map((order) => (

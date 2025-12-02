@@ -178,13 +178,13 @@ const DeliveryOptions = () => {
                       </Label>
                     </div>
                     
-                    <div className="flex items-center space-x-3 p-4 rounded-lg border hover:bg-accent/5 cursor-pointer">
+                    {/* <div className="flex items-center space-x-3 p-4 rounded-lg border hover:bg-accent/5 cursor-pointer">
                       <RadioGroupItem value="overnight" id="overnight" />
                       <Label htmlFor="overnight" className="flex-1 cursor-pointer">
                         <div className="font-semibold">Overnight Delivery (+₹150)</div>
                         <div className="text-sm text-muted-foreground">Next business day</div>
                       </Label>
-                    </div>
+                    </div> */}
                   </div>
                 </RadioGroup>
               </CardContent>
