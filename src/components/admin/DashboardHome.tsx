@@ -43,17 +43,17 @@ import {
 
 export function DashboardHome() {
   const [stats, setStats] = useState({
-    totalRevenue: 245890,
-    revenueChange: 12.5,
+    totalRevenue: 0,
+    revenueChange: 0,
     onlineSales: 0,
     offlineSales: 0,
     expenses: 0,
-    totalOrders: 1234,
-    ordersChange: 8.2,
-    totalCustomers: 856,
-    customersChange: 15.3,
-    totalProducts: 145,
-    productsChange: 5.1,
+    totalOrders: 0,
+    ordersChange: 0,
+    totalCustomers: 0,
+    customersChange: 0,
+    totalProducts: 0,
+    productsChange: 0,
   });
 
   const [revenueData, setRevenueData] = useState<any[]>([
