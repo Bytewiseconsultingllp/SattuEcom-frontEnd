@@ -19,19 +19,22 @@ export interface OfflineSalesResponse {
 export interface OfflineSale {
   _id?: string;
   date: string;
-  customerName: string;
-  customerPhone: string;
-  customerEmail: string;
+  customer_name: string;
+  customer_phone: string;
+  customer_email: string;
   items: OfflineSaleItem[];
-  totalAmount: number;
-  finalAmount?: number;
-  paymentMethod: string;
+  total_amount: number;
+  final_amount?: number;
+  payment_method: string;
   notes?: string; 
-  gstType?: string;
+  gst_type?: string;
   discount?: number;
   created_at?: string;
   updated_at?: string;
-  invoiceNumber?: string;
+  invoice_number?: string;
+  // Invoice status fields (populated from backend)
+  invoice_payment_status?: 'pending' | 'paid' | 'failed' | 'refunded';
+  invoice_sale_type?: 'online' | 'offline';
   // Optional flags for backend behavior
   suppressEmail?: boolean;
 }

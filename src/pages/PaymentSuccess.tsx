@@ -25,8 +25,8 @@ const PaymentSuccess = () => {
       setIsLoading(false);
       // You can fetch actual order details here if needed
       setOrderDetails({
-        orderId: orderId || "N/A",
-        paymentId: paymentId || "N/A",
+        order_id: orderId || "N/A",
+        payment_id: paymentId || "N/A",
       });
     }, 1500);
 
@@ -89,13 +89,13 @@ const PaymentSuccess = () => {
                 <div className="space-y-3">
                   <div className="flex justify-between items-center py-2 border-b">
                     <span className="text-muted-foreground">Order ID</span>
-                    <span className="font-mono font-semibold">{orderDetails?.orderId}</span>
+                    <span className="font-mono font-semibold">{orderDetails?.order_id}</span>
                   </div>
 
-                  {orderDetails?.paymentId && (
+                  {orderDetails?.payment_id && (
                     <div className="flex justify-between items-center py-2 border-b">
                       <span className="text-muted-foreground">Payment ID</span>
-                      <span className="font-mono text-sm">{orderDetails?.paymentId}</span>
+                      <span className="font-mono text-sm">{orderDetails?.payment_id}</span>
                     </div>
                   )}
 

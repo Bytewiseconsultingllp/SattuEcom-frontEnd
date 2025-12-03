@@ -1,20 +1,27 @@
 import api from "../axiosInstance";
 import axios from "axios";
 
+// ✅ UPDATED: Added missing fields from backend Payment model
 export interface Payment {
   id: string;
   order_id: string;
+  user_id: string;
   razorpay_order_id: string;
   razorpay_payment_id?: string;
+  razorpay_signature?: string;
   amount: number;
   currency: string;
   status: 'created' | 'authorized' | 'captured' | 'failed' | 'refunded' | 'partial_refund';
   payment_method?: string;
   payment_email?: string;
   payment_contact?: string;
-  refund_amount?: number;
-  refund_status?: 'none' | 'pending' | 'processed' | 'failed';
+  refund_id?: string;
+  refund_amount: number;
+  refund_status: 'none' | 'pending' | 'processed' | 'failed';
+  sale_type?: 'online' | 'offline';
+  error_code?: string;
   error_description?: string;
+  metadata?: any;
   created_at: string;
   updated_at: string;
   order?: {

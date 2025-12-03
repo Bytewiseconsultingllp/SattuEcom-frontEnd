@@ -1,51 +1,88 @@
 import api from '../axiosInstance';
 import axios from 'axios';
 
+// ✅ UPDATED: All fields now use snake_case matching backend
 export interface Invoice {
   id: string;
-  invoiceNumber: string;
-  orderId: string;
-  orderNumber?: string;
-  userId: string;
-  userName?: string;
-  userEmail?: string;
+  invoice_number: string;
+  user_id: string;
+  order_id: string;
+  
+  // User details (from populate)
+  user_name?: string;
+  user_email?: string;
+  user_phone?: string;
+  
+  // Items
   items: InvoiceItem[];
+  
+  // Amounts - all snake_case
   subtotal: number;
-  tax: number;
-  discount: number;
-  shippingCharges: number;
-  total: number;
-  issueDate: string;
-  dueDate?: string;
-  paymentStatus: 'pending' | 'paid' | 'failed' | 'refunded';
-  paymentMethod?: string;
-  paymentDate?: string;
-  billingAddress?: Address;
-  shippingAddress?: Address;
+  discount_amount: number;
+  coupon_discount: number;
+  gift_price: number;
+  delivery_charges: number;
+  tax_amount: number;
+  total_amount: number;
+  
+  // Dates
+  issue_date: string;
+  due_date?: string;
+  
+  // Payment info
+  payment_status: 'pending' | 'paid' | 'failed' | 'refunded';
+  payment_method?: string;
+  payment_date?: string;
+  razorpay_payment_id?: string;
+  razorpay_order_id?: string;
+  
+  // Sale type
+  sale_type: 'online' | 'offline';
+  
+  // UPI (for offline sales)
+  upi_qr_code?: string;
+  upi_id?: string;
+  
+  // Addresses
+  billing_address?: Address;
+  shipping_address?: Address;
+  
+  // Additional
   notes?: string;
   terms?: string;
+  pdf_url?: string;
+  
+  // Status
   status: 'draft' | 'issued' | 'paid' | 'overdue' | 'cancelled';
-  createdAt: string;
-  updatedAt?: string;
+  
+  // Timestamps
+  created_at: string;
+  updated_at?: string;
+  
+  // Additional for offline tracking
+  days_pending?: number;
 }
 
+// ✅ UPDATED: Item fields use snake_case
 export interface InvoiceItem {
-  productId?: string;
+  product_id?: string;
   name: string;
   description?: string;
   quantity: number;
-  rate: number;
+  price: number;
   amount: number;
 }
 
+// ✅ UPDATED: Address fields use snake_case
 export interface Address {
-  fullName: string;
+  full_name: string;
   phone: string;
-  addressLine1: string;
-  addressLine2?: string;
+  email?: string;
+  address_line1: string;
+  address_line2?: string;
   city: string;
   state: string;
-  postalCode: string;
+  postal_code: string;
   country: string;
 }
 
@@ -87,7 +124,8 @@ export async function getInvoiceById(id: string) {
 /**
  * Download invoice PDF
  */
-export async function downloadInvoicePDF(id: string, invoiceNumber: string) {
+// ✅ UPDATED: Parameter name changed to snake_case
+export async function downloadInvoicePDF(id: string, invoice_number: string) {
   try {
     const res = await api.get(`/invoices/${id}/download`, {
       responseType: 'blob',
@@ -97,7 +135,7 @@ export async function downloadInvoicePDF(id: string, invoiceNumber: string) {
     const url = window.URL.createObjectURL(new Blob([res.data]));
     const link = document.createElement('a');
     link.href = url;
-    link.setAttribute('download', `invoice-${invoiceNumber}.pdf`);
+    link.setAttribute('download', `invoice-${invoice_number}.pdf`);
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -138,15 +176,16 @@ export async function getAllInvoices(params?: {
 /**
  * Update invoice status (admin)
  */
+// ✅ UPDATED: Parameter name changed to snake_case
 export async function updateInvoiceStatus(
   id: string,
   status: string,
-  paymentStatus?: string
+  payment_status?: string
 ) {
   try {
     const res = await api.patch(`/invoices/${id}/status`, {
       status,
-      paymentStatus,
+      payment_status,
     });
     return res.data;
   } catch (err: any) {

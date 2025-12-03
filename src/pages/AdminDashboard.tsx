@@ -298,7 +298,7 @@ const AdminDashboard = ({ forceSection }: AdminDashboardProps) => {
   }
 
   const customerOrders = selectedCustomer
-    ? orders.filter((o) => (o.user_id || o.userId) === selectedCustomer.id)
+    ? orders.filter((o) => o.user_id === selectedCustomer.id)
     : [];
 
   function handleLogout() {

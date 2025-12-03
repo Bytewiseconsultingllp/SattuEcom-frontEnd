@@ -147,13 +147,13 @@ export function OfflineSalesPage() {
       setEditingSale(sale);
       setFormData({
         date: sale.date,
-        customerName: sale.customerName,
-        customerPhone: sale.customerPhone,
-        customerEmail: (sale as any).customerEmail || "",
-        paymentMethod: sale.paymentMethod,
+        customerName: sale.customer_name,
+        customerPhone: sale.customer_phone,
+        customerEmail: sale.customer_email || "",
+        paymentMethod: sale.payment_method,
         notes: sale.notes || "",
-        gstType: (sale as any).gstType || "non-gst",
-        discount: (sale as any).discount || 0,
+        gstType: sale.gst_type || "non-gst",
+        discount: sale.discount || 0,
       });
       setItems(sale.items);
     } else {
@@ -404,7 +404,7 @@ export function OfflineSalesPage() {
             discount,
             finalAmount,
             gstType: row["GST Type"] || "non-gst",
-            invoiceNumber: row["Invoice Number"] || "",
+            invoice_number: row["Invoice Number"] || "",
             paymentMethod: row["Payment Method"] || "cash",
             notes: row.Notes || "",
           });
@@ -598,6 +598,7 @@ export function OfflineSalesPage() {
                     <TableHead>Email</TableHead>
                     <TableHead>Phone</TableHead>
                     <TableHead>Invoice</TableHead>
+                    <TableHead>Invoice Status</TableHead>
                     <TableHead>Items</TableHead>
                     <TableHead>GST</TableHead>
                     <TableHead>Payment</TableHead>
@@ -612,36 +613,48 @@ export function OfflineSalesPage() {
                       <TableCell>
                         {format(new Date(sale.date), "dd MMM yyyy")}
                       </TableCell>
-                      <TableCell>{sale.customerName}</TableCell>
+                      <TableCell>{sale.customer_name}</TableCell>
                       <TableCell className="text-sm text-blue-600">
-                        {(sale as any).customerEmail}
+                        {sale.customer_email}
                       </TableCell>
-                      <TableCell>{sale.customerPhone}</TableCell>
+                      <TableCell>{sale.customer_phone}</TableCell>
                       <TableCell>
-                        {sale.invoiceNumber ? (
+                        {sale.invoice_number ? (
                           <span className="text-xs font-mono bg-muted px-2 py-1 rounded">
-                            {sale.invoiceNumber}
+                            {sale.invoice_number}
                           </span>
                         ) : (
                           <span className="text-xs text-muted-foreground">-</span>
                         )}
                       </TableCell>
                       <TableCell>
+                        {sale.invoice_number && sale.invoice_payment_status ? (
+                          <Badge 
+                            variant={sale.invoice_payment_status === 'paid' ? 'default' : 'secondary'}
+                            className={sale.invoice_payment_status === 'paid' ? 'bg-green-600' : 'bg-orange-500'}
+                          >
+                            {sale.invoice_payment_status === 'paid' ? 'Paid' : 'Pending'}
+                          </Badge>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">No Invoice</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
                         <Badge variant="secondary">{sale.items.length} items</Badge>
                       </TableCell>
                       <TableCell>
-                        <Badge variant={((sale as any).gstType === 'gst') ? "default" : "secondary"}>
-                          {((sale as any).gstType === 'gst') ? 'GST' : 'Non-GST'}
+                        <Badge variant={sale.gst_type === 'gst' ? "default" : "secondary"}>
+                          {sale.gst_type === 'gst' ? 'GST' : 'Non-GST'}
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <Badge variant="outline">{sale.paymentMethod}</Badge>
+                        <Badge variant="outline">{sale.payment_method}</Badge>
                       </TableCell>
                       <TableCell className="text-right font-semibold">
-                        {formatCurrency(sale.totalAmount)}
+                        {formatCurrency(sale.total_amount)}
                       </TableCell>
                       <TableCell className="text-right font-semibold text-green-600">
-                        {formatCurrency((sale as any).finalAmount || sale.totalAmount)}
+                        {formatCurrency(sale.final_amount || sale.total_amount)}
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">

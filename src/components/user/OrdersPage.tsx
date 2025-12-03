@@ -11,18 +11,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import {
   Package,
@@ -40,9 +32,8 @@ import {
   RefreshCw,
   AlertCircle,
   Eye,
-  X,
 } from "lucide-react";
-import { getOrders as apiGetOrders, cancelOrder as apiCancelOrder } from "@/lib/api/order";
+import { getOrders as apiGetOrders } from "@/lib/api/order";
 import { downloadInvoicePDF } from "@/lib/api/invoice";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -54,18 +45,6 @@ export function OrdersPage() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [dateFilter, setDateFilter] = useState("all");
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
-  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
-  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
-  const [cancelReason, setCancelReason] = useState("");
-  const [cancelReasonKey, setCancelReasonKey] = useState("");
-
-  const cancelReasons = [
-    { key: "ordered_by_mistake", label: "Ordered by mistake" },
-    { key: "found_better_price", label: "Found a better price elsewhere" },
-    { key: "delivery_too_slow", label: "Delivery time is too long" },
-    { key: "change_of_mind", label: "Changed my mind" },
-    { key: "other", label: "Other (specify)" },
-  ];
 
   useEffect(() => {
     fetchOrders();
@@ -76,6 +55,12 @@ export function OrdersPage() {
       setLoading(true);
       const response = await apiGetOrders();
       if (response?.success) {
+        console.log("📦 Orders received from API:", response.data);
+        // Log first order status for debugging
+        if (response.data && response.data.length > 0) {
+          console.log("First order status:", response.data[0].status);
+          console.log("First order full data:", response.data[0]);
+        }
         setOrders(response.data || []);
       }
     } catch (error: any) {
@@ -84,36 +69,6 @@ export function OrdersPage() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleCancelOrder = async () => {
-    if (!selectedOrderId || !cancelReasonKey) {
-      toast.error("Please select a cancellation reason");
-      return;
-    }
-
-    if (cancelReasonKey === "other" && !cancelReason.trim()) {
-      toast.error("Please specify the cancellation reason");
-      return;
-    }
-
-    try {
-      const reason = cancelReasonKey === "other" ? cancelReason : cancelReasonKey;
-      await apiCancelOrder(selectedOrderId, reason);
-      toast.success("Order cancelled successfully");
-      setCancelDialogOpen(false);
-      setCancelReason("");
-      setCancelReasonKey("");
-      setSelectedOrderId(null);
-      fetchOrders();
-    } catch (error: any) {
-      toast.error(error.message || "Failed to cancel order");
-    }
-  };
-
-  const openCancelDialog = (orderId: string) => {
-    setSelectedOrderId(orderId);
-    setCancelDialogOpen(true);
   };
 
   const handleDownloadInvoice = async (invoiceId: string, invoiceNumber: string) => {
@@ -432,16 +387,6 @@ export function OrdersPage() {
                       </div>
 
                       <div className="flex items-center gap-2">
-                        {["pending", "processing"].includes((order.status || '').toLowerCase()) && (
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => openCancelDialog(order.id)}
-                          >
-                            <X className="h-4 w-4 mr-1" />
-                            Cancel
-                          </Button>
-                        )}
                         {order.invoice_id && order.invoice_number && (
                           <Button
                             variant="outline"
@@ -609,73 +554,6 @@ export function OrdersPage() {
         </div>
       )}
 
-      {/* Cancel Order Dialog */}
-      <Dialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Cancel Order</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Please select a reason for cancelling this order:
-            </p>
-            <div className="space-y-2">
-              {cancelReasons.map((reason) => (
-                <label
-                  key={reason.key}
-                  className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-colors ${
-                    cancelReasonKey === reason.key
-                      ? "border-primary bg-primary/5"
-                      : "border-border hover:bg-muted/50"
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="cancel_reason"
-                    value={reason.key}
-                    checked={cancelReasonKey === reason.key}
-                    onChange={(e) => setCancelReasonKey(e.target.value)}
-                    className="w-4 h-4"
-                  />
-                  <span className="text-sm">{reason.label}</span>
-                </label>
-              ))}
-            </div>
-            {cancelReasonKey === "other" && (
-              <div>
-                <label className="text-sm font-medium mb-2 block">
-                  Please specify the reason
-                </label>
-                <Textarea
-                  value={cancelReason}
-                  onChange={(e) => setCancelReason(e.target.value)}
-                  placeholder="Enter your reason for cancellation"
-                  rows={3}
-                />
-              </div>
-            )}
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setCancelDialogOpen(false);
-                setCancelReason("");
-                setCancelReasonKey("");
-              }}
-            >
-              Close
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={handleCancelOrder}
-              disabled={!cancelReasonKey || (cancelReasonKey === "other" && !cancelReason.trim())}
-            >
-              Confirm Cancellation
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

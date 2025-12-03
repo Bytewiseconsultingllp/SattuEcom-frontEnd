@@ -75,7 +75,7 @@ export function AdminInvoicesPage() {
       };
 
       if (statusFilter !== 'all') params.status = statusFilter;
-      if (paymentStatusFilter !== 'all') params.paymentStatus = paymentStatusFilter;
+      if (paymentStatusFilter !== 'all') params.payment_status = paymentStatusFilter;
       if (searchTerm) params.search = searchTerm;
 
       const response = await getAllInvoices(params);
@@ -86,11 +86,11 @@ export function AdminInvoicesPage() {
         
         // Calculate stats
         const total = response.pagination?.total || 0;
-        const paid = response.data?.filter((inv: any) => inv.paymentStatus === 'paid').length || 0;
-        const pending = response.data?.filter((inv: any) => inv.paymentStatus === 'pending').length || 0;
+        const paid = response.data?.filter((inv: any) => inv.payment_status === 'paid').length || 0;
+        const pending = response.data?.filter((inv: any) => inv.payment_status === 'pending').length || 0;
         const totalRevenue = response.data
-          ?.filter((inv: any) => inv.paymentStatus === 'paid')
-          .reduce((sum: number, inv: any) => sum + (inv.total || 0), 0) || 0;
+          ?.filter((inv: any) => inv.payment_status === 'paid')
+          .reduce((sum: number, inv: any) => sum + (inv.total_amount || 0), 0) || 0;
 
         setStats({ total, paid, pending, totalRevenue });
       }
@@ -102,9 +102,9 @@ export function AdminInvoicesPage() {
     }
   };
 
-  const handleDownloadInvoice = async (invoiceId: string, invoiceNumber: string) => {
+  const handleDownloadInvoice = async (invoiceId: string, invoice_number: string) => {
     try {
-      await downloadInvoicePDF(invoiceId, invoiceNumber);
+      await downloadInvoicePDF(invoiceId, invoice_number);
       toast.success('Invoice downloaded successfully');
     } catch (error: any) {
       toast.error(error.message || 'Failed to download invoice');
@@ -116,9 +116,9 @@ export function AdminInvoicesPage() {
     setDetailsDialogOpen(true);
   };
 
-  const handleUpdateStatus = async (invoiceId: string, status: string, paymentStatus?: string) => {
+  const handleUpdateStatus = async (invoiceId: string, status: string, payment_status?: string) => {
     try {
-      await updateInvoiceStatus(invoiceId, status, paymentStatus);
+      await updateInvoiceStatus(invoiceId, status, payment_status);
       toast.success('Invoice status updated successfully');
       fetchInvoices();
       setDetailsDialogOpen(false);
@@ -305,7 +305,8 @@ export function AdminInvoicesPage() {
                     <TableRow>
                       <TableHead>Invoice Number</TableHead>
                       <TableHead>Customer</TableHead>
-                      <TableHead>Order</TableHead>
+                      <TableHead>Order ID</TableHead>
+                      <TableHead>Sale Type</TableHead>
                       <TableHead>Amount</TableHead>
                       <TableHead>Issue Date</TableHead>
                       <TableHead>Due Date</TableHead>
@@ -317,21 +318,42 @@ export function AdminInvoicesPage() {
                   <TableBody>
                     {invoices.map((invoice) => (
                       <TableRow key={invoice.id}>
-                        <TableCell className="font-medium">{invoice.invoiceNumber}</TableCell>
+                        <TableCell className="font-medium">{invoice.invoice_number}</TableCell>
                         <TableCell>
                           <div>
-                            <p className="font-medium">{invoice.userName || 'N/A'}</p>
-                            <p className="text-sm text-muted-foreground">{invoice.userEmail}</p>
+                            <p className="font-medium">{invoice.user_name || (invoice as any).userName || 'N/A'}</p>
+                            <p className="text-sm text-muted-foreground">{invoice.user_email || (invoice as any).userEmail}</p>
                           </div>
                         </TableCell>
-                        <TableCell>{invoice.orderNumber || invoice.orderId?.slice(0, 8)}</TableCell>
-                        <TableCell className="font-semibold">{formatCurrency(invoice.total)}</TableCell>
-                        <TableCell>{formatDate(invoice.issueDate)}</TableCell>
-                        <TableCell>{formatDate(invoice.dueDate)}</TableCell>
+                        <TableCell className="font-mono text-xs">{invoice.order_id || 'N/A'}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="capitalize">
+                            {invoice.sale_type || 'online'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="font-semibold">{formatCurrency(invoice.total_amount)}</TableCell>
+                        <TableCell>{formatDate(invoice.issue_date)}</TableCell>
+                        <TableCell>
+                          {invoice.sale_type === 'offline' && invoice.payment_status !== 'paid' ? (
+                            <span className="text-orange-600 font-medium">{formatDate(invoice.due_date)}</span>
+                          ) : (
+                            <span className="text-muted-foreground">{formatDate(invoice.due_date)}</span>
+                          )}
+                        </TableCell>
                         <TableCell>{getStatusBadge(invoice.status)}</TableCell>
-                        <TableCell>{getPaymentStatusBadge(invoice.paymentStatus)}</TableCell>
+                        <TableCell>{getPaymentStatusBadge(invoice.payment_status)}</TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-2">
+                            {invoice.payment_status === 'pending' && (
+                              <Button
+                                variant="default"
+                                size="sm"
+                                className="bg-green-600 hover:bg-green-700"
+                                onClick={() => handleUpdateStatus(invoice.id, 'paid', 'paid')}
+                              >
+                                Mark Paid
+                              </Button>
+                            )}
                             <Button
                               variant="ghost"
                               size="sm"
@@ -342,7 +364,7 @@ export function AdminInvoicesPage() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => handleDownloadInvoice(invoice.id, invoice.invoiceNumber)}
+                              onClick={() => handleDownloadInvoice(invoice.id, invoice.invoice_number)}
                             >
                               <Download className="h-4 w-4" />
                             </Button>
@@ -389,7 +411,7 @@ export function AdminInvoicesPage() {
       <Dialog open={detailsDialogOpen} onOpenChange={setDetailsDialogOpen}>
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Invoice Details - {selectedInvoice?.invoiceNumber}</DialogTitle>
+            <DialogTitle>Invoice Details - {selectedInvoice?.invoice_number}</DialogTitle>
           </DialogHeader>
 
           {selectedInvoice && (
@@ -400,11 +422,11 @@ export function AdminInvoicesPage() {
                 <div className="grid grid-cols-2 gap-2 text-sm">
                   <div>
                     <p className="text-muted-foreground">Name</p>
-                    <p className="font-medium">{selectedInvoice.userName || 'N/A'}</p>
+                    <p className="font-medium">{selectedInvoice.user_name || (selectedInvoice as any).userName || 'N/A'}</p>
                   </div>
                   <div>
                     <p className="text-muted-foreground">Email</p>
-                    <p className="font-medium">{selectedInvoice.userEmail || 'N/A'}</p>
+                    <p className="font-medium">{selectedInvoice.user_email || (selectedInvoice as any).userEmail || 'N/A'}</p>
                   </div>
                 </div>
               </div>
@@ -415,11 +437,11 @@ export function AdminInvoicesPage() {
                 <div className="grid grid-cols-2 gap-2 text-sm">
                   <div>
                     <p className="text-muted-foreground">Issue Date</p>
-                    <p className="font-medium">{formatDate(selectedInvoice.issueDate)}</p>
+                    <p className="font-medium">{formatDate(selectedInvoice.issue_date)}</p>
                   </div>
                   <div>
                     <p className="text-muted-foreground">Due Date</p>
-                    <p className="font-medium">{formatDate(selectedInvoice.dueDate)}</p>
+                    <p className="font-medium">{formatDate(selectedInvoice.due_date)}</p>
                   </div>
                   <div>
                     <p className="text-muted-foreground">Status</p>
@@ -427,7 +449,7 @@ export function AdminInvoicesPage() {
                   </div>
                   <div>
                     <p className="text-muted-foreground">Payment Status</p>
-                    <p>{getPaymentStatusBadge(selectedInvoice.paymentStatus)}</p>
+                    <p>{getPaymentStatusBadge(selectedInvoice.payment_status)}</p>
                   </div>
                 </div>
               </div>
@@ -440,21 +462,21 @@ export function AdminInvoicesPage() {
                     <span className="text-muted-foreground">Subtotal</span>
                     <span>{formatCurrency(selectedInvoice.subtotal)}</span>
                   </div>
-                  {selectedInvoice.discount > 0 && (
+                  {(selectedInvoice.discount_amount || (selectedInvoice as any).discount || 0) > 0 && (
                     <div className="flex justify-between text-green-600">
                       <span>Discount</span>
-                      <span>-{formatCurrency(selectedInvoice.discount)}</span>
+                      <span>-{formatCurrency(selectedInvoice.discount_amount || (selectedInvoice as any).discount || 0)}</span>
                     </div>
                   )}
-                  {selectedInvoice.tax > 0 && (
+                  {(selectedInvoice.tax_amount || (selectedInvoice as any).tax || 0) > 0 && (
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Tax</span>
-                      <span>{formatCurrency(selectedInvoice.tax)}</span>
+                      <span>{formatCurrency(selectedInvoice.tax_amount || (selectedInvoice as any).tax || 0)}</span>
                     </div>
                   )}
                   <div className="flex justify-between font-semibold text-base pt-2 border-t">
                     <span>Total</span>
-                    <span>{formatCurrency(selectedInvoice.total)}</span>
+                    <span>{formatCurrency(selectedInvoice.total_amount || (selectedInvoice as any).total)}</span>
                   </div>
                 </div>
               </div>
@@ -465,7 +487,7 @@ export function AdminInvoicesPage() {
                 <div className="flex gap-2">
                   <Select
                     defaultValue={selectedInvoice.status}
-                    onValueChange={(value) => handleUpdateStatus(selectedInvoice.id, value, selectedInvoice.paymentStatus)}
+                    onValueChange={(value) => handleUpdateStatus(selectedInvoice.id, value, selectedInvoice.payment_status)}
                   >
                     <SelectTrigger className="flex-1">
                       <SelectValue />
@@ -480,7 +502,7 @@ export function AdminInvoicesPage() {
                   </Select>
 
                   <Select
-                    defaultValue={selectedInvoice.paymentStatus}
+                    defaultValue={selectedInvoice.payment_status}
                     onValueChange={(value) => handleUpdateStatus(selectedInvoice.id, selectedInvoice.status, value)}
                   >
                     <SelectTrigger className="flex-1">
@@ -506,7 +528,7 @@ export function AdminInvoicesPage() {
               Close
             </Button>
             <Button
-              onClick={() => selectedInvoice && handleDownloadInvoice(selectedInvoice.id, selectedInvoice.invoiceNumber)}
+              onClick={() => selectedInvoice && handleDownloadInvoice(selectedInvoice.id, selectedInvoice.invoice_number)}
             >
               <Download className="h-4 w-4 mr-2" />
               Download PDF

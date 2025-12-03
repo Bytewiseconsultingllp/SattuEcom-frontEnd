@@ -46,9 +46,9 @@ export function InvoicesPage() {
     }
   };
 
-  const handleDownloadInvoice = async (invoiceId: string, invoiceNumber: string) => {
+  const handleDownloadInvoice = async (invoiceId: string, invoice_number: string) => {
     try {
-      await downloadInvoicePDF(invoiceId, invoiceNumber);
+      await downloadInvoicePDF(invoiceId, invoice_number);
       toast.success('Invoice downloaded successfully');
     } catch (error: any) {
       toast.error(error.message || 'Failed to download invoice');
@@ -105,10 +105,10 @@ export function InvoicesPage() {
 
   const stats = {
     total: invoices.length,
-    paid: invoices.filter(inv => inv.paymentStatus === 'paid').length,
-    pending: invoices.filter(inv => inv.paymentStatus === 'pending').length,
+    paid: invoices.filter(inv => inv.payment_status === 'paid').length,
+    pending: invoices.filter(inv => inv.payment_status === 'pending').length,
     totalAmount: invoices
-      .filter(inv => inv.paymentStatus === 'paid')
+      .filter(inv => inv.payment_status === 'paid')
       .reduce((sum, inv) => sum + (inv.total || 0), 0),
   };
 
@@ -211,40 +211,48 @@ export function InvoicesPage() {
                             <div className="flex items-center gap-3 mb-2">
                               <FileText className="h-5 w-5 text-blue-600" />
                               <h3 className="text-lg font-semibold">
-                                {invoice.invoiceNumber}
+                                {invoice.invoice_number}
                               </h3>
-                              {getPaymentStatusBadge(invoice.paymentStatus)}
+                              {getPaymentStatusBadge(invoice.payment_status)}
+                              {invoice.sale_type && (
+                                <Badge variant="outline" className="capitalize">
+                                  {invoice.sale_type}
+                                </Badge>
+                              )}
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm text-muted-foreground">
                               <div className="flex items-center gap-1">
                                 <Calendar className="h-4 w-4" />
-                                <span>Issued: {formatDate(invoice.issueDate)}</span>
+                                <span>Issued: {formatDate(invoice.issue_date)}</span>
                               </div>
-                              <div className="flex items-center gap-1">
-                                <Calendar className="h-4 w-4" />
-                                <span>Due: {formatDate(invoice.dueDate)}</span>
-                              </div>
+                              {/* Only show due date for offline sales with pending payment */}
+                              {invoice.sale_type === 'offline' && invoice.payment_status !== 'paid' && (
+                                <div className="flex items-center gap-1">
+                                  <Calendar className="h-4 w-4" />
+                                  <span className="text-orange-600 font-medium">Due: {formatDate(invoice.due_date)}</span>
+                                </div>
+                              )}
                               <div className="flex items-center gap-1">
                                 <DollarSign className="h-4 w-4" />
                                 <span className="font-semibold text-foreground">
-                                  {formatCurrency(invoice.total)}
+                                  {formatCurrency(invoice.total_amount)}
                                 </span>
                               </div>
                             </div>
 
-                            {invoice.orderNumber && (
-                              <p className="text-sm text-muted-foreground mt-2">
-                                Order: {invoice.orderNumber}
+                            {invoice.order_id && (
+                              <p className="text-sm text-muted-foreground mt-2 font-mono">
+                                Order ID: {invoice.order_id}
                               </p>
                             )}
                           </div>
 
                           {/* Actions */}
                           <div className="flex items-center gap-2">
-                            {invoice.orderId && (
+                            {invoice.order_id && (
                               <Button asChild variant="outline" size="sm">
-                                <Link to={`/order/${invoice.orderId}`}>
+                                <Link to={`/order/${invoice.order_id}`}>
                                   <Eye className="h-4 w-4 mr-1" />
                                   View Order
                                 </Link>
@@ -253,7 +261,7 @@ export function InvoicesPage() {
                             <Button
                               variant="default"
                               size="sm"
-                              onClick={() => handleDownloadInvoice(invoice.id, invoice.invoiceNumber)}
+                              onClick={() => handleDownloadInvoice(invoice.id, invoice.invoice_number)}
                             >
                               <Download className="h-4 w-4 mr-1" />
                               Download PDF
@@ -262,30 +270,36 @@ export function InvoicesPage() {
                         </div>
 
                         {/* Amount Breakdown */}
-                        {(invoice.discount > 0 || invoice.tax > 0) && (
+                        {(invoice.discount_amount > 0 || invoice.tax_amount > 0 || invoice.delivery_charges > 0) && (
                           <div className="mt-4 pt-4 border-t">
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
                               <div>
                                 <p className="text-muted-foreground">Subtotal</p>
                                 <p className="font-medium">{formatCurrency(invoice.subtotal)}</p>
                               </div>
-                              {invoice.discount > 0 && (
+                              {invoice.discount_amount > 0 && (
                                 <div>
                                   <p className="text-muted-foreground">Discount</p>
                                   <p className="font-medium text-green-600">
-                                    -{formatCurrency(invoice.discount)}
+                                    -{formatCurrency(invoice.discount_amount)}
                                   </p>
                                 </div>
                               )}
-                              {invoice.tax > 0 && (
+                              {invoice.delivery_charges > 0 && (
+                                <div>
+                                  <p className="text-muted-foreground">Delivery</p>
+                                  <p className="font-medium">{formatCurrency(invoice.delivery_charges)}</p>
+                                </div>
+                              )}
+                              {invoice.tax_amount > 0 && (
                                 <div>
                                   <p className="text-muted-foreground">Tax</p>
-                                  <p className="font-medium">{formatCurrency(invoice.tax)}</p>
+                                  <p className="font-medium">{formatCurrency(invoice.tax_amount)}</p>
                                 </div>
                               )}
                               <div>
                                 <p className="text-muted-foreground">Total</p>
-                                <p className="font-semibold">{formatCurrency(invoice.total)}</p>
+                                <p className="font-semibold">{formatCurrency(invoice.total_amount)}</p>
                               </div>
                             </div>
                           </div>
