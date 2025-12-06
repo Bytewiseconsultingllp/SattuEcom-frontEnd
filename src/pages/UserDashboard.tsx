@@ -42,7 +42,7 @@ import { ChevronDown, CheckCircle2, Clock } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Link as RouterLink } from "react-router-dom";
 import { removeUserCookie } from "@/utils/cookie";
-import { useNavigate, Link, useLocation } from "react-router-dom";
+import { useNavigate, Link, useLocation, useSearchParams } from "react-router-dom";
 import { getAddresses as apiGetAddresses, createAddress as apiCreateAddress, setDefaultAddress as apiSetDefaultAddress, deleteAddress as apiDeleteAddress, updateAddress as apiUpdateAddress } from "@/lib/api/addresses";
 import { toast } from "sonner";
 import { getWishlistItems, removeFromWishlist } from "@/lib/api/wishlist";
@@ -61,11 +61,15 @@ import { MyReviewsPage } from "@/components/user/MyReviewsPage";
 import { getUserCustomGiftRequests, type CustomGiftRequest } from "@/lib/api/gifts";
 
 const UserDashboard = () => {
-  const [activeSection, setActiveSection] = useState("overview");
+  const [searchParams, setSearchParams] = useSearchParams();
   const location = useLocation();
+  const navigate = useNavigate();
+  
+  // Read section from URL query parameters, default to "overview"
+  const activeSection = searchParams.get("section") || "overview";
+  
   const [orderStatusFilter, setOrderStatusFilter] = useState("all");
   const [dateFilter, setDateFilter] = useState("all");
-  const navigate = useNavigate();
   const [addresses, setAddresses] = useState<any[]>([]);
   const [addrLoading, setAddrLoading] = useState<boolean>(false);
   const [addrDialogOpen, setAddrDialogOpen] = useState(false);
@@ -167,14 +171,10 @@ const UserDashboard = () => {
     navigate("/login");
   }
 
+  // Debug: Log activeSection changes
   useEffect(() => {
-    // Initialize active tab from navigation state or persisted storage
-    const initialTab = (location.state as any)?.tab || localStorage.getItem('user_dashboard_tab');
-    if (initialTab && typeof initialTab === 'string') {
-      setActiveSection(initialTab);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    console.log('UserDashboard activeSection:', activeSection);
+  }, [activeSection]);
 
   useEffect(() => {
     // Persist active tab
@@ -403,7 +403,7 @@ const UserDashboard = () => {
                 <SidebarMenu>
                   <SidebarMenuItem>
                     <SidebarMenuButton
-                      onClick={() => setActiveSection("overview")}
+                      onClick={() => setSearchParams({ section: "overview" })}
                       isActive={activeSection === "overview"}
                     >
                       <Package className="h-4 w-4" />
@@ -412,7 +412,7 @@ const UserDashboard = () => {
                   </SidebarMenuItem>
                   <SidebarMenuItem>
                     <SidebarMenuButton
-                      onClick={() => setActiveSection("orders")}
+                      onClick={() => setSearchParams({ section: "orders" })}
                       isActive={activeSection === "orders"}
                     >
                       <History className="h-4 w-4" />
@@ -421,8 +421,8 @@ const UserDashboard = () => {
                   </SidebarMenuItem>
                   <SidebarMenuItem>
                     <SidebarMenuButton
-                      onClick={() => setActiveSection("tracking")}
-                      isActive={activeSection === "tracking"}
+                      onClick={() => setSearchParams({ section: "track-orders" })}
+                      isActive={activeSection === "tracking" || activeSection === "track-orders"}
                     >
                       <Truck className="h-4 w-4" />
                       <span>Track Orders</span>
@@ -430,7 +430,7 @@ const UserDashboard = () => {
                   </SidebarMenuItem>
                   <SidebarMenuItem>
                     <SidebarMenuButton
-                      onClick={() => setActiveSection("wishlist")}
+                      onClick={() => setSearchParams({ section: "wishlist" })}
                       isActive={activeSection === "wishlist"}
                     >
                       <Heart className="h-4 w-4" />
@@ -448,7 +448,7 @@ const UserDashboard = () => {
                 <SidebarMenu>
                   <SidebarMenuItem>
                     <SidebarMenuButton
-                      onClick={() => setActiveSection("profile")}
+                      onClick={() => setSearchParams({ section: "profile" })}
                       isActive={activeSection === "profile"}
                     >
                       <User className="h-4 w-4" />
@@ -457,7 +457,7 @@ const UserDashboard = () => {
                   </SidebarMenuItem>
                   <SidebarMenuItem>
                     <SidebarMenuButton
-                      onClick={() => setActiveSection("addresses")}
+                      onClick={() => setSearchParams({ section: "addresses" })}
                       isActive={activeSection === "addresses"}
                     >
                       <MapPin className="h-4 w-4" />
@@ -466,7 +466,7 @@ const UserDashboard = () => {
                   </SidebarMenuItem>
                   <SidebarMenuItem>
                     <SidebarMenuButton
-                      onClick={() => setActiveSection("payments")}
+                      onClick={() => setSearchParams({ section: "payments" })}
                       isActive={activeSection === "payments"}
                     >
                       <CreditCard className="h-4 w-4" />
@@ -475,8 +475,8 @@ const UserDashboard = () => {
                   </SidebarMenuItem>
                   <SidebarMenuItem>
                     <SidebarMenuButton
-                      onClick={() => setActiveSection("my-reviews")}
-                      isActive={activeSection === "my-reviews"}
+                      onClick={() => setSearchParams({ section: "reviews" })}
+                      isActive={activeSection === "my-reviews" || activeSection === "reviews"}
                     >
                       <FileText className="h-4 w-4" />
                       <span>My Reviews</span>
@@ -484,7 +484,7 @@ const UserDashboard = () => {
                   </SidebarMenuItem>
                   <SidebarMenuItem>
                     <SidebarMenuButton
-                      onClick={() => setActiveSection("custom-gifts")}
+                      onClick={() => setSearchParams({ section: "custom-gifts" })}
                       isActive={activeSection === "custom-gifts"}
                     >
                       <Gift className="h-4 w-4" />
@@ -541,7 +541,7 @@ const UserDashboard = () => {
               <DashboardOverview />
             )}
 
-            {activeSection === "my-reviews" && (
+            {(activeSection === "my-reviews" || activeSection === "reviews") && (
               <MyReviewsPage />
             )}
 
@@ -656,7 +656,7 @@ const UserDashboard = () => {
               </div>
             )}
 
-            {activeSection === "tracking" && (
+            {(activeSection === "tracking" || activeSection === "track-orders") && (
               <TrackOrdersPage />
             )}
 

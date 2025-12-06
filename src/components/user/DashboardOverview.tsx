@@ -237,7 +237,7 @@ export function DashboardOverview() {
         {/* Total Orders */}
         <Card 
           className="hover:shadow-lg transition-all cursor-pointer group"
-          onClick={() => navigate("/user-dashboard?section=orders")}
+          onClick={() => navigate("/user/dashboard?section=orders")}
         >
           <CardContent className="pt-6">
             <div className="flex items-center justify-between mb-3">
@@ -256,7 +256,7 @@ export function DashboardOverview() {
         {/* Active Orders */}
         <Card 
           className="hover:shadow-lg transition-all cursor-pointer group"
-          onClick={() => navigate("/user-dashboard?section=track-orders")}
+          onClick={() => navigate("/user/dashboard?section=track-orders")}
         >
           <CardContent className="pt-6">
             <div className="flex items-center justify-between mb-3">
@@ -279,7 +279,7 @@ export function DashboardOverview() {
         {/* Total Spent */}
         <Card 
           className="hover:shadow-lg transition-all cursor-pointer group"
-          onClick={() => navigate("/user-dashboard?section=payments")}
+          onClick={() => navigate("/user/dashboard?section=payments")}
         >
           <CardContent className="pt-6">
             <div className="flex items-center justify-between mb-3">
@@ -298,7 +298,7 @@ export function DashboardOverview() {
         {/* Wishlist */}
         <Card 
           className="hover:shadow-lg transition-all cursor-pointer group"
-          onClick={() => navigate("/user-dashboard?section=wishlist")}
+          onClick={() => navigate("/user/dashboard?section=wishlist")}
         >
           <CardContent className="pt-6">
             <div className="flex items-center justify-between mb-3">
@@ -328,7 +328,7 @@ export function DashboardOverview() {
               <Button 
                 variant="ghost" 
                 size="sm"
-                onClick={() => navigate("/user-dashboard?section=orders")}
+                onClick={() => navigate("/user/dashboard?section=orders")}
               >
                 View All
                 <ArrowRight className="h-4 w-4 ml-1" />
@@ -433,7 +433,7 @@ export function DashboardOverview() {
               <Button 
                 variant="outline" 
                 className="w-full"
-                onClick={() => navigate("/user-dashboard?section=profile")}
+                onClick={() => navigate("/user/dashboard?section=profile")}
               >
                 <User className="h-4 w-4 mr-2" />
                 View Profile
@@ -450,7 +450,7 @@ export function DashboardOverview() {
               <Button 
                 variant="ghost" 
                 className="w-full justify-start"
-                onClick={() => navigate("/user-dashboard?section=track-orders")}
+                onClick={() => navigate("/user/dashboard?section=track-orders")}
               >
                 <Truck className="h-4 w-4 mr-3" />
                 Track Orders
@@ -459,7 +459,7 @@ export function DashboardOverview() {
               <Button 
                 variant="ghost" 
                 className="w-full justify-start"
-                onClick={() => navigate("/user-dashboard?section=wishlist")}
+                onClick={() => navigate("/user/dashboard?section=wishlist")}
               >
                 <Heart className="h-4 w-4 mr-3" />
                 My Wishlist
@@ -468,7 +468,7 @@ export function DashboardOverview() {
               <Button 
                 variant="ghost" 
                 className="w-full justify-start"
-                onClick={() => navigate("/user-dashboard?section=addresses")}
+                onClick={() => navigate("/user/dashboard?section=addresses")}
               >
                 <MapPin className="h-4 w-4 mr-3" />
                 Manage Addresses
@@ -477,7 +477,7 @@ export function DashboardOverview() {
               <Button 
                 variant="ghost" 
                 className="w-full justify-start"
-                onClick={() => navigate("/user-dashboard?section=reviews")}
+                onClick={() => navigate("/user/dashboard?section=reviews")}
               >
                 <Star className="h-4 w-4 mr-3" />
                 My Reviews
@@ -519,7 +519,7 @@ export function DashboardOverview() {
               <Button 
                 variant="ghost" 
                 size="sm"
-                onClick={() => navigate("/user-dashboard?section=payments")}
+                onClick={() => navigate("/user/dashboard?section=payments")}
               >
                 View All
                 <ArrowRight className="h-4 w-4 ml-1" />
