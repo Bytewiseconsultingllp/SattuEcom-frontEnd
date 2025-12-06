@@ -330,7 +330,7 @@ export function TrackOrdersPage() {
                       </div>
 
                       {/* Tracking Info */}
-                      {order.tracking && (
+                      {order.shipment && order.shipment.trackingNumber && (
                         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
                           <h4 className="font-semibold mb-3 flex items-center gap-2 text-blue-900">
                             <Truck className="h-4 w-4" />
@@ -338,21 +338,31 @@ export function TrackOrdersPage() {
                           </h4>
                           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                             <div>
-                              <p className="text-blue-600 font-medium mb-1">Courier Partner</p>
-                              <p className="text-blue-900">{order.tracking.agency}</p>
+                              <p className="text-blue-600 font-medium mb-1">Delivery Partner</p>
+                              <p className="text-blue-900">{order.shipment.deliveryPartner}</p>
                             </div>
                             <div>
                               <p className="text-blue-600 font-medium mb-1">Tracking Number</p>
                               <p className="font-mono text-blue-900">
-                                {order.tracking.trackingNumber}
+                                {order.shipment.trackingNumber}
                               </p>
                             </div>
-                            <div>
-                              <p className="text-blue-600 font-medium mb-1">
-                                Estimated Delivery
-                              </p>
-                              <p className="text-blue-900">{order.tracking.estimatedDelivery}</p>
-                            </div>
+                            {order.shipment.estimatedDelivery && (
+                              <div>
+                                <p className="text-blue-600 font-medium mb-1">
+                                  Estimated Delivery
+                                </p>
+                                <p className="text-blue-900">{order.shipment.estimatedDelivery}</p>
+                              </div>
+                            )}
+                            {order.shipment.shippedAt && (
+                              <div>
+                                <p className="text-blue-600 font-medium mb-1">
+                                  Shipped On
+                                </p>
+                                <p className="text-blue-900">{formatDate(order.shipment.shippedAt)}</p>
+                              </div>
+                            )}
                           </div>
                         </div>
                       )}

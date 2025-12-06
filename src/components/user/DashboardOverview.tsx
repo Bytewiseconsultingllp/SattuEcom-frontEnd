@@ -3,12 +3,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Progress } from "@/components/ui/progress";
+import { Separator } from "@/components/ui/separator";
 import {
   Package,
-  ShoppingCart,
+  ShoppingBag,
   Heart,
   MapPin,
-  TrendingUp,
   Clock,
   CheckCircle2,
   Truck,
@@ -16,52 +17,38 @@ import {
   Star,
   ArrowRight,
   Gift,
-  Percent,
-  DollarSign,
-  ArrowUpRight,
-  ArrowDownRight,
-  AlertCircle,
-  XCircle,
+  User,
+  Mail,
+  Phone,
+  Calendar,
+  TrendingUp,
+  Award,
+  ShieldCheck,
+  ChevronRight,
+  Sparkles,
 } from "lucide-react";
-import {
-  LineChart,
-  Line,
-  BarChart,
-  Bar,
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-} from "recharts";
 import { getOrders as apiGetOrders } from "@/lib/api/order";
 import { getMyPayments } from "@/lib/api/payments.production";
 import { getWishlistItems } from "@/lib/api/wishlist";
 import { getProfile } from "@/lib/api/user";
-import { getAdminDashboardStats, getOnlineSalesTotal, getOfflineSalesTotal, getExpensesTotal } from "@/lib/api/dashboardStats";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { format } from "date-fns";
+import { toast } from "sonner";
 
 export function DashboardOverview() {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
+  const [profile, setProfile] = useState<any>(null);
   const [stats, setStats] = useState({
     totalOrders: 0,
     activeOrders: 0,
     completedOrders: 0,
+    cancelledOrders: 0,
     totalSpent: 0,
     wishlistCount: 0,
     recentOrders: [] as any[],
     recentPayments: [] as any[],
-    onlineSales: 0,
-    offlineSales: 0,
-    expenses: 0,
-    totalRevenue: 0,
-    revenueChange: 0,
   });
-  const [profile, setProfile] = useState<any>(null);
 
   useEffect(() => {
     fetchDashboardData();
@@ -70,95 +57,78 @@ export function DashboardOverview() {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-
-      // Fetch all data in parallel
-      const [ordersRes, paymentsRes, wishlistRes, profileRes, dashboardStatsRes, onlineSalesRes, offlineSalesRes, expensesRes] = await Promise.allSettled([
+      const [ordersRes, paymentsRes, wishlistRes, profileRes] = await Promise.allSettled([
         apiGetOrders(),
-        getMyPayments({ page: 1, limit: 5 }),
+        getMyPayments(),
         getWishlistItems(),
         getProfile(),
-        getAdminDashboardStats(),
-        getOnlineSalesTotal(),
-        getOfflineSalesTotal(),
-        getExpensesTotal(),
       ]);
 
       // Process orders
-      const orders = ordersRes.status === "fulfilled" && ordersRes.value?.success 
-        ? ordersRes.value.data 
+      const orders = ordersRes.status === "fulfilled" && ordersRes.value?.success
+        ? ordersRes.value.data
         : [];
-      
+
+      const activeStatuses = ["pending", "processing", "shipped"];
       const activeOrders = orders.filter((o: any) => 
-        ["pending", "processing", "shipped"].includes((o.status || "").toLowerCase())
-      );
-      
+        activeStatuses.includes(o.status?.toLowerCase())
+      ).length;
+
       const completedOrders = orders.filter((o: any) => 
-        (o.status || "").toLowerCase() === "delivered"
-      );
+        o.status?.toLowerCase() === "delivered"
+      ).length;
+
+      const cancelledOrders = orders.filter((o: any) => 
+        o.status?.toLowerCase() === "cancelled"
+      ).length;
+
+      const recentOrders = orders.slice(0, 5);
 
       // Process payments
-      const payments = paymentsRes.status === "fulfilled" && paymentsRes.value?.data 
-        ? paymentsRes.value.data 
+      const payments = paymentsRes.status === "fulfilled" && paymentsRes.value?.success
+        ? paymentsRes.value.data
         : [];
-      
+
       const totalSpent = payments
         .filter((p: any) => p.status === "captured")
-        .reduce((sum: number, p: any) => sum + p.amount, 0);
+        .reduce((sum: number, p: any) => sum + (p.amount || 0), 0);
+
+      const recentPayments = payments.slice(0, 3);
 
       // Process wishlist
-      const wishlist = wishlistRes.status === "fulfilled" ? wishlistRes.value : [];
+      const wishlist = wishlistRes.status === "fulfilled" && wishlistRes.value?.success
+        ? wishlistRes.value.data
+        : [];
 
       // Process profile
-      const userProfile = profileRes.status === "fulfilled" ? profileRes.value : null;
+      const profileData = profileRes.status === "fulfilled" && profileRes.value?.success
+        ? profileRes.value.data
+        : null;
 
-      // Process dashboard stats
-      const dashboardStats = dashboardStatsRes.status === "fulfilled" && dashboardStatsRes.value?.success
-        ? dashboardStatsRes.value.data
-        : { onlineSales: 0, offlineSales: 0, expenses: 0, totalRevenue: 0, revenueChange: 0 };
-
-      // Process sales and expenses
-      const onlineSalesData = onlineSalesRes.status === "fulfilled" && onlineSalesRes.value?.success
-        ? onlineSalesRes.value.data?.total || 0
-        : 0;
-
-      const offlineSalesData = offlineSalesRes.status === "fulfilled" && offlineSalesRes.value?.success
-        ? offlineSalesRes.value.data?.total || 0
-        : 0;
-
-      const expensesData = expensesRes.status === "fulfilled" && expensesRes.value?.success
-        ? expensesRes.value.data?.total || 0
-        : 0;
-
-      // Calculate total revenue: Online Sales + Offline Sales - Expenses
-      const calculatedRevenue = onlineSalesData + offlineSalesData - expensesData;
-
+      setProfile(profileData);
       setStats({
         totalOrders: orders.length,
-        activeOrders: activeOrders.length,
-        completedOrders: completedOrders.length,
+        activeOrders,
+        completedOrders,
+        cancelledOrders,
         totalSpent,
         wishlistCount: wishlist.length,
-        recentOrders: orders.slice(0, 3),
-        recentPayments: payments.slice(0, 3),
-        onlineSales: onlineSalesData || dashboardStats.onlineSales,
-        offlineSales: offlineSalesData || dashboardStats.offlineSales,
-        expenses: expensesData || dashboardStats.expenses,
-        totalRevenue: calculatedRevenue || dashboardStats.totalRevenue,
-        revenueChange: dashboardStats.revenueChange || 12.5,
+        recentOrders,
+        recentPayments,
       });
-
-      setProfile(userProfile);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Failed to fetch dashboard data:", error);
+      toast.error("Failed to load dashboard data");
     } finally {
       setLoading(false);
     }
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-IN", {
-      style: "currency",
-      currency: "INR",
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      minimumFractionDigits: 0,
     }).format(amount);
   };
 
@@ -170,129 +140,177 @@ export function DashboardOverview() {
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    const configs: Record<string, { variant: any; icon: any }> = {
-      pending: { variant: "outline", icon: <Clock className="h-3 w-3" /> },
-      processing: { variant: "secondary", icon: <Package className="h-3 w-3" /> },
-      shipped: { variant: "default", icon: <Truck className="h-3 w-3" /> },
-      delivered: { variant: "default", icon: <CheckCircle2 className="h-3 w-3" /> },
+  const getStatusConfig = (status: string) => {
+    const configs: Record<string, { label: string; color: string; bgColor: string; icon: any }> = {
+      pending: {
+        label: "Order Placed",
+        color: "text-blue-700",
+        bgColor: "bg-blue-100",
+        icon: Package,
+      },
+      processing: {
+        label: "Processing",
+        color: "text-orange-700",
+        bgColor: "bg-orange-100",
+        icon: Clock,
+      },
+      shipped: {
+        label: "Shipped",
+        color: "text-purple-700",
+        bgColor: "bg-purple-100",
+        icon: Truck,
+      },
+      delivered: {
+        label: "Delivered",
+        color: "text-green-700",
+        bgColor: "bg-green-100",
+        icon: CheckCircle2,
+      },
+      cancelled: {
+        label: "Cancelled",
+        color: "text-red-700",
+        bgColor: "bg-red-100",
+        icon: Package,
+      },
     };
 
-    const config = configs[(status || "pending").toLowerCase()] || configs.pending;
-    return (
-      <Badge variant={config.variant} className="flex items-center gap-1 w-fit">
-        {config.icon}
-        {status || "Pending"}
-      </Badge>
-    );
+    return configs[status?.toLowerCase()] || configs.pending;
+  };
+
+  const getLoyaltyTier = () => {
+    if (stats.totalSpent >= 50000) return { name: "Platinum", color: "text-purple-600", progress: 100 };
+    if (stats.totalSpent >= 25000) return { name: "Gold", color: "text-yellow-600", progress: 75 };
+    if (stats.totalSpent >= 10000) return { name: "Silver", color: "text-gray-600", progress: 50 };
+    return { name: "Bronze", color: "text-orange-600", progress: 25 };
   };
 
   if (loading) {
     return (
       <div className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {[1, 2, 3, 4].map((i) => (
+        <Skeleton className="h-48 w-full" />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {[...Array(6)].map((_, i) => (
             <Skeleton key={i} className="h-32" />
           ))}
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Skeleton className="h-96" />
-          <Skeleton className="h-96" />
-        </div>
+        <Skeleton className="h-96 w-full" />
       </div>
     );
   }
 
-  return (
-    <div className="space-y-6 animate-fade-in">
-      {/* Welcome Section - Admin Dashboard Style */}
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl p-8 text-white">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold mb-2">Welcome back, {profile?.name || "User"}! 👋</h1>
-            <p className="text-blue-100">
-              Here's what's happening with your store today
-            </p>
-          </div>
-          <div className="hidden md:flex items-center gap-4">
-            <Button variant="secondary" size="lg">
-              View Reports
-            </Button>
-          </div>
-        </div>
-      </div>
+  const loyaltyTier = getLoyaltyTier();
 
-      {/* Order Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="hover:shadow-lg transition-shadow">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center">
+  return (
+    <div className="space-y-6">
+      {/* Welcome Hero Section */}
+      <Card className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 opacity-10" />
+        <CardContent className="relative pt-8 pb-8">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <h1 className="text-3xl md:text-4xl font-bold">
+                  Welcome back, {profile?.name || "User"}! 👋
+                </h1>
+              </div>
+              <p className="text-muted-foreground text-lg">
+                Here's everything happening with your account
+              </p>
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="text-right">
+                <p className="text-sm text-muted-foreground mb-1">Loyalty Tier</p>
+                <div className="flex items-center gap-2">
+                  <Award className={`h-5 w-5 ${loyaltyTier.color}`} />
+                  <span className={`text-lg font-bold ${loyaltyTier.color}`}>
+                    {loyaltyTier.name}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Quick Stats Grid */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {/* Total Orders */}
+        <Card 
+          className="hover:shadow-lg transition-all cursor-pointer group"
+          onClick={() => navigate("/user-dashboard?section=orders")}
+        >
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between mb-3">
+              <div className="p-3 rounded-xl bg-blue-100 group-hover:bg-blue-200 transition-colors">
                 <Package className="h-6 w-6 text-blue-600" />
+              </div>
+              <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-blue-600 transition-colors" />
+            </div>
+            <div>
+              <p className="text-3xl font-bold mb-1">{stats.totalOrders}</p>
+              <p className="text-sm text-muted-foreground">Total Orders</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Active Orders */}
+        <Card 
+          className="hover:shadow-lg transition-all cursor-pointer group"
+          onClick={() => navigate("/user-dashboard?section=track-orders")}
+        >
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between mb-3">
+              <div className="p-3 rounded-xl bg-orange-100 group-hover:bg-orange-200 transition-colors">
+                <Clock className="h-6 w-6 text-orange-600" />
+              </div>
+              {stats.activeOrders > 0 && (
+                <Badge variant="secondary" className="animate-pulse">
+                  {stats.activeOrders}
+                </Badge>
+              )}
+            </div>
+            <div>
+              <p className="text-3xl font-bold mb-1">{stats.activeOrders}</p>
+              <p className="text-sm text-muted-foreground">Active Orders</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Total Spent */}
+        <Card 
+          className="hover:shadow-lg transition-all cursor-pointer group"
+          onClick={() => navigate("/user-dashboard?section=payments")}
+        >
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between mb-3">
+              <div className="p-3 rounded-xl bg-green-100 group-hover:bg-green-200 transition-colors">
+                <CreditCard className="h-6 w-6 text-green-600" />
               </div>
               <TrendingUp className="h-5 w-5 text-green-600" />
             </div>
-            <h3 className="text-2xl font-bold mb-1">{stats.totalOrders}</h3>
-            <p className="text-sm text-muted-foreground">Total Orders</p>
-            <Link to="/dashboard?section=orders">
-              <Button variant="link" className="p-0 h-auto mt-2 text-xs">
-                View all <ArrowRight className="h-3 w-3 ml-1" />
-              </Button>
-            </Link>
+            <div>
+              <p className="text-2xl font-bold mb-1">{formatCurrency(stats.totalSpent)}</p>
+              <p className="text-sm text-muted-foreground">Total Spent</p>
+            </div>
           </CardContent>
         </Card>
 
-        <Card className="hover:shadow-lg transition-shadow">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="h-12 w-12 rounded-full bg-yellow-100 flex items-center justify-center">
-                <Clock className="h-6 w-6 text-yellow-600" />
+        {/* Wishlist */}
+        <Card 
+          className="hover:shadow-lg transition-all cursor-pointer group"
+          onClick={() => navigate("/user-dashboard?section=wishlist")}
+        >
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between mb-3">
+              <div className="p-3 rounded-xl bg-pink-100 group-hover:bg-pink-200 transition-colors">
+                <Heart className="h-6 w-6 text-pink-600" />
               </div>
-              {stats.activeOrders > 0 && (
-                <Badge variant="secondary">{stats.activeOrders} Active</Badge>
-              )}
+              <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-pink-600 transition-colors" />
             </div>
-            <h3 className="text-2xl font-bold mb-1">{stats.activeOrders}</h3>
-            <p className="text-sm text-muted-foreground">Active Orders</p>
-            <Link to="/dashboard?section=orders">
-              <Button variant="link" className="p-0 h-auto mt-2 text-xs">
-                Track orders <ArrowRight className="h-3 w-3 ml-1" />
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
-
-        <Card className="hover:shadow-lg transition-shadow">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center">
-                <CheckCircle2 className="h-6 w-6 text-green-600" />
-              </div>
+            <div>
+              <p className="text-3xl font-bold mb-1">{stats.wishlistCount}</p>
+              <p className="text-sm text-muted-foreground">Wishlist Items</p>
             </div>
-            <h3 className="text-2xl font-bold mb-1">{stats.completedOrders}</h3>
-            <p className="text-sm text-muted-foreground">Completed Orders</p>
-            <Link to="/dashboard?section=orders">
-              <Button variant="link" className="p-0 h-auto mt-2 text-xs">
-                View history <ArrowRight className="h-3 w-3 ml-1" />
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
-
-        <Card className="hover:shadow-lg transition-shadow">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="h-12 w-12 rounded-full bg-purple-100 flex items-center justify-center">
-                <CreditCard className="h-6 w-6 text-purple-600" />
-              </div>
-            </div>
-            <h3 className="text-2xl font-bold mb-1">{formatCurrency(stats.totalSpent)}</h3>
-            <p className="text-sm text-muted-foreground">Total Spent</p>
-            <Link to="/dashboard?section=payments">
-              <Button variant="link" className="p-0 h-auto mt-2 text-xs">
-                View payments <ArrowRight className="h-3 w-3 ml-1" />
-              </Button>
-            </Link>
           </CardContent>
         </Card>
       </div>
@@ -304,129 +322,186 @@ export function DashboardOverview() {
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center gap-2">
-                <Package className="h-5 w-5" />
+                <ShoppingBag className="h-5 w-5" />
                 Recent Orders
               </CardTitle>
-              <Link to="/dashboard?section=orders">
-                <Button variant="ghost" size="sm">
-                  View All <ArrowRight className="h-4 w-4 ml-1" />
-                </Button>
-              </Link>
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => navigate("/user-dashboard?section=orders")}
+              >
+                View All
+                <ArrowRight className="h-4 w-4 ml-1" />
+              </Button>
             </div>
           </CardHeader>
           <CardContent>
             {stats.recentOrders.length === 0 ? (
               <div className="text-center py-12">
-                <Package className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                <Package className="h-12 w-12 mx-auto text-muted-foreground mb-3 opacity-50" />
                 <p className="text-muted-foreground mb-4">No orders yet</p>
-                <Button asChild>
-                  <Link to="/products">Start Shopping</Link>
+                <Button onClick={() => navigate("/products")}>
+                  <ShoppingBag className="h-4 w-4 mr-2" />
+                  Start Shopping
                 </Button>
               </div>
             ) : (
-              <div className="space-y-4">
-                {stats.recentOrders.map((order) => (
-                  <div
-                    key={order.id}
-                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
-                  >
-                    <div className="flex items-center gap-4 flex-1">
-                      <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center">
-                        <Package className="h-6 w-6 text-muted-foreground" />
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <p className="font-semibold">
-                            #{order.id.slice(0, 8).toUpperCase()}
-                          </p>
-                          {getStatusBadge(order.status)}
+              <div className="space-y-3">
+                {stats.recentOrders.map((order) => {
+                  const statusConfig = getStatusConfig(order.status);
+                  const StatusIcon = statusConfig.icon;
+                  
+                  return (
+                    <div
+                      key={order.id}
+                      className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
+                      onClick={() => navigate(`/order/${order.id}`)}
+                    >
+                      <div className="flex items-center gap-4 flex-1">
+                        <div className={`p-2 rounded-lg ${statusConfig.bgColor}`}>
+                          <StatusIcon className={`h-5 w-5 ${statusConfig.color}`} />
                         </div>
-                        <p className="text-sm text-muted-foreground">
-                          {formatDate(order.created_at)} • {order.order_items?.length || 0} items
-                        </p>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <p className="font-semibold text-sm">
+                              #{order.id.slice(0, 8).toUpperCase()}
+                            </p>
+                            <Badge className={`text-xs ${statusConfig.bgColor} ${statusConfig.color} border-0`}>
+                              {statusConfig.label}
+                            </Badge>
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            {formatDate(order.created_at)} • {order.order_items?.length || 0} items
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-bold">{formatCurrency(order.total_amount)}</p>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="font-bold">{formatCurrency(order.total_amount)}</p>
-                      <Link to={`/order/${order.id}`}>
-                        <Button variant="link" className="p-0 h-auto text-xs">
-                          View Details
-                        </Button>
-                      </Link>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </CardContent>
         </Card>
 
-        {/* Quick Actions & Stats */}
+        {/* Profile & Quick Actions */}
         <div className="space-y-6">
+          {/* Profile Card */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Profile</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center gap-4">
+                <div className="h-16 w-16 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white text-2xl font-bold">
+                  {profile?.name?.charAt(0).toUpperCase() || "U"}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold truncate">{profile?.name || "User"}</p>
+                  <p className="text-sm text-muted-foreground truncate">{profile?.email}</p>
+                </div>
+              </div>
+              
+              <Separator />
+              
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Status</span>
+                  {profile?.isVerified ? (
+                    <Badge variant="default" className="text-xs">
+                      <ShieldCheck className="h-3 w-3 mr-1" />
+                      Verified
+                    </Badge>
+                  ) : (
+                    <Badge variant="secondary" className="text-xs">Unverified</Badge>
+                  )}
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Member Since</span>
+                  <span className="font-medium">
+                    {profile?.createdAt ? formatDate(profile.createdAt) : "N/A"}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Completed Orders</span>
+                  <span className="font-medium">{stats.completedOrders}</span>
+                </div>
+              </div>
+
+              <Button 
+                variant="outline" 
+                className="w-full"
+                onClick={() => navigate("/user-dashboard?section=profile")}
+              >
+                <User className="h-4 w-4 mr-2" />
+                View Profile
+              </Button>
+            </CardContent>
+          </Card>
+
           {/* Quick Actions */}
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Quick Actions</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
-              <Link to="/dashboard?section=orders">
-                <Button variant="outline" className="w-full justify-start">
-                  <Package className="h-4 w-4 mr-2" />
-                  My Orders
-                </Button>
-              </Link>
-              <Link to="/dashboard?section=wishlist">
-                <Button variant="outline" className="w-full justify-start">
-                  <Heart className="h-4 w-4 mr-2" />
-                  Wishlist ({stats.wishlistCount})
-                </Button>
-              </Link>
-              <Link to="/dashboard?section=addresses">
-                <Button variant="outline" className="w-full justify-start">
-                  <MapPin className="h-4 w-4 mr-2" />
-                  Manage Addresses
-                </Button>
-              </Link>
-              <Link to="/dashboard?section=payments">
-                <Button variant="outline" className="w-full justify-start">
-                  <CreditCard className="h-4 w-4 mr-2" />
-                  Payment History
-                </Button>
-              </Link>
+            <CardContent className="space-y-2">
+              <Button 
+                variant="ghost" 
+                className="w-full justify-start"
+                onClick={() => navigate("/user-dashboard?section=track-orders")}
+              >
+                <Truck className="h-4 w-4 mr-3" />
+                Track Orders
+                <ChevronRight className="h-4 w-4 ml-auto" />
+              </Button>
+              <Button 
+                variant="ghost" 
+                className="w-full justify-start"
+                onClick={() => navigate("/user-dashboard?section=wishlist")}
+              >
+                <Heart className="h-4 w-4 mr-3" />
+                My Wishlist
+                <ChevronRight className="h-4 w-4 ml-auto" />
+              </Button>
+              <Button 
+                variant="ghost" 
+                className="w-full justify-start"
+                onClick={() => navigate("/user-dashboard?section=addresses")}
+              >
+                <MapPin className="h-4 w-4 mr-3" />
+                Manage Addresses
+                <ChevronRight className="h-4 w-4 ml-auto" />
+              </Button>
+              <Button 
+                variant="ghost" 
+                className="w-full justify-start"
+                onClick={() => navigate("/user-dashboard?section=reviews")}
+              >
+                <Star className="h-4 w-4 mr-3" />
+                My Reviews
+                <ChevronRight className="h-4 w-4 ml-auto" />
+              </Button>
             </CardContent>
           </Card>
 
-          {/* Account Info */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Account Info</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Member Since</span>
-                <span className="text-sm font-medium">
-                  {profile?.createdAt ? formatDate(profile.createdAt) : "N/A"}
-                </span>
+          {/* Loyalty Progress */}
+          <Card className="bg-gradient-to-br from-purple-50 to-pink-50">
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <Sparkles className={`h-5 w-5 ${loyaltyTier.color}`} />
+                  <span className={`font-bold ${loyaltyTier.color}`}>{loyaltyTier.name} Member</span>
+                </div>
+                <Award className={`h-6 w-6 ${loyaltyTier.color}`} />
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Email</span>
-                <span className="text-sm font-medium truncate max-w-[150px]">
-                  {profile?.email || "N/A"}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Status</span>
-                {profile?.isVerified ? (
-                  <Badge variant="default" className="text-xs">Verified</Badge>
-                ) : (
-                  <Badge variant="outline" className="text-xs">Unverified</Badge>
-                )}
-              </div>
-              <Link to="/dashboard?section=profile">
-                <Button variant="outline" size="sm" className="w-full mt-2">
-                  View Profile
-                </Button>
-              </Link>
+              <Progress value={loyaltyTier.progress} className="h-2 mb-2" />
+              <p className="text-xs text-muted-foreground">
+                {loyaltyTier.name === "Platinum" 
+                  ? "You've reached the highest tier!" 
+                  : `Spend ${formatCurrency(loyaltyTier.name === "Bronze" ? 10000 - stats.totalSpent : loyaltyTier.name === "Silver" ? 25000 - stats.totalSpent : 50000 - stats.totalSpent)} more to reach the next tier`}
+              </p>
             </CardContent>
           </Card>
         </div>
@@ -441,39 +516,33 @@ export function DashboardOverview() {
                 <CreditCard className="h-5 w-5" />
                 Recent Payments
               </CardTitle>
-              <Link to="/dashboard?section=payments">
-                <Button variant="ghost" size="sm">
-                  View All <ArrowRight className="h-4 w-4 ml-1" />
-                </Button>
-              </Link>
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => navigate("/user-dashboard?section=payments")}
+              >
+                View All
+                <ArrowRight className="h-4 w-4 ml-1" />
+              </Button>
             </div>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {stats.recentPayments.map((payment) => (
                 <div
                   key={payment.id}
-                  className="flex items-center justify-between p-3 border rounded-lg"
+                  className="p-4 border rounded-lg hover:shadow-md transition-shadow"
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="p-2 rounded-lg bg-green-100">
                       <CheckCircle2 className="h-5 w-5 text-green-600" />
                     </div>
-                    <div>
-                      <p className="font-medium text-sm">
-                        {payment.razorpay_payment_id?.slice(0, 20) || payment.id.slice(0, 8)}...
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {formatDate(payment.created_at)}
-                      </p>
-                    </div>
+                    <Badge variant="default" className="text-xs">Paid</Badge>
                   </div>
-                  <div className="text-right">
-                    <p className="font-bold">{formatCurrency(payment.amount)}</p>
-                    <Badge variant="default" className="text-xs">
-                      {payment.status === "captured" ? "Paid" : payment.status}
-                    </Badge>
-                  </div>
+                  <p className="font-bold text-xl mb-1">{formatCurrency(payment.amount)}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {formatDate(payment.created_at)}
+                  </p>
                 </div>
               ))}
             </div>

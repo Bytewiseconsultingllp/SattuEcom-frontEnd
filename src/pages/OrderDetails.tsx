@@ -9,7 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { getOrderById, cancelOrder } from "@/lib/api/order";
+import { getOrderById } from "@/lib/api/order";
 import { CheckCircle2, Truck, Package, Clock, ArrowLeft, MapPin, Mail, Phone, Calendar, Hash, XCircle, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 
@@ -18,16 +18,6 @@ export default function OrderDetails() {
   const navigate = useNavigate();
   const [order, setOrder] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
-  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
-  const [cancelReasonKey, setCancelReasonKey] = useState("");
-  const [cancelReasonText, setCancelReasonText] = useState("");
-  const cancelReasons = [
-    { key: 'ordered_by_mistake', label: 'Ordered by mistake' },
-    { key: 'found_better_price', label: 'Found a better price elsewhere' },
-    { key: 'delivery_too_slow', label: 'Delivery time is too long' },
-    { key: 'change_of_mind', label: 'Changed my mind' },
-    { key: 'other', label: 'Other (specify)' },
-  ];
 
   useEffect(() => {
     fetchOrder();
@@ -81,22 +71,6 @@ export default function OrderDetails() {
     }
   };
 
-  async function handleConfirmCancel() {
-    if (!order?.id) return;
-    const selected = cancelReasons.find(r => r.key === cancelReasonKey);
-    const reason = cancelReasonKey === 'other' ? cancelReasonText.trim() : selected?.label;
-    if (!reason) return toast.error('Please select or enter a reason');
-    try {
-      const res = await cancelOrder(order.id, reason);
-      if (res?.success) {
-        toast.success('Order cancelled successfully');
-        setCancelDialogOpen(false);
-        fetchOrder();
-      }
-    } catch (e: any) {
-      toast.error(e.message || 'Failed to cancel order');
-    }
-  }
 
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-gray-50 to-white">
@@ -401,27 +375,6 @@ export default function OrderDetails() {
                     </CardContent>
                   </Card>
 
-                  {/* Actions */}
-                  {(['pending', 'processing'] as string[]).includes((order.status || '').toLowerCase()) && (
-                    <Card className="shadow-lg border-red-200">
-                      <CardHeader>
-                        <CardTitle className="text-base">Order Actions</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <Button 
-                          variant="destructive" 
-                          className="w-full"
-                          onClick={() => setCancelDialogOpen(true)}
-                        >
-                          <XCircle className="h-4 w-4 mr-2" />
-                          Cancel Order
-                        </Button>
-                        <p className="text-xs text-muted-foreground mt-3">
-                          You can cancel this order since it hasn't been shipped yet.
-                        </p>
-                      </CardContent>
-                    </Card>
-                  )}
 
                   {/* Need Help */}
                   <Card className="shadow-lg bg-gradient-to-br from-primary/5 to-primary/10">
@@ -446,65 +399,6 @@ export default function OrderDetails() {
       </main>
       <Footer />
 
-      {/* Cancel Order Dialog */}
-      <Dialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Cancel Order</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">Please select a reason for cancelling this order:</p>
-            <div className="space-y-2">
-              {cancelReasons.map(r => (
-                <label 
-                  key={r.key} 
-                  className={`flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-all ${
-                    cancelReasonKey === r.key 
-                      ? 'border-primary bg-primary/5' 
-                      : 'border-gray-200 hover:border-primary/50'
-                  }`}
-                >
-                  <input 
-                    type="radio" 
-                    name="cancel_reason" 
-                    className="h-4 w-4" 
-                    checked={cancelReasonKey === r.key} 
-                    onChange={() => setCancelReasonKey(r.key)} 
-                  />
-                  <span className="text-sm">{r.label}</span>
-                </label>
-              ))}
-            </div>
-            {cancelReasonKey === 'other' && (
-              <div className="space-y-2">
-                <Label>Please specify your reason</Label>
-                <Textarea 
-                  value={cancelReasonText} 
-                  onChange={(e) => setCancelReasonText(e.target.value)} 
-                  placeholder="Enter your reason for cancellation"
-                  rows={3}
-                />
-              </div>
-            )}
-            <div className="flex gap-3 pt-4">
-              <Button 
-                variant="outline" 
-                className="flex-1"
-                onClick={() => setCancelDialogOpen(false)}
-              >
-                Go Back
-              </Button>
-              <Button 
-                variant="destructive" 
-                className="flex-1"
-                onClick={handleConfirmCancel}
-              >
-                Confirm Cancel
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
