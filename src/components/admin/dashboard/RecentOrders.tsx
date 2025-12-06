@@ -79,7 +79,7 @@ export function RecentOrders() {
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Recent Orders</CardTitle>
         <Button variant="ghost" size="sm" asChild>
-          <Link to="/admin/orders">View All</Link>
+          <Link to="/admin/dashboard?section=orders">View All</Link>
         </Button>
       </CardHeader>
       <CardContent>

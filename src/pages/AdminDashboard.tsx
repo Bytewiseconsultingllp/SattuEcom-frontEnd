@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -97,6 +98,7 @@ import { OfflineSalesPage } from "@/components/admin/OfflineSalesPage";
 import { SocialMediaPage } from "@/components/admin/SocialMediaPage";
 import { CompanySettingsPage } from "@/components/admin/CompanySettingsPage";
 import { ContactManagementPage } from "@/components/admin/ContactManagementPage";
+import { AdminProfilePage } from "@/components/admin/AdminProfilePage";
 import { DashboardHome } from "@/components/admin/DashboardHome-Refactored";
 import { ModernAdminSidebar } from "@/components/admin/ModernAdminSidebar";
 import { ModernAdminHeader } from "@/components/admin/ModernAdminHeader";
@@ -110,7 +112,11 @@ interface AdminDashboardProps {
 }
 
 const AdminDashboard = ({ forceSection }: AdminDashboardProps) => {
-  const [activeSection, setActiveSection] = useState(forceSection || "dashboard");
+  const [searchParams, setSearchParams] = useSearchParams();
+  
+  // Read section from URL query parameters, with forceSection as override
+  const activeSection = forceSection || searchParams.get("section") || "dashboard";
+  
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
   const [orderStatusFilter, setOrderStatusFilter] = useState("all");
@@ -143,19 +149,23 @@ const AdminDashboard = ({ forceSection }: AdminDashboardProps) => {
   ];
   const navigate = useNavigate();
 
-  // Persist/restore active tab
-  useEffect(() => {
-    if (forceSection) {
-      setActiveSection(forceSection);
-      return;
+  // Helper function to navigate to a section
+  const navigateToSection = (section: string) => {
+    if (!forceSection) {
+      setSearchParams({ section });
+      try { localStorage.setItem('admin_dashboard_tab', section); } catch { }
     }
-    const tab = localStorage.getItem('admin_dashboard_tab');
-    if (tab) setActiveSection(tab);
-  }, [forceSection]);
+  };
+  
+  // Load last active tab from localStorage on first mount (if no forceSection)
   useEffect(() => {
-    if (forceSection) return;
-    try { localStorage.setItem('admin_dashboard_tab', activeSection); } catch { }
-  }, [activeSection, forceSection]);
+    if (!forceSection && !searchParams.get("section")) {
+      const savedTab = localStorage.getItem('admin_dashboard_tab');
+      if (savedTab) {
+        setSearchParams({ section: savedTab });
+      }
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     console.log(getUserCookie());
@@ -312,7 +322,7 @@ const AdminDashboard = ({ forceSection }: AdminDashboardProps) => {
         {/* Modern Sidebar with Categories */}
         <ModernAdminSidebar
           activeSection={activeSection}
-          setActiveSection={setActiveSection}
+          setActiveSection={navigateToSection}
         />
 
         <div className="flex-1 flex flex-col">
@@ -941,6 +951,9 @@ const AdminDashboard = ({ forceSection }: AdminDashboardProps) => {
 
             {activeSection === "settings" && (
               <CompanySettingsPage />
+            )}
+            {activeSection === "profile" && (
+              <AdminProfilePage />
             )}
 
             {activeSection === "contact" && (

@@ -480,7 +480,7 @@ export function DashboardHome() {
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Recent Orders</CardTitle>
             <Button variant="ghost" size="sm" asChild>
-              <Link to="/admin/orders">View All</Link>
+              <Link to="/admin/dashboard?section=orders">View All</Link>
             </Button>
           </CardHeader>
           <CardContent>
@@ -526,7 +526,7 @@ export function DashboardHome() {
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Top Products</CardTitle>
             <Button variant="ghost" size="sm" asChild>
-              <Link to="/admin/products">View All</Link>
+              <Link to="/admin/dashboard?section=products">View All</Link>
             </Button>
           </CardHeader>
           <CardContent>
@@ -591,7 +591,7 @@ export function DashboardHome() {
               </Link>
             </Button>
             <Button variant="outline" className="h-24 flex-col gap-2" asChild>
-              <Link to="/admin/reports">
+              <Link to="/admin/dashboard?section=reports">
                 <TrendingUp className="h-6 w-6" />
                 <span>View Reports</span>
               </Link>

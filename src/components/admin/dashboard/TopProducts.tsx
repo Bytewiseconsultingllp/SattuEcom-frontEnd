@@ -41,7 +41,7 @@ export function TopProducts() {
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Top Products</CardTitle>
         <Button variant="ghost" size="sm" asChild>
-          <Link to="/admin/products">View All</Link>
+          <Link to="/admin/dashboard?section=products">View All</Link>
         </Button>
       </CardHeader>
       <CardContent>

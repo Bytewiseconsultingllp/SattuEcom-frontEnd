@@ -110,7 +110,7 @@ export function AlertsPanel() {
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Alerts & Warnings</CardTitle>
         <Button variant="ghost" size="sm" asChild>
-          <Link to="/admin/orders">View Orders</Link>
+          <Link to="/admin/dashboard?section=orders">View Orders</Link>
         </Button>
       </CardHeader>
       <CardContent>

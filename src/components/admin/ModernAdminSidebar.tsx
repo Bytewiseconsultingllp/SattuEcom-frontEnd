@@ -3,6 +3,7 @@ import {
   Package,
   ShoppingCart,
   Users,
+  User,
   MessageSquare,
   Tag,
   Gift,
@@ -202,6 +203,12 @@ export function ModernAdminSidebar({
       label: "Settings & Support",
       collapsible: true,
       items: [
+        {
+          id: "profile",
+          label: "Admin Profile",
+          icon: User,
+          section: "profile",
+        },
         {
           id: "settings",
           label: "Company Settings",

@@ -156,7 +156,7 @@ export function DashboardMetrics() {
           </div>
           <div className="hidden md:flex items-center gap-4">
             <Button variant="secondary" size="lg" asChild>
-              <Link to="/admin/reports">View Reports</Link>
+              <Link to="/admin/dashboard?section=reports">View Reports</Link>
             </Button>
           </div>
         </div>
