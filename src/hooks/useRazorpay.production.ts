@@ -174,6 +174,15 @@ export const useRazorpay = () => {
   const cleanup = () => {
     setIsProcessing(false);
     paymentInProgressRef.current = false;
+    
+    // Clear delivery options and address from sessionStorage
+    try {
+      sessionStorage.removeItem('delivery_options');
+      sessionStorage.removeItem('selected_address_id');
+    } catch (e) {
+      console.error('Failed to clear session storage:', e);
+    }
+    
     if (razorpayInstanceRef.current) {
       try {
         razorpayInstanceRef.current.close();

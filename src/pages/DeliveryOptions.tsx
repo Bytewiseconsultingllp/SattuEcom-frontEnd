@@ -23,15 +23,37 @@ const DeliveryOptions = () => {
     try { return sessionStorage.getItem('selected_address_id') || undefined; } catch { return undefined; }
   })();
   
-  const [deliverySpeed, setDeliverySpeed] = useState("standard");
-  const [specialInstructions, setSpecialInstructions] = useState("");
+  // Initialize state from sessionStorage or location state
+  const savedOptions = (() => {
+    try {
+      const stored = sessionStorage.getItem('delivery_options');
+      return stored ? JSON.parse(stored) : null;
+    } catch {
+      return null;
+    }
+  })();
+
+  const [deliverySpeed, setDeliverySpeed] = useState(
+    location.state?.deliveryOptions?.deliverySpeed || savedOptions?.deliverySpeed || "standard"
+  );
+  const [specialInstructions, setSpecialInstructions] = useState(
+    location.state?.deliveryOptions?.specialInstructions || savedOptions?.specialInstructions || ""
+  );
   
   // Gift state
   const [giftDesigns, setGiftDesigns] = useState<GiftDesign[]>([]);
-  const [selectedGiftId, setSelectedGiftId] = useState<string | null>(null);
-  const [selectedGiftPrice, setSelectedGiftPrice] = useState<number>(0);
-  const [selectedGiftName, setSelectedGiftName] = useState<string>("");
-  const [giftMessage, setGiftMessage] = useState("");
+  const [selectedGiftId, setSelectedGiftId] = useState<string | null>(
+    location.state?.deliveryOptions?.selectedGiftId || savedOptions?.selectedGiftId || null
+  );
+  const [selectedGiftPrice, setSelectedGiftPrice] = useState<number>(
+    location.state?.deliveryOptions?.giftPrice || savedOptions?.giftPrice || 0
+  );
+  const [selectedGiftName, setSelectedGiftName] = useState<string>(
+    location.state?.deliveryOptions?.giftName || savedOptions?.giftName || ""
+  );
+  const [giftMessage, setGiftMessage] = useState(
+    location.state?.deliveryOptions?.giftMessage || savedOptions?.giftMessage || ""
+  );
   const [giftLoading, setGiftLoading] = useState(false);
   
   // Custom gift request modal state

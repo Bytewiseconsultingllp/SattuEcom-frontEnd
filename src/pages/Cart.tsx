@@ -95,16 +95,19 @@ const Cart = () => {
             <div className="lg:col-span-2 space-y-3">
               {isLoading && cartItems.length === 0 ? (
                 Array.from({ length: 3 }).map((_, idx) => (
-                  <Card key={idx} className="border-emerald-100 shadow-sm">
-                    <CardContent className="p-4">
-                      <div className="flex gap-3">
-                        <Skeleton className="w-20 h-20 rounded-lg" />
-                        <div className="flex-1 space-y-2">
-                          <Skeleton className="h-4 w-2/3" />
-                          <Skeleton className="h-3 w-1/3" />
-                          <div className="flex items-center justify-between">
-                            <Skeleton className="h-6 w-20" />
-                            <Skeleton className="h-8 w-24" />
+                  <Card key={idx} className="border-emerald-200 shadow-md bg-white overflow-hidden">
+                    <CardContent className="p-0">
+                      <div className="flex flex-col sm:flex-row">
+                        <Skeleton className="w-full sm:w-32 md:w-40 h-40 sm:h-full" />
+                        <div className="flex-1 p-4 sm:p-5 space-y-4">
+                          <div className="space-y-2">
+                            <Skeleton className="h-6 w-3/4" />
+                            <Skeleton className="h-4 w-24 rounded-full" />
+                          </div>
+                          <Skeleton className="h-8 w-32" />
+                          <div className="flex flex-col sm:flex-row justify-between gap-4 pt-4">
+                            <Skeleton className="h-10 w-40" />
+                            <Skeleton className="h-10 w-32 rounded-lg" />
                           </div>
                         </div>
                       </div>
@@ -113,75 +116,110 @@ const Cart = () => {
                 ))
               ) : (
                 cartItems.map((item) => (
-                  <Card key={item.id} className="border-emerald-100 shadow-sm hover:shadow-md transition-shadow bg-white/80 backdrop-blur">
-                    <CardContent className="p-4">
-                      <div className="flex gap-4">
-                        <Link to={`/product/${item.product.id}`}>
-                          <img
-                            src={item.product.images?.[0] || "/placeholder.svg"}
-                            alt={item.product.name}
-                            className="w-20 h-20 object-cover rounded-lg border border-emerald-100"
-                          />
+                  <Card key={item.id} className="border-emerald-200 shadow-md hover:shadow-lg transition-all duration-300 bg-white overflow-hidden">
+                    <CardContent className="p-0">
+                      <div className="flex flex-col sm:flex-row">
+                        {/* Product Image */}
+                        <Link to={`/product/${item.product.id}`} className="flex-shrink-0">
+                          <div className="relative w-full sm:w-32 md:w-40 h-40 sm:h-full bg-gradient-to-br from-emerald-50 to-lime-50">
+                            <img
+                              src={item.product.images?.[0] || "/placeholder.svg"}
+                              alt={item.product.name}
+                              className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                            />
+                            
+                          </div>
                         </Link>
 
-                        <div className="flex-1 space-y-2">
-                          <div>
-                            <Link to={`/product/${item.product.id}`}>
-                              <h3 className="font-bold text-base text-emerald-900 hover:text-emerald-700 transition-colors">
-                                {item.product.name}
-                              </h3>
-                            </Link>
-                            <p className="text-xs text-emerald-600/80">
-                              {item.product.category}
-                            </p>
+                        {/* Product Details */}
+                        <div className="flex-1 p-4 sm:p-5 flex flex-col justify-between">
+                          {/* Top Section: Title and Remove Button */}
+                          <div className="flex justify-between items-start gap-3 mb-3">
+                            <div className="flex-1">
+                              <Link to={`/product/${item.product.id}`}>
+                                <h3 className="font-bold text-lg md:text-xl text-emerald-900 hover:text-emerald-700 transition-colors line-clamp-2">
+                                  {item.product.name}
+                                </h3>
+                              </Link>
+                              <div className="flex items-center gap-2 mt-1">
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
+                                  {item.product.category}
+                                </span>
+                              </div>
+                            </div>
+                            
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-9 w-9 hover:bg-red-50 text-red-500 hover:text-red-700 rounded-full flex-shrink-0"
+                              onClick={() => removeItem(item.id)}
+                              disabled={isItemLoading(item.id)}
+                              title="Remove from cart"
+                            >
+                              <Trash2 className="h-5 w-5" />
+                            </Button>
                           </div>
 
-                          <div className="flex items-center justify-between flex-wrap gap-2">
-                            <span className="font-bold text-lg text-emerald-600">
-                              ₹{item.product.price}
-                            </span>
+                          {/* Middle Section: Price and Description */}
+                          <div className="mb-4 space-y-2">
+                            <div className="flex items-baseline gap-2">
+                              <span className="text-2xl font-bold text-emerald-600">
+                                ₹{item.product.price}
+                              </span>
+                              <span className="text-sm text-emerald-600/60">per unit</span>
+                            </div>
+                            {item.product.description && (
+                              <p className="text-sm text-emerald-700/70 line-clamp-2 leading-relaxed">
+                                {item.product.description}
+                              </p>
+                            )}
+                          </div>
 
-                            <div className="flex items-center gap-2">
-                              <div className="flex items-center border border-emerald-200 rounded-lg bg-white">
+                          {/* Bottom Section: Quantity and Subtotal */}
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-4 border-t border-emerald-100">
+                            {/* Quantity Selector */}
+                            <div className="flex items-center gap-3">
+                              <span className="text-sm font-medium text-emerald-700">Quantity:</span>
+                              <div className="flex items-center border-2 border-emerald-300 rounded-lg bg-white shadow-sm">
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  className="h-8 w-8 hover:bg-emerald-50 text-emerald-700"
-                                  disabled={isItemLoading(item.id)}
+                                  className="h-10 w-10 hover:bg-emerald-50 text-emerald-700 rounded-l-lg"
+                                  disabled={isItemLoading(item.id) || item.quantity <= 1}
                                   onClick={() => handleQuantityChange(item.id, -1, item.quantity)}
                                 >
-                                  <Minus className="h-3 w-3" />
+                                  <Minus className="h-4 w-4" />
                                 </Button>
-                                <span className="px-4 text-sm font-bold text-emerald-900">
+                                <span className="px-4 min-w-[3rem] text-center text-base font-bold text-emerald-900">
                                   {item.quantity}
                                 </span>
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  className="h-8 w-8 hover:bg-emerald-50 text-emerald-700"
+                                  className="h-10 w-10 hover:bg-emerald-50 text-emerald-700 rounded-r-lg"
                                   disabled={isItemLoading(item.id)}
                                   onClick={() => handleQuantityChange(item.id, 1, item.quantity)}
                                 >
-                                  <Plus className="h-3 w-3" />
+                                  <Plus className="h-4 w-4" />
                                 </Button>
                               </div>
+                            </div>
 
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-8 w-8 hover:bg-red-50 text-red-600"
-                                onClick={() => removeItem(item.id)}
-                                disabled={isItemLoading(item.id)}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
+                            {/* Subtotal */}
+                            <div className="flex items-center justify-between sm:justify-end gap-2 bg-emerald-50 px-4 py-2 rounded-lg">
+                              <span className="text-sm font-medium text-emerald-700">Subtotal:</span>
+                              <span className="text-xl font-bold text-emerald-900">
+                                ₹{item.product.price * item.quantity}
+                              </span>
                             </div>
                           </div>
 
-                          <div className="flex items-center justify-between pt-2 border-t border-emerald-100">
-                            <span className="text-xs text-emerald-700">Subtotal:</span>
-                            <span className="font-bold text-sm text-emerald-900">₹{item.product.price * item.quantity}</span>
-                          </div>
+                          {/* Loading Overlay */}
+                          {isItemLoading(item.id) && (
+                            <div className="absolute inset-0 bg-white/60 backdrop-blur-[1px] flex items-center justify-center">
+                              <Loader2 className="h-6 w-6 animate-spin text-emerald-600" />
+                            </div>
+                          )}
                         </div>
                       </div>
                     </CardContent>
@@ -220,7 +258,7 @@ const Cart = () => {
                         <div className="p-3 bg-lime-50 rounded-lg border border-lime-200">
                           <p className="text-xs text-lime-800 font-medium flex items-center gap-2">
                             <span className="h-1.5 w-1.5 rounded-full bg-lime-500" />
-                            Shipping & taxes at checkout
+                            Shipping & taxes to be calculated at checkout
                           </p>
                         </div>
 
@@ -232,16 +270,17 @@ const Cart = () => {
                         </div>
                       </div>
 
-                      <div className="space-y-2">
+                      <div className="space-y-6">
                         <Link to="/checkout">
                           <Button size="lg" className="w-full bg-emerald-600 hover:bg-emerald-700 text-white shadow-md hover:shadow-lg transition-all h-11">
                             Proceed to Checkout
                             <ArrowRight className="ml-2 h-4 w-4" />
                           </Button>
                         </Link>
-                        
+                        </div>
+                        <div className="space-y-6">
                         <Link to="/products">
-                          <Button variant="outline" className="w-full border border-emerald-600 text-emerald-700 hover:bg-emerald-50 transition-all">
+                          <Button variant="outline" className="w-full border border-emerald-600 text-emerald-700 hover:bg-emerald-700 transition-all">
                             <ShoppingBag className="mr-2 h-4 w-4" />
                             Continue Shopping
                           </Button>

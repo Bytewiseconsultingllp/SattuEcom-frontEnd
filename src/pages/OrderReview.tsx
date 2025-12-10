@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { MapPin, Package, Gift, Trash2, Plus, Minus, ChevronDown, ChevronUp, CreditCard, Loader2, ShoppingBag, Truck } from "lucide-react";
 import { toast } from "sonner";
 import { getAddressById as apiGetAddressById } from "@/lib/api/addresses";
@@ -46,6 +47,7 @@ const OrderReview = () => {
   const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(null);
   const [couponDiscount, setCouponDiscount] = useState(0);
   const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
+  const [isCouponDialogOpen, setIsCouponDialogOpen] = useState(false);
 
   // Get gift selection from delivery options
   const selectedGiftId = deliveryOptions.selectedGiftId || null;
@@ -155,6 +157,7 @@ const OrderReview = () => {
     product_id: ci.product?.id || ci.product_id,
     quantity: ci.quantity,
     price: ci.product?.price || 0,
+    category: ci.product?.category || '',
   }));
 
   const onApplyCoupon = async (code?: string) => {
@@ -182,7 +185,7 @@ const OrderReview = () => {
   const onRemoveCoupon = () => {
     setAppliedCoupon(null);
     setCouponDiscount(0);
-    // keep code input for convenience
+    setCouponCode(""); // Clear the coupon code input
   };
 
   const handlePlaceOrder = async () => {
@@ -575,14 +578,74 @@ const OrderReview = () => {
 
                       {availableCoupons.length > 0 && !appliedCoupon && (
                         <div>
-                          <p className="text-xs text-emerald-700 mb-1.5">Available coupons</p>
-                          <div className="flex flex-wrap gap-1.5">
-                            {availableCoupons.map(c => (
-                              <Button key={c.id} variant="outline" size="sm" onClick={() => onApplyCoupon(c.code)} className="border-emerald-600 text-emerald-700 hover:bg-emerald-50 h-7 px-2 text-xs">
-                                {c.code}
+                          <Dialog open={isCouponDialogOpen} onOpenChange={setIsCouponDialogOpen}>
+                            <DialogTrigger asChild>
+                              <Button variant="outline" size="sm" className="w-full border-emerald-600 text-emerald-700 hover:bg-emerald-700 h-9 text-xs">
+                                <Gift className="h-3 w-3 mr-2" />
+                                View Available Coupons ({availableCoupons.length})
                               </Button>
-                            ))}
-                          </div>
+                            </DialogTrigger>
+                            <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                              <DialogHeader>
+                                <DialogTitle className="text-emerald-900">Available Coupons</DialogTitle>
+                              </DialogHeader>
+                              <div className="space-y-3 mt-4">
+                                {availableCoupons.map(c => (
+                                  <Card key={c.id} className="border-emerald-200 hover:border-emerald-400 transition-all">
+                                    <CardContent className="p-4">
+                                      <div className="flex items-start justify-between gap-3">
+                                        <div className="flex-1">
+                                          <div className="flex items-center gap-2 mb-2">
+                                            <Badge className="bg-emerald-600 text-sm font-bold">{c.code}</Badge>
+                                            <Badge variant="outline" className="text-xs capitalize">
+                                              {c.type === 'buy_x_get_y' ? 'Buy X Get Y' : c.type}
+                                            </Badge>
+                                          </div>
+                                          <p className="text-sm text-emerald-900 font-medium mb-1">
+                                            {c.type === 'percentage' && `${c.discount_value}% OFF`}
+                                            {c.type === 'fixed' && `₹${c.discount_value} OFF`}
+                                            {c.type === 'buy_x_get_y' && `Buy ${c.buy_quantity} Get ${c.get_quantity} FREE`}
+                                            {c.type === 'free_shipping' && 'FREE SHIPPING'}
+                                          </p>
+                                          {c.description && (
+                                            <p className="text-xs text-emerald-600 mb-2">{c.description}</p>
+                                          )}
+                                          <div className="flex flex-wrap gap-2 text-xs text-emerald-700">
+                                            {c.min_purchase_amount && (
+                                              <span className="bg-emerald-50 px-2 py-1 rounded">
+                                                Min: ₹{c.min_purchase_amount}
+                                              </span>
+                                            )}
+                                            {c.max_discount_amount && c.type === 'percentage' && (
+                                              <span className="bg-emerald-50 px-2 py-1 rounded">
+                                                Max: ₹{c.max_discount_amount}
+                                              </span>
+                                            )}
+                                            {c.end_date && (
+                                              <span className="bg-amber-50 px-2 py-1 rounded text-amber-700">
+                                                Valid till: {new Date(c.end_date).toLocaleDateString()}
+                                              </span>
+                                            )}
+                                          </div>
+                                        </div>
+                                        <Button 
+                                          size="sm" 
+                                          onClick={() => {
+                                            onApplyCoupon(c.code);
+                                            setIsCouponDialogOpen(false);
+                                          }} 
+                                          disabled={isApplyingCoupon}
+                                          className="bg-emerald-600 hover:bg-emerald-700 text-xs"
+                                        >
+                                          Apply
+                                        </Button>
+                                      </div>
+                                    </CardContent>
+                                  </Card>
+                                ))}
+                              </div>
+                            </DialogContent>
+                          </Dialog>
                         </div>
                       )}
                     </div>
@@ -608,7 +671,7 @@ const OrderReview = () => {
                       
                       <Button 
                         variant="outline" 
-                        className="w-full border border-emerald-600 text-emerald-700 hover:bg-emerald-50"
+                        className="w-full border border-emerald-600 text-emerald-700 hover:bg-emerald-700"
                         onClick={() => { try { if (addressId) sessionStorage.setItem('selected_address_id', addressId); } catch {}; navigate("/delivery-options", { state: { addressId } }); }}
                       >
                         Back to Delivery Options

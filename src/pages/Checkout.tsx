@@ -280,7 +280,7 @@ const Checkout = () => {
                             <Check className="h-3 w-3 text-emerald-700" />
                           </div>
                         )}
-                        <Button variant="outline" size="sm" onClick={() => openEdit(address)} className="border-emerald-600 text-emerald-700 hover:bg-emerald-50 text-xs h-7 px-2">
+                        <Button variant="outline" size="sm" onClick={() => openEdit(address)} className="border-emerald-600 text-emerald-700 hover:bg-emerald-700 text-xs h-7 px-2">
                           Edit
                         </Button>
                       </div>
@@ -291,7 +291,7 @@ const Checkout = () => {
             </RadioGroup>
 
             <div className="flex justify-between items-center sticky bottom-0 bg-white/90 backdrop-blur py-3 border-t border-emerald-100 rounded-t-xl shadow-md gap-3">
-              <Button variant="outline" onClick={() => navigate("/cart")} className="border border-emerald-600 text-emerald-700 hover:bg-emerald-50">
+              <Button variant="outline" onClick={() => navigate("/cart")} className="border border-emerald-600 text-emerald-700 hover:bg-emerald-700">
                 Back to Cart
               </Button>
               <Button onClick={handleContinue} className="bg-emerald-600 hover:bg-emerald-700 shadow-sm">
