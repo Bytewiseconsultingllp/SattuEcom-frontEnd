@@ -42,8 +42,8 @@ export function SocialMediaPage() {
   const [accounts, setAccounts] = useState<SocialAccount[]>([
     {
       platform: "Facebook",
-      username: "@sattustore",
-      url: "https://facebook.com/sattustore",
+      username: "@grainfusion",
+      url: "https://facebook.com/grainfusion",
       followers: 5420,
       isActive: true,
       icon: Facebook,
@@ -51,8 +51,8 @@ export function SocialMediaPage() {
     },
     {
       platform: "Instagram",
-      username: "@sattustore",
-      url: "https://instagram.com/sattustore",
+      username: "@grainfusion",
+      url: "https://instagram.com/grainfusion",
       followers: 8930,
       isActive: true,
       icon: Instagram,
@@ -73,16 +73,41 @@ export function SocialMediaPage() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-pink-500 to-pink-600 rounded-lg p-6 text-white">
+      {/* Header - Marketing Orange Theme */}
+      <div className="bg-gradient-to-r from-orange-600 to-amber-500 rounded-xl p-6 text-white shadow-lg shadow-orange-500/20">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold mb-2">Social Media Management</h1>
-            <p className="text-pink-100">
+            <p className="text-orange-100">
               Manage all your social media accounts
             </p>
           </div>
           <Share2 className="h-16 w-16 opacity-20" />
+        </div>
+      </div>
+
+      {/* Info Banner */}
+      <div className="bg-orange-50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-800 rounded-xl p-4">
+        <div className="flex items-start gap-3">
+          <div className="h-8 w-8 rounded-lg bg-orange-100 dark:bg-orange-900/50 flex items-center justify-center flex-shrink-0">
+            <Share2 className="h-4 w-4 text-orange-600 dark:text-orange-400" />
+          </div>
+          <div className="flex-1">
+            <h3 className="font-semibold text-orange-900 dark:text-orange-100 mb-1">Social Media Presence</h3>
+            <p className="text-sm text-orange-700 dark:text-orange-300">
+              Connect and manage your social media accounts across platforms. Monitor follower growth, engagement rates, and post performance. Keep your social presence active and connected with your audience.
+            </p>
+            <div className="mt-3 flex items-center gap-4 text-sm">
+              <div className="flex items-center gap-1.5">
+                <span className="font-semibold text-orange-900 dark:text-orange-100">{totalFollowers.toLocaleString()}</span>
+                <span className="text-orange-600 dark:text-orange-400">Total Followers</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="font-semibold text-orange-900 dark:text-orange-100">{accounts.filter(a => a.isActive).length}</span>
+                <span className="text-orange-600 dark:text-orange-400">Active Accounts</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 

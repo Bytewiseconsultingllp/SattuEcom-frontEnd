@@ -51,13 +51,103 @@ import { competitiveStrengths, contactDetails, marketHighlights, powerIngredient
 import { Testimonials } from "@/components/Testimonials";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { useCart } from "@/contexts/CartContext";
+import { addToWishlist, removeFromWishlist, isInWishlist } from "@/lib/api/wishlist";
+import { toast } from "sonner";
+import { Star, Eye } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const Index = () => {
   const [featuredProducts, setFeaturedProducts] = useState<any[]>([]);
+  const [allProducts, setAllProducts] = useState<any[]>([]);
   const [banners, setBanners] = useState<Banner[]>([]);
   const [carouselApi, setCarouselApi] = useState<CarouselApi | null>(null);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [slideCount, setSlideCount] = useState(0);
+  const [wishlistItems, setWishlistItems] = useState<Set<string>>(new Set());
+  const [loadingCart, setLoadingCart] = useState<Set<string>>(new Set());
+  const [loadingWishlist, setLoadingWishlist] = useState<Set<string>>(new Set());
+  
+  const { addToCart } = useCart();
+  const navigate = useNavigate();
+
+  // Check if user is logged in
+  const isUserLoggedIn = () => {
+    const token = document.cookie.split('; ').find(row => row.startsWith('token='));
+    return !!token;
+  };
+
+  // Handler for adding to cart
+  const handleAddToCart = async (e: React.MouseEvent, productId: string, productName: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!isUserLoggedIn()) {
+      toast.error('Please login to add items to cart', {
+        action: {
+          label: 'Login',
+          onClick: () => navigate('/login')
+        }
+      });
+      return;
+    }
+    
+    setLoadingCart(prev => new Set(prev).add(productId));
+    try {
+      await addToCart(productId, 1);
+      toast.success(`${productName} added to cart!`);
+    } catch (error: any) {
+      toast.error(error?.message || 'Failed to add to cart');
+    } finally {
+      setLoadingCart(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(productId);
+        return newSet;
+      });
+    }
+  };
+
+  // Handler for toggling wishlist
+  const handleToggleWishlist = async (e: React.MouseEvent, productId: string, productName: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!isUserLoggedIn()) {
+      toast.error('Please login to manage wishlist', {
+        action: {
+          label: 'Login',
+          onClick: () => navigate('/login')
+        }
+      });
+      return;
+    }
+
+    setLoadingWishlist(prev => new Set(prev).add(productId));
+    try {
+      const isInWish = wishlistItems.has(productId);
+      if (isInWish) {
+        await removeFromWishlist(productId);
+        setWishlistItems(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(productId);
+          return newSet;
+        });
+        toast.success(`${productName} removed from wishlist`);
+      } else {
+        await addToWishlist(productId);
+        setWishlistItems(prev => new Set(prev).add(productId));
+        toast.success(`${productName} added to wishlist!`);
+      }
+    } catch (error: any) {
+      toast.error(error?.message || 'Failed to update wishlist');
+    } finally {
+      setLoadingWishlist(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(productId);
+        return newSet;
+      });
+    }
+  };
 
   useEffect(() => {
     let mounted = true;
@@ -93,6 +183,39 @@ const Index = () => {
     };
 
     loadBanners();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadAllProducts = async () => {
+      try {
+        const res: any = await getProducts(1, 100); // Load more products for marquee
+        if (!mounted) return;
+
+        if (res?.success) {
+          setAllProducts(res.data || []);
+          setFeaturedProducts((res.data || []).slice(0, 3));
+        } else if (Array.isArray(res)) {
+          setAllProducts(res);
+          setFeaturedProducts(res.slice(0, 3));
+        } else if (res?.data && Array.isArray(res.data)) {
+          setAllProducts(res.data);
+          setFeaturedProducts(res.data.slice(0, 3));
+        }
+      } catch {
+        if (mounted) {
+          setAllProducts([]);
+          setFeaturedProducts([]);
+        }
+      }
+    };
+
+    loadAllProducts();
 
     return () => {
       mounted = false;
@@ -326,115 +449,20 @@ const Index = () => {
       <Header />
 
       <main className="flex-1">
-        {/* Hero Section */}
-        <section id={HOME_SECTION_IDS.hero} className="relative overflow-hidden min-h-[600px]">
-          <div className="absolute inset-0 z-0">
-            <img
-              src={heroImage}
-              alt="Grain Fusion Hero"
-              className="w-full h-full object-cover"
-            />
-            <div className="absolute inset-0 bg-gradient-to-r from-emerald-950/95 via-emerald-900/85 to-emerald-800/60" data-parallax-speed="8" />
-            <div className="absolute -left-24 top-1/2 h-[700px] w-[700px] -translate-y-1/2 rounded-full bg-emerald-700/20 blur-3xl" aria-hidden data-parallax-speed="60" />
-            <div className="absolute -right-24 top-1/3 h-[500px] w-[500px] rounded-full bg-lime-400/20 blur-3xl" aria-hidden data-parallax-speed="40" />
-          </div>
-
-          <div className="relative z-10">
-            <div className="container mx-auto px-4 py-28 lg:py-36">
-              <div className="grid gap-14 lg:grid-cols-[1.2fr_1fr] items-center">
-                <div className="space-y-8 text-primary-foreground" data-gsap-hero>
-                  <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-sm font-medium backdrop-blur" data-gsap-badge>
-                    <span className="h-2 w-2 rounded-full bg-lime-300 animate-pulse" />
-                    Made in India • Swatishree's Innovation Pvt. Ltd.
-                  </div>
-                  <h1 className="text-4xl md:text-6xl font-bold leading-tight">
-                    Reviving traditional grains <span className="text-lime-300">for modern nutrition</span>
-                  </h1>
-                  <p className="text-lg md:text-xl text-emerald-100/80 leading-relaxed max-w-2xl">
-                    Grain Fusion transforms age-old recipes into convenient, nutrient-dense foods. Discover gluten-free millets, protein-rich mixes, and wholesome superfoods crafted for every generation.
-                  </p>
-
-                  <div className="flex flex-wrap gap-4">
-                    <Link to="/products">
-                      <Button size="lg" className="text-lg px-8 shadow-lg shadow-emerald-900/30 hover:shadow-xl transition-all">
-                        Explore Products
-                      </Button>
-                    </Link>
-                    <Button size="lg" variant="outline" className="text-lg px-8 border-white/40 bg-white/10 text-white hover:bg-white/20 hover:border-white/60 backdrop-blur-sm transition-all">
-                      View Nutrition Story
-                    </Button>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-6" data-gsap-stats>
-                    {[{
-                      label: "Gluten Free",
-                      value: "100%",
-                      description: "Millet-rich blends without additives",
-                    }, {
-                      label: "Farm Partnerships",
-                      value: "2,000+",
-                      description: "Fair-trade sourcing across India",
-                    }, {
-                      label: "Customer Trust",
-                      value: "500+",
-                      description: "Families loving Grain Fusion daily",
-                    }].map(({ label, value, description }) => (
-                      <div key={label} className="rounded-2xl bg-white/10 border border-white/20 p-5 backdrop-blur">
-                        <p className="text-sm uppercase tracking-[0.3em] text-emerald-100/80">{label}</p>
-                        <p className="text-3xl font-semibold text-lime-200 mt-2">{value}</p>
-                        <p className="text-sm text-emerald-100/70 mt-2">{description}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="relative hidden lg:block" data-animate="true">
-                  <div className="absolute inset-0 rounded-3xl bg-emerald-700/30 blur-2xl" aria-hidden />
-                  <div className="relative rounded-3xl border border-emerald-100/50 bg-white/95 p-8 shadow-2xl space-y-6">
-                    <h3 className="text-xl font-semibold text-emerald-900">Why Grain Fusion?</h3>
-                    <ul className="space-y-3 text-sm text-emerald-700">
-                      <li className="flex items-start gap-3">
-                        <span className="mt-1 h-2 w-2 rounded-full bg-emerald-500" />
-                        20 authentic ingredients with 2X millet content for unmatched nutrition.
-                      </li>
-                      <li className="flex items-start gap-3">
-                        <span className="mt-1 h-2 w-2 rounded-full bg-emerald-500" />
-                        Complete natural processing—no artificial flavours, colours, or preservatives.
-                      </li>
-                      <li className="flex items-start gap-3">
-                        <span className="mt-1 h-2 w-2 rounded-full bg-emerald-500" />
-                        Crafted by Swatishree's Innovation Pvt. Ltd., blending ancestral recipes with modern convenience.
-                      </li>
-                    </ul>
-
-                    <div className="rounded-2xl bg-emerald-50 p-5 border border-emerald-100 space-y-3">
-                      <p className="text-sm font-semibold text-emerald-700 uppercase tracking-[0.3em]">Featured</p>
-                      <p className="text-lg font-semibold text-emerald-900">Trusted by wellness enthusiasts nationwide</p>
-                      <p className="text-sm text-emerald-700/80">
-                        Join a growing community embracing pure, ready-to-enjoy nutrition rooted in India's heritage.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
+        {/* Banner Section */}
         {banners.length > 0 && (
-          <section className="relative w-full overflow-hidden bg-gradient-to-b from-background via-muted/30 to-background py-12" data-animate="true">
-            <div className="container mx-auto px-4">
-              <Carousel
-                className="relative w-full overflow-hidden rounded-3xl shadow-2xl"
-                setApi={setCarouselApi}
-                opts={{ align: "start", loop: true }}
-              >
+          <section className="relative w-full overflow-hidden" data-animate="true">
+            <Carousel
+              className="relative w-full overflow-hidden"
+              setApi={setCarouselApi}
+              opts={{ align: "start", loop: true }}
+            >
                 <CarouselContent className="w-full ml-0">
                     {banners.map((banner, index) => {
                       const isExternal = banner.linkUrl && banner.linkUrl.startsWith("http");
 
                       const content = (
-                        <div className="relative overflow-hidden rounded-3xl group cursor-pointer">
+                        <div className="relative overflow-hidden group cursor-pointer">
                           {/* Image with zoom effect on hover */}
                           <div className="relative overflow-hidden">
                             <img
@@ -556,10 +584,320 @@ const Index = () => {
                     />
                   </div>
                 )}
-              </Carousel>
+            </Carousel>
+          </section>
+        )}
+
+        {/* Products Section */}
+        {allProducts.length > 0 && (
+          <section className="py-12 bg-gradient-to-r from-emerald-50 via-white to-lime-50 overflow-hidden">
+            <div className="mb-8 text-center">
+              <h2 className="text-3xl md:text-4xl font-bold text-emerald-900 mb-2">Our Products</h2>
+              <p className="text-lg text-muted-foreground">Explore our range of traditional nutrition</p>
+            </div>
+            
+            {/* Marquee Animation with Pause on Hover */}
+            <div className="relative group">
+              <div className="flex animate-marquee group-hover:[animation-play-state:paused]">
+                {/* First set of products */}
+                {allProducts.map((product: any, index: number) => (
+                  <div key={`first-${product._id || product.id || index}`} className="inline-block mx-4 flex-shrink-0" style={{ width: '300px' }}>
+                    <div className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden h-full flex flex-col">
+                      <Link to={`/product/${product._id || product.id}`}>
+                        <div className="relative overflow-hidden group/img" style={{ height: '260px' }}>
+                          <img
+                            src={product.images?.[0] || product.imageUrl || product.image || '/placeholder.svg'}
+                            alt={product.name || 'Product'}
+                            className="w-full h-full object-cover hover:scale-110 transition-transform duration-500"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.src = '/placeholder.svg';
+                            }}
+                          />
+                          {product.discount && product.discount > 0 && (
+                            <div className="absolute top-3 right-3 bg-red-500 text-white px-3 py-1 rounded-full text-sm font-semibold">
+                              {product.discount}% OFF
+                            </div>
+                          )}
+                        </div>
+                      </Link>
+                      <div className="p-4 flex flex-col flex-grow">
+                        <Link to={`/product/${product._id || product.id}`}>
+                          <h3 className="font-semibold text-base text-emerald-900 mb-2 line-clamp-2 min-h-[44px] hover:text-emerald-700 transition-colors">
+                            {product.name || 'Product Name'}
+                          </h3>
+                        </Link>
+                        
+                        {/* Ratings */}
+                        <div className="flex items-center gap-1 mb-2">
+                          {[...Array(5)].map((_, i) => (
+                            <Star
+                              key={i}
+                              className={`h-3 w-3 ${
+                                i < Math.floor(product.rating || product.averageRating || 4)
+                                  ? 'text-yellow-500 fill-yellow-500'
+                                  : 'text-gray-300 fill-gray-300'
+                              }`}
+                            />
+                          ))}
+                          <span className="text-xs text-gray-600 ml-1">
+                            ({product.reviews_count || product.reviewCount || 0})
+                          </span>
+                        </div>
+
+                        <div className="mt-auto space-y-3">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-xl font-bold text-emerald-600">
+                              ₹{product.price || product.sellingPrice || 0}
+                            </span>
+                            {(product.originalPrice || product.mrp) && (product.originalPrice || product.mrp) > (product.price || product.sellingPrice) && (
+                              <span className="text-xs text-gray-500 line-through">
+                                ₹{product.originalPrice || product.mrp}
+                              </span>
+                            )}
+                          </div>
+                          
+                          <div className="flex gap-2">
+                            <button
+                              onClick={(e) => handleAddToCart(e, product._id || product.id, product.name)}
+                              disabled={loadingCart.has(product._id || product.id)}
+                              className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1"
+                            >
+                              {loadingCart.has(product._id || product.id) ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <ShoppingBag className="h-4 w-4" />
+                              )}
+                              <span className="text-xs">Cart</span>
+                            </button>
+                            <button
+                              onClick={(e) => handleToggleWishlist(e, product._id || product.id, product.name)}
+                              disabled={loadingWishlist.has(product._id || product.id)}
+                              className={`p-2 rounded-lg border-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
+                                wishlistItems.has(product._id || product.id)
+                                  ? 'bg-red-50 border-red-500 text-red-500'
+                                  : 'border-gray-300 text-gray-600 hover:border-red-500 hover:text-red-500'
+                              }`}
+                            >
+                              {loadingWishlist.has(product._id || product.id) ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Heart 
+                                  className="h-4 w-4" 
+                                  fill={wishlistItems.has(product._id || product.id) ? 'currentColor' : 'none'}
+                                />
+                              )}
+                            </button>
+                            <Link to={`/product/${product._id || product.id}`}>
+                              <button className="p-2 rounded-lg border-2 border-emerald-600 text-emerald-600 hover:bg-emerald-50 transition-all">
+                                <Eye className="h-4 w-4" />
+                              </button>
+                            </Link>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                {/* Duplicate set for seamless loop */}
+                {allProducts.map((product: any, index: number) => (
+                  <div key={`second-${product._id || product.id || index}`} className="inline-block mx-4 flex-shrink-0" style={{ width: '300px' }}>
+                    <div className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden h-full flex flex-col">
+                      <Link to={`/product/${product._id || product.id}`}>
+                        <div className="relative overflow-hidden group/img" style={{ height: '260px' }}>
+                          <img
+                            src={product.images?.[0] || product.imageUrl || product.image || '/placeholder.svg'}
+                            alt={product.name || 'Product'}
+                            className="w-full h-full object-cover hover:scale-110 transition-transform duration-500"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.src = '/placeholder.svg';
+                            }}
+                          />
+                          {product.discount && product.discount > 0 && (
+                            <div className="absolute top-3 right-3 bg-red-500 text-white px-3 py-1 rounded-full text-sm font-semibold">
+                              {product.discount}% OFF
+                            </div>
+                          )}
+                        </div>
+                      </Link>
+                      <div className="p-4 flex flex-col flex-grow">
+                        <Link to={`/product/${product._id || product.id}`}>
+                          <h3 className="font-semibold text-base text-emerald-900 mb-2 line-clamp-2 min-h-[44px] hover:text-emerald-700 transition-colors">
+                            {product.name || 'Product Name'}
+                          </h3>
+                        </Link>
+                        
+                        {/* Ratings */}
+                        <div className="flex items-center gap-1 mb-2">
+                          {[...Array(5)].map((_, i) => (
+                            <Star
+                              key={i}
+                              className={`h-3 w-3 ${
+                                i < Math.floor(product.rating || product.averageRating || 4)
+                                  ? 'text-yellow-500 fill-yellow-500'
+                                  : 'text-gray-300 fill-gray-300'
+                              }`}
+                            />
+                          ))}
+                          <span className="text-xs text-gray-600 ml-1">
+                            ({product.reviews_count || product.reviewCount || 0})
+                          </span>
+                        </div>
+
+                        <div className="mt-auto space-y-3">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-xl font-bold text-emerald-600">
+                              ₹{product.price || product.sellingPrice || 0}
+                            </span>
+                            {(product.originalPrice || product.mrp) && (product.originalPrice || product.mrp) > (product.price || product.sellingPrice) && (
+                              <span className="text-xs text-gray-500 line-through">
+                                ₹{product.originalPrice || product.mrp}
+                              </span>
+                            )}
+                          </div>
+                          
+                          <div className="flex gap-2">
+                            <button
+                              onClick={(e) => handleAddToCart(e, product._id || product.id, product.name)}
+                              disabled={loadingCart.has(product._id || product.id)}
+                              className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-lg font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1"
+                            >
+                              {loadingCart.has(product._id || product.id) ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <ShoppingBag className="h-4 w-4" />
+                              )}
+                              <span className="text-xs">Cart</span>
+                            </button>
+                            <button
+                              onClick={(e) => handleToggleWishlist(e, product._id || product.id, product.name)}
+                              disabled={loadingWishlist.has(product._id || product.id)}
+                              className={`p-2 rounded-lg border-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
+                                wishlistItems.has(product._id || product.id)
+                                  ? 'bg-red-50 border-red-500 text-red-500'
+                                  : 'border-gray-300 text-gray-600 hover:border-red-500 hover:text-red-500'
+                              }`}
+                            >
+                              {loadingWishlist.has(product._id || product.id) ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Heart 
+                                  className="h-4 w-4" 
+                                  fill={wishlistItems.has(product._id || product.id) ? 'currentColor' : 'none'}
+                                />
+                              )}
+                            </button>
+                            <Link to={`/product/${product._id || product.id}`}>
+                              <button className="p-2 rounded-lg border-2 border-emerald-600 text-emerald-600 hover:bg-emerald-50 transition-all">
+                                <Eye className="h-4 w-4" />
+                              </button>
+                            </Link>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </section>
         )}
+
+        {/* Hero Section */}
+        <section id={HOME_SECTION_IDS.hero} className="relative overflow-hidden min-h-[600px]">
+          <div className="absolute inset-0 z-0">
+            <img
+              src={heroImage}
+              alt="Grain Fusion Hero"
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-r from-emerald-950/95 via-emerald-900/85 to-emerald-800/60" data-parallax-speed="8" />
+            <div className="absolute -left-24 top-1/2 h-[700px] w-[700px] -translate-y-1/2 rounded-full bg-emerald-700/20 blur-3xl" aria-hidden data-parallax-speed="60" />
+            <div className="absolute -right-24 top-1/3 h-[500px] w-[500px] rounded-full bg-lime-400/20 blur-3xl" aria-hidden data-parallax-speed="40" />
+          </div>
+
+          <div className="relative z-10">
+            <div className="container mx-auto px-4 py-28 lg:py-36">
+              <div className="grid gap-14 lg:grid-cols-[1.2fr_1fr] items-center">
+                <div className="space-y-8 text-primary-foreground" data-gsap-hero>
+                  <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-sm font-medium backdrop-blur" data-gsap-badge>
+                    <span className="h-2 w-2 rounded-full bg-lime-300 animate-pulse" />
+                    Made in India • Swatishree's Innovation Pvt. Ltd.
+                  </div>
+                  <h1 className="text-4xl md:text-6xl font-bold leading-tight">
+                    Reviving traditional grains <span className="text-lime-300">for modern nutrition</span>
+                  </h1>
+                  <p className="text-lg md:text-xl text-emerald-100/80 leading-relaxed max-w-2xl">
+                    Grain Fusion transforms age-old recipes into convenient, nutrient-dense foods. Discover gluten-free millets, protein-rich mixes, and wholesome superfoods crafted for every generation.
+                  </p>
+
+                  <div className="flex flex-wrap gap-4">
+                    <Link to="/products">
+                      <Button size="lg" className="text-lg px-8 shadow-lg shadow-emerald-900/30 hover:shadow-xl transition-all">
+                        Explore Products
+                      </Button>
+                    </Link>
+                    <Button size="lg" variant="outline" className="text-lg px-8 border-white/40 bg-white/10 text-white hover:bg-white/20 hover:border-white/60 backdrop-blur-sm transition-all">
+                      View Nutrition Story
+                    </Button>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-6" data-gsap-stats>
+                    {[{
+                      label: "Gluten Free",
+                      value: "100%",
+                      description: "Millet-rich blends without additives",
+                    }, {
+                      label: "Farm Partnerships",
+                      value: "2,000+",
+                      description: "Fair-trade sourcing across India",
+                    }, {
+                      label: "Customer Trust",
+                      value: "500+",
+                      description: "Families loving Grain Fusion daily",
+                    }].map(({ label, value, description }) => (
+                      <div key={label} className="rounded-2xl bg-white/10 border border-white/20 p-5 backdrop-blur">
+                        <p className="text-sm uppercase tracking-[0.3em] text-emerald-100/80">{label}</p>
+                        <p className="text-3xl font-semibold text-lime-200 mt-2">{value}</p>
+                        <p className="text-sm text-emerald-100/70 mt-2">{description}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="relative hidden lg:block" data-animate="true">
+                  <div className="absolute inset-0 rounded-3xl bg-emerald-700/30 blur-2xl" aria-hidden />
+                  <div className="relative rounded-3xl border border-emerald-100/50 bg-white/95 p-8 shadow-2xl space-y-6">
+                    <h3 className="text-xl font-semibold text-emerald-900">Why Grain Fusion?</h3>
+                    <ul className="space-y-3 text-sm text-emerald-700">
+                      <li className="flex items-start gap-3">
+                        <span className="mt-1 h-2 w-2 rounded-full bg-emerald-500" />
+                        20 authentic ingredients with 2X millet content for unmatched nutrition.
+                      </li>
+                      <li className="flex items-start gap-3">
+                        <span className="mt-1 h-2 w-2 rounded-full bg-emerald-500" />
+                        Complete natural processing—no artificial flavours, colours, or preservatives.
+                      </li>
+                      <li className="flex items-start gap-3">
+                        <span className="mt-1 h-2 w-2 rounded-full bg-emerald-500" />
+                        Crafted by Swatishree's Innovation Pvt. Ltd., blending ancestral recipes with modern convenience.
+                      </li>
+                    </ul>
+
+                    <div className="rounded-2xl bg-emerald-50 p-5 border border-emerald-100 space-y-3">
+                      <p className="text-sm font-semibold text-emerald-700 uppercase tracking-[0.3em]">Featured</p>
+                      <p className="text-lg font-semibold text-emerald-900">Trusted by wellness enthusiasts nationwide</p>
+                      <p className="text-sm text-emerald-700/80">
+                        Join a growing community embracing pure, ready-to-enjoy nutrition rooted in India's heritage.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
 
         {/* Benefits Section */}
         <section className="py-20 bg-muted/30">
@@ -636,14 +974,6 @@ const Index = () => {
               <p className="text-lg text-muted-foreground">
                 At Grain Fusion, we fuse India's traditional food heritage with modern wellness needs. Our mission is to transform age-old grains and recipes into nutritious, delicious, and ready-to-enjoy foods that fit seamlessly into contemporary life.
               </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-8" data-gsap-stagger data-stagger="center">
-              {featuredProducts.map((product: any) => (
-                <div key={product._id || product.id} className="featured-product">
-                  <ProductCard product={product} />
-                </div>
-              ))}
             </div>
 
             <div className="rounded-3xl bg-gradient-to-r from-emerald-600 to-lime-500 text-white p-10 text-center shadow-xl" data-animate="true" data-animate-strong>

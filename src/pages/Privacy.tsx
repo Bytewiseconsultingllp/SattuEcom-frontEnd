@@ -26,7 +26,7 @@ const Privacy = () => {
               <section className="mb-8">
                 <h2 className="text-2xl font-bold mb-4">Introduction</h2>
                 <p className="text-muted-foreground leading-relaxed">
-                  At SattuStore, we are committed to protecting your privacy and ensuring the security 
+                  At Grain Fusion, we are committed to protecting your privacy and ensuring the security 
                   of your personal information. This Privacy Policy explains how we collect, use, and 
                   safeguard your data when you use our website and services.
                 </p>
@@ -96,7 +96,7 @@ const Privacy = () => {
                 <h2 className="text-2xl font-bold mb-4">Contact Us</h2>
                 <p className="text-muted-foreground leading-relaxed">
                   If you have any questions about this Privacy Policy or our data practices, 
-                  please contact us at support@sattustore.com or +91 98765 43210.
+                  please contact us at support@grainfusion.com or +91 98765 43210.
                 </p>
               </section>
             </CardContent>

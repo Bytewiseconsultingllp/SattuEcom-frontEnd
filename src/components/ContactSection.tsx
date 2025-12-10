@@ -33,7 +33,7 @@ export const ContactSection = ({ id }: ContactSectionProps) => {
                 <Mail className="h-8 w-8 text-primary" />
               </div>
               <h3 className="font-bold mb-2">Email</h3>
-              <p className="text-muted-foreground">info@sattustore.com</p>
+              <p className="text-muted-foreground">info@grainfusion.com</p>
             </CardContent>
           </Card>
 

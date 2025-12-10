@@ -84,9 +84,9 @@ import { getAllOrders as apiGetAllOrders, updateOrderStatus as apiUpdateOrderSta
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import AdminProductsPage from "@/components/admin/AdminProductsPage";
-import AdminReviewsPage from "@/components/admin/AdminReviewsPage";
-import AdminCouponsPage from "@/components/admin/AdminCouponsPage";
-import AdminGiftDesignPage from "@/components/admin/AdminGiftDesignPage";
+import ModernReviewsPage from "@/components/admin/ModernReviewsPage";
+import ModernCouponsPage from "@/components/admin/ModernCouponsPage";
+import ModernGiftDesignPage from "@/components/admin/ModernGiftDesignPage";
 import AdminCustomGiftRequestsPage from "@/components/admin/AdminCustomGiftRequestsPage";
 import { AdminInvoicesPage } from "@/components/admin/AdminInvoicesPage";
 import { PaymentManagement } from "@/components/admin/PaymentManagement";
@@ -621,7 +621,7 @@ const AdminDashboard = ({ forceSection }: AdminDashboardProps) => {
             {activeSection === "customers" && <ModernCustomersPage />}
 
             {/* Gift Management */}
-            {activeSection === "gift-designs" && <AdminGiftDesignPage />}
+            {activeSection === "gift-designs" && <ModernGiftDesignPage />}
             {activeSection === "custom-gifts" && <AdminCustomGiftRequestsPage />}
 
             {/* Old Customers Section - Removed, using ModernCustomersPage now */}
@@ -905,11 +905,11 @@ const AdminDashboard = ({ forceSection }: AdminDashboardProps) => {
             })()}
 
             {activeSection === "reviews" && (
-              <AdminReviewsPage />
+              <ModernReviewsPage />
             )}
 
             {activeSection === "coupons" && (
-              <AdminCouponsPage />
+              <ModernCouponsPage />
             )}
 
             {activeSection === "payments" && (

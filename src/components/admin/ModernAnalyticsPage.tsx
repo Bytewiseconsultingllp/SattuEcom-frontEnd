@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   Select,
   SelectContent,
@@ -35,6 +36,7 @@ import {
   ArrowDownRight,
   Download,
   Calendar,
+  AlertTriangle,
 } from "lucide-react";
 import { getAllOrders } from "@/lib/api/order";
 import { getProducts } from "@/lib/api/products";
@@ -173,12 +175,12 @@ export function ModernAnalyticsPage() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl p-6 text-white">
+      {/* Header - Insights Purple Theme */}
+      <div className="bg-gradient-to-r from-purple-600 to-violet-500 rounded-xl p-6 text-white shadow-lg shadow-purple-500/20">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold mb-2">Analytics Dashboard</h1>
-            <p className="text-indigo-100">
+            <p className="text-purple-100">
               Comprehensive business insights and metrics
             </p>
           </div>

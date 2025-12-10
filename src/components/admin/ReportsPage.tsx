@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   Select,
   SelectContent,
@@ -25,6 +26,7 @@ import {
   Clock,
   History,
   Archive,
+  AlertTriangle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { getAdminDashboardStats } from "@/lib/api/dashboardStats";
@@ -688,12 +690,21 @@ export function ReportsPage() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg p-6 text-white">
+      {/* Development Banner */}
+      <Alert className="border-amber-500 bg-amber-50 dark:bg-amber-950">
+        <AlertTriangle className="h-4 w-4 text-amber-600" />
+        <AlertTitle className="text-amber-900 dark:text-amber-100">Under Development</AlertTitle>
+        <AlertDescription className="text-amber-800 dark:text-amber-200">
+          This section is currently under development. Some reports may not be accurate or complete. Please use the data with caution.
+        </AlertDescription>
+      </Alert>
+
+      {/* Header - Insights Purple Theme */}
+      <div className="bg-gradient-to-r from-purple-600 to-violet-500 rounded-xl p-6 text-white shadow-lg shadow-purple-500/20">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold mb-2">Reports & Analytics</h1>
-            <p className="text-blue-100">
+            <p className="text-purple-100">
               Download comprehensive business reports
             </p>
           </div>

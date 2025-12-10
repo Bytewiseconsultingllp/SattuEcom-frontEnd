@@ -618,21 +618,50 @@ function AdminCouponsPage() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-bold">Coupon Management</h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            {filteredCoupons.length} coupon{filteredCoupons.length !== 1 ? 's' : ''} found
-          </p>
+      {/* Header - Marketing Orange Theme */}
+      <div className="bg-gradient-to-r from-orange-600 to-amber-500 rounded-xl p-6 text-white shadow-lg shadow-orange-500/20">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold mb-2">Coupon Management</h1>
+            <p className="text-orange-100">
+              Create and manage discount coupons for customers
+            </p>
+          </div>
+          <Tag className="h-16 w-16 opacity-20" />
         </div>
-        <Button onClick={() => {
-          resetForm();
-          setSelectedCoupon(null);
-          setIsAddOpen(true);
-        }}>
-          <Plus className="mr-2 h-4 w-4" />
-          Create Coupon
-        </Button>
+      </div>
+
+      {/* Info Banner */}
+      <div className="bg-orange-50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-800 rounded-xl p-4">
+        <div className="flex items-start gap-3">
+          <div className="h-8 w-8 rounded-lg bg-orange-100 dark:bg-orange-900/50 flex items-center justify-center flex-shrink-0">
+            <Tag className="h-4 w-4 text-orange-600 dark:text-orange-400" />
+          </div>
+          <div className="flex-1">
+            <h3 className="font-semibold text-orange-900 dark:text-orange-100 mb-1">Discount Coupons</h3>
+            <p className="text-sm text-orange-700 dark:text-orange-300">
+              Create percentage or fixed discounts, buy X get Y offers, and free shipping coupons. Set minimum purchase amounts, usage limits, and validity periods to control your promotions effectively.
+            </p>
+            <div className="mt-3 flex items-center gap-4 text-sm">
+              <div className="flex items-center gap-1.5">
+                <span className="font-semibold text-orange-900 dark:text-orange-100">{filteredCoupons.length}</span>
+                <span className="text-orange-600 dark:text-orange-400">Total Coupons</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="font-semibold text-orange-900 dark:text-orange-100">{coupons.filter(c => c.is_active).length}</span>
+                <span className="text-orange-600 dark:text-orange-400">Active</span>
+              </div>
+            </div>
+          </div>
+          <Button onClick={() => {
+            resetForm();
+            setSelectedCoupon(null);
+            setIsAddOpen(true);
+          }} className="bg-orange-600 hover:bg-orange-700 text-white">
+            <Plus className="mr-2 h-4 w-4" />
+            Create Coupon
+          </Button>
+        </div>
       </div>
 
       {/* Search & Filters */}

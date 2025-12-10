@@ -176,12 +176,12 @@ export function ExpenseManagementPage() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-red-500 to-red-600 rounded-lg p-6 text-white">
+      {/* Header - Finance & Sales Green Theme */}
+      <div className="bg-gradient-to-r from-emerald-600 to-green-500 rounded-xl p-6 text-white shadow-lg shadow-emerald-500/20">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold mb-2">Expense Management</h1>
-            <p className="text-red-100">
+            <p className="text-emerald-100">
               Track all offline expenses and purchases
             </p>
           </div>

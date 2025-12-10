@@ -167,16 +167,31 @@ export function BannersManagementPage() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg p-6 text-white">
+      {/* Header - Marketing Orange Theme */}
+      <div className="bg-gradient-to-r from-orange-600 to-amber-500 rounded-xl p-6 text-white shadow-lg shadow-orange-500/20">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold mb-2">Advertisement Banners</h1>
-            <p className="text-purple-100">
+            <p className="text-orange-100">
               Manage seasonal and promotional banners
             </p>
           </div>
           <ImageIcon className="h-16 w-16 opacity-20" />
+        </div>
+      </div>
+
+      {/* Info Banner */}
+      <div className="bg-orange-50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-800 rounded-xl p-4">
+        <div className="flex items-start gap-3">
+          <div className="h-8 w-8 rounded-lg bg-orange-100 dark:bg-orange-900/50 flex items-center justify-center flex-shrink-0">
+            <ImageIcon className="h-4 w-4 text-orange-600 dark:text-orange-400" />
+          </div>
+          <div className="flex-1">
+            <h3 className="font-semibold text-orange-900 dark:text-orange-100 mb-1">Promotional Banners</h3>
+            <p className="text-sm text-orange-700 dark:text-orange-300">
+              Create eye-catching banners for festivals, sales, and special occasions. Schedule banners in advance and track their performance. Banners are displayed prominently on the homepage.
+            </p>
+          </div>
         </div>
       </div>
 

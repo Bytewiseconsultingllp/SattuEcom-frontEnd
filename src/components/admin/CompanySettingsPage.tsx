@@ -130,12 +130,12 @@ export function CompanySettingsPage() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-indigo-500 to-indigo-600 rounded-lg p-6 text-white">
+      {/* Header - Configuration Slate Theme */}
+      <div className="bg-gradient-to-r from-slate-700 to-slate-600 rounded-xl p-6 text-white shadow-lg shadow-slate-500/20">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold mb-2">Company Settings</h1>
-            <p className="text-indigo-100">
+            <p className="text-slate-100">
               {isEditMode ? "Edit your business information" : "View your business information"}
             </p>
           </div>
@@ -143,7 +143,7 @@ export function CompanySettingsPage() {
             {!isEditMode && (
               <Button
                 onClick={() => setIsEditMode(true)}
-                className="bg-white text-indigo-600 hover:bg-indigo-50"
+                className="bg-white text-slate-700 hover:bg-slate-50"
               >
                 <Edit className="h-4 w-4 mr-2" />
                 Edit Settings
