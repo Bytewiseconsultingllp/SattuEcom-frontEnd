@@ -138,43 +138,61 @@ const DeliveryOptions = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-emerald-50 via-white to-lime-50">
       <Header />
       
       <main className="flex-1">
-        <div className="bg-gradient-hero py-12 mb-8">
-          <div className="container mx-auto px-4">
-            <h1 className="text-4xl font-bold text-primary-foreground mb-4">Delivery Options</h1>
-            <p className="text-lg text-primary-foreground/90">Customize your delivery preferences</p>
+        {/* Hero Header */}
+        <div className="relative overflow-hidden bg-gradient-to-r from-emerald-900 via-emerald-800 to-teal-700 py-8 mb-6">
+          <div className="absolute inset-0 bg-[url('/placeholder.svg')] opacity-5" />
+          <div className="absolute -left-24 top-1/2 h-64 w-64 -translate-y-1/2 rounded-full bg-emerald-700/30 blur-3xl" />
+          <div className="absolute -right-24 top-1/3 h-48 w-48 rounded-full bg-lime-400/20 blur-3xl" />
+          
+          <div className="container mx-auto px-4 relative z-10">
+            <div className="flex items-center gap-2 mb-2">
+              <Package className="h-6 w-6 text-lime-300" />
+              <h1 className="text-2xl md:text-3xl font-bold text-white">Delivery Options</h1>
+            </div>
+            <p className="text-sm md:text-base text-emerald-100">Customize your delivery preferences</p>
           </div>
         </div>
 
-        <div className="container mx-auto px-4 pb-12">
-          <div className="max-w-3xl mx-auto space-y-6">
+        <div className="container mx-auto px-4 pb-8">
+          <div className="max-w-3xl mx-auto space-y-4">
             
             {/* Delivery Speed */}
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <Truck className="h-6 w-6 text-primary" />
-                  <h2 className="text-xl font-bold">Delivery Speed</h2>
+            <Card className="border border-emerald-100 shadow-sm bg-white/80 backdrop-blur">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2 mb-4 pb-3 border-b border-emerald-100">
+                  <div className="h-8 w-8 rounded-full bg-emerald-100 flex items-center justify-center">
+                    <Truck className="h-4 w-4 text-emerald-700" />
+                  </div>
+                  <h2 className="text-lg font-bold text-emerald-900">Delivery Speed</h2>
                 </div>
                 
                 <RadioGroup value={deliverySpeed} onValueChange={setDeliverySpeed}>
-                  <div className="space-y-4">
-                    <div className="flex items-center space-x-3 p-4 rounded-lg border hover:bg-accent/5 cursor-pointer">
-                      <RadioGroupItem value="standard" id="standard" />
+                  <div className="space-y-3">
+                    <div className={`flex items-center space-x-2 p-3 rounded-lg border transition-all cursor-pointer ${
+                      deliverySpeed === 'standard' 
+                        ? 'border-emerald-600 bg-emerald-50' 
+                        : 'border-emerald-200 hover:border-emerald-400 hover:bg-emerald-50/50'
+                    }`}>
+                      <RadioGroupItem value="standard" id="standard" className="border-emerald-600" />
                       <Label htmlFor="standard" className="flex-1 cursor-pointer">
-                        <div className="font-semibold">Standard Delivery (Free)</div>
-                        <div className="text-sm text-muted-foreground">5-7 business days</div>
+                        <div className="font-bold text-sm text-emerald-900">Standard Delivery (Free)</div>
+                        <div className="text-xs text-emerald-600">5-7 business days</div>
                       </Label>
                     </div>
                     
-                    <div className="flex items-center space-x-3 p-4 rounded-lg border hover:bg-accent/5 cursor-pointer">
-                      <RadioGroupItem value="express" id="express" />
+                    <div className={`flex items-center space-x-2 p-3 rounded-lg border transition-all cursor-pointer ${
+                      deliverySpeed === 'express' 
+                        ? 'border-emerald-600 bg-emerald-50' 
+                        : 'border-emerald-200 hover:border-emerald-400 hover:bg-emerald-50/50'
+                    }`}>
+                      <RadioGroupItem value="express" id="express" className="border-emerald-600" />
                       <Label htmlFor="express" className="flex-1 cursor-pointer">
-                        <div className="font-semibold">Express Delivery (+₹50)</div>
-                        <div className="text-sm text-muted-foreground">2-3 business days</div>
+                        <div className="font-bold text-sm text-emerald-900">Express Delivery (+₹50)</div>
+                        <div className="text-xs text-emerald-600">2-3 business days</div>
                       </Label>
                     </div>
                     
@@ -191,16 +209,18 @@ const DeliveryOptions = () => {
             </Card>
 
             {/* Gift Selection */}
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between gap-3 mb-4">
-                  <div className="flex items-center gap-3">
-                    <Gift className="h-6 w-6 text-primary" />
-                    <h2 className="text-xl font-bold">Select a Gift Design</h2>
+            <Card className="border border-emerald-100 shadow-sm bg-white/80 backdrop-blur">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between gap-2 mb-4 pb-3 border-b border-emerald-100">
+                  <div className="flex items-center gap-2">
+                    <div className="h-8 w-8 rounded-full bg-emerald-100 flex items-center justify-center">
+                      <Gift className="h-4 w-4 text-emerald-700" />
+                    </div>
+                    <h2 className="text-lg font-bold text-emerald-900">Select a Gift Design</h2>
                   </div>
                   <Dialog open={customGiftModalOpen} onOpenChange={setCustomGiftModalOpen}>
                     <DialogTrigger asChild>
-                      <Button variant="outline" size="sm">
+                      <Button variant="outline" size="sm" className="border-emerald-600 text-emerald-700 hover:bg-emerald-50">
                         <Gift className="h-4 w-4 mr-2" />
                         Custom Gift
                       </Button>
@@ -448,11 +468,13 @@ const DeliveryOptions = () => {
             </Card>
 
             {/* Special Instructions */}
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <Package className="h-6 w-6 text-primary" />
-                  <h2 className="text-xl font-bold">Special Instructions</h2>
+            <Card className="border border-emerald-100 shadow-sm bg-white/80 backdrop-blur">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2 mb-4 pb-3 border-b border-emerald-100">
+                  <div className="h-8 w-8 rounded-full bg-emerald-100 flex items-center justify-center">
+                    <Package className="h-4 w-4 text-emerald-700" />
+                  </div>
+                  <h2 className="text-lg font-bold text-emerald-900">Special Instructions</h2>
                 </div>
                 
                 <div className="space-y-2">
@@ -472,15 +494,13 @@ const DeliveryOptions = () => {
               </CardContent>
             </Card>
 
-            <div className="flex justify-between items-center sticky bottom-0 bg-background py-4 border-t gap-4">
-              <Button variant="outline" onClick={() => navigate("/checkout")}>
+            <div className="flex justify-between items-center sticky bottom-0 bg-white/90 backdrop-blur py-3 border-t border-emerald-100 rounded-t-xl shadow-md gap-3">
+              <Button variant="outline" onClick={() => navigate("/checkout")} className="border border-emerald-600 text-emerald-700 hover:bg-emerald-50">
                 Back to Address
               </Button>
-              <div className="flex gap-2">
-                <Button size="lg" onClick={handleContinue}>
-                  Continue to Review Order
-                </Button>
-              </div>
+              <Button onClick={handleContinue} className="bg-emerald-600 hover:bg-emerald-700 shadow-sm">
+                Continue to Review Order
+              </Button>
             </div>
           </div>
         </div>

@@ -123,24 +123,37 @@ const Checkout = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-emerald-50 via-white to-lime-50">
       <Header />
       
       <main className="flex-1">
-        <div className="bg-gradient-hero py-12 mb-8">
-          <div className="container mx-auto px-4">
-            <h1 className="text-4xl font-bold text-primary-foreground mb-4">Select Delivery Address</h1>
-            <p className="text-lg text-primary-foreground/90">Choose where you want your order delivered</p>
+        {/* Hero Header */}
+        <div className="relative overflow-hidden bg-gradient-to-r from-emerald-900 via-emerald-800 to-teal-700 py-8 mb-6">
+          <div className="absolute inset-0 bg-[url('/placeholder.svg')] opacity-5" />
+          <div className="absolute -left-24 top-1/2 h-64 w-64 -translate-y-1/2 rounded-full bg-emerald-700/30 blur-3xl" />
+          <div className="absolute -right-24 top-1/3 h-48 w-48 rounded-full bg-lime-400/20 blur-3xl" />
+          
+          <div className="container mx-auto px-4 relative z-10">
+            <div className="flex items-center gap-2 mb-2">
+              <MapPin className="h-6 w-6 text-lime-300" />
+              <h1 className="text-2xl md:text-3xl font-bold text-white">Delivery Address</h1>
+            </div>
+            <p className="text-sm md:text-base text-emerald-100">Choose where you want your order delivered</p>
           </div>
         </div>
 
-        <div className="container mx-auto px-4 pb-12">
+        <div className="container mx-auto px-4 pb-8">
           <div className="max-w-3xl mx-auto">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold">Saved Addresses</h2>
+            <div className="flex justify-between items-center mb-4 p-4 bg-white/80 backdrop-blur rounded-xl border border-emerald-100 shadow-sm">
+              <div className="flex items-center gap-2">
+                <div className="h-8 w-8 rounded-full bg-emerald-100 flex items-center justify-center">
+                  <MapPin className="h-4 w-4 text-emerald-700" />
+                </div>
+                <h2 className="text-lg font-bold text-emerald-900">Saved Addresses</h2>
+              </div>
               <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                 <DialogTrigger asChild>
-                  <Button onClick={() => { setEditAddressId(null); resetForm(); }}>
+                  <Button onClick={() => { setEditAddressId(null); resetForm(); }} className="bg-emerald-600 hover:bg-emerald-700 shadow-md">
                     <Plus className="h-4 w-4 mr-2" />
                     Add New Address
                   </Button>
@@ -233,37 +246,43 @@ const Checkout = () => {
             </div>
 
             <RadioGroup value={selectedAddressId} onValueChange={setSelectedAddressId}>
-              <div className="space-y-4 mb-8">
+              <div className="space-y-3 mb-6">
                 {addresses.map((address: any) => (
-                  <Card key={address.id} className={`cursor-pointer transition-all ${selectedAddressId === address.id ? 'ring-2 ring-primary' : ''}`}>
-                    <CardContent className="p-6">
-                      <div className="flex items-start gap-4">
-                        <RadioGroupItem value={address.id} id={address.id} className="mt-1" />
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <MapPin className="h-4 w-4 text-primary" />
-                            <span className="font-bold">{address.full_name}</span>
+                  <Card key={address.id} className={`cursor-pointer transition-all border hover:shadow-md bg-white/80 backdrop-blur ${
+                    selectedAddressId === address.id 
+                      ? 'ring-1 ring-emerald-600 border-emerald-600 shadow-sm' 
+                      : 'border-emerald-100 hover:border-emerald-300'
+                  }`}>
+                    <CardContent className="p-4">
+                      <div className="flex items-start gap-3">
+                        <RadioGroupItem value={address.id} id={address.id} className="mt-0.5 border-emerald-600" />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1 flex-wrap">
+                            <MapPin className="h-3 w-3 text-emerald-600 flex-shrink-0" />
+                            <span className="font-bold text-sm text-emerald-900">{address.full_name}</span>
                             {address.label && (
-                              <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded">{address.label}</span>
+                              <span className="text-xs bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full">{address.label}</span>
                             )}
                             {address.is_default && (
-                              <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded">
+                              <span className="text-xs bg-lime-100 text-lime-700 px-1.5 py-0.5 rounded-full">
                                 Default
                               </span>
                             )}
                           </div>
-                          <p className="text-sm text-muted-foreground mb-1">{address.address_line1}{address.address_line2 ? `, ${address.address_line2}` : ''}</p>
-                          <p className="text-sm text-muted-foreground mb-1">
+                          <p className="text-xs text-emerald-700 mb-0.5">{address.address_line1}{address.address_line2 ? `, ${address.address_line2}` : ''}</p>
+                          <p className="text-xs text-emerald-700 mb-0.5">
                             {address.city}, {address.state} - {address.postal_code}
                           </p>
-                          <p className="text-sm text-muted-foreground">Phone: {address.phone}</p>
+                          <p className="text-xs text-emerald-600">Phone: {address.phone}</p>
                         </div>
                         {selectedAddressId === address.id && (
-                          <Check className="h-5 w-5 text-primary" />
+                          <div className="h-6 w-6 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                            <Check className="h-3 w-3 text-emerald-700" />
+                          </div>
                         )}
-                        <div className="ml-auto">
-                          <Button variant="outline" size="sm" onClick={() => openEdit(address)}>Edit</Button>
-                        </div>
+                        <Button variant="outline" size="sm" onClick={() => openEdit(address)} className="border-emerald-600 text-emerald-700 hover:bg-emerald-50 text-xs h-7 px-2">
+                          Edit
+                        </Button>
                       </div>
                     </CardContent>
                   </Card>
@@ -271,11 +290,11 @@ const Checkout = () => {
               </div>
             </RadioGroup>
 
-            <div className="flex justify-between items-center sticky bottom-0 bg-background py-4 border-t">
-              <Button variant="outline" onClick={() => navigate("/cart")}>
+            <div className="flex justify-between items-center sticky bottom-0 bg-white/90 backdrop-blur py-3 border-t border-emerald-100 rounded-t-xl shadow-md gap-3">
+              <Button variant="outline" onClick={() => navigate("/cart")} className="border border-emerald-600 text-emerald-700 hover:bg-emerald-50">
                 Back to Cart
               </Button>
-              <Button size="lg" onClick={handleContinue}>
+              <Button onClick={handleContinue} className="bg-emerald-600 hover:bg-emerald-700 shadow-sm">
                 Continue to Delivery Options
               </Button>
             </div>
