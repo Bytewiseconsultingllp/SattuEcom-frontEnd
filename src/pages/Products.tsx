@@ -137,8 +137,8 @@ const Products = () => {
       
       <main className="flex-1">
         {/* Hero Section with Gradient Background */}
-        <section className="relative overflow-hidden bg-gradient-to-br from-emerald-900 via-emerald-800 to-emerald-700 py-20">
-          {/* Decorative Elements */}
+        {/* <section className="relative overflow-hidden bg-gradient-to-br from-emerald-900 via-emerald-800 to-emerald-700 py-20">
+          
           <div className="absolute inset-0 pointer-events-none">
             <div className="absolute top-10 left-10 h-64 w-64 rounded-full bg-lime-400/20 blur-3xl" />
             <div className="absolute bottom-20 right-20 h-80 w-80 rounded-full bg-emerald-500/20 blur-3xl" />
@@ -146,24 +146,24 @@ const Products = () => {
 
           <div className="relative container mx-auto px-4" data-animate="true">
             <div className="max-w-4xl mx-auto text-center space-y-6">
-              {/* Badge */}
+              
               <div className="inline-flex items-center gap-2 rounded-full bg-white/10 backdrop-blur-md px-4 py-2 border border-white/20">
                 <Leaf className="h-4 w-4 text-lime-300" />
                 <span className="text-sm font-semibold uppercase tracking-wider text-lime-100">Premium Collection</span>
               </div>
 
-              {/* Title */}
+              
               <h1 className="text-5xl md:text-6xl font-bold text-white leading-tight">
                 Discover Our <span className="text-lime-300">Products</span>
               </h1>
 
-              {/* Description */}
+              
               <p className="text-xl text-emerald-100/90 leading-relaxed max-w-2xl mx-auto">
                 Explore our range of premium sattu and millet products, crafted with 100% natural ingredients 
                 and traditional methods for modern nutrition.
               </p>
 
-              {/* Stats */}
+              
               <div className="grid grid-cols-3 gap-4 pt-6 max-w-2xl mx-auto" data-gsap-stagger data-stagger="center">
                 <div className="rounded-2xl bg-white/10 backdrop-blur-sm border border-white/20 p-4">
                   <div className="text-3xl font-bold text-lime-300">{totalProducts}+</div>
@@ -180,7 +180,7 @@ const Products = () => {
               </div>
             </div>
           </div>
-        </section>
+        </section> */}
 
         {/* Main Content Section */}
         <div className="relative bg-gradient-to-b from-emerald-50 via-lime-50/30 to-white py-12">
