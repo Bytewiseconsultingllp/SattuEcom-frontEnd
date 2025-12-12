@@ -986,7 +986,7 @@ const Index = () => {
         </section>
 
         {/* Market Opportunity */}
-        <section id={HOME_SECTION_IDS.marketOpportunity} className="py-20 bg-gradient-to-r from-lime-50 via-white to-emerald-50">
+        {/* <section id={HOME_SECTION_IDS.marketOpportunity} className="py-20 bg-gradient-to-r from-lime-50 via-white to-emerald-50">
           <div className="container mx-auto px-4 space-y-12">
             <div className="grid lg:grid-cols-[1.2fr_1fr] gap-10 items-center">
               <div className="space-y-6" data-animate="true">
@@ -1013,10 +1013,10 @@ const Index = () => {
               </div>
             </div>
           </div>
-        </section>
+        </section> */}
 
         {/* Strategy */}
-        <section id={HOME_SECTION_IDS.strategy} className="py-20">
+        {/* <section id={HOME_SECTION_IDS.strategy} className="py-20">
           <div className="container mx-auto px-4 space-y-12">
             <div className="max-w-2xl mx-auto text-center space-y-4" data-animate="true">
               <span className="text-sm font-semibold uppercase tracking-[0.4em] text-primary">Why Grain Fusion</span>
@@ -1048,7 +1048,7 @@ const Index = () => {
               </div>
             </div>
           </div>
-        </section>
+        </section> */}
 
         {/* Product */}
         <section id={HOME_SECTION_IDS.product} className="py-20 bg-muted/20">
@@ -1113,7 +1113,7 @@ const Index = () => {
         </div>
 
         {/* Contact Section */}
-        <section
+        {/* <section
           id={HOME_SECTION_IDS.contactSection}
           className="relative overflow-hidden py-20 bg-gradient-to-br from-emerald-50 via-white to-lime-50"
         >
@@ -1249,7 +1249,7 @@ const Index = () => {
               </div>
             </div>
           </div>
-        </section>
+        </section> */}
 
         {/* CTA Section */}
         <section
