@@ -1,133 +1,195 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ShoppingCart, Minus, Plus, Check } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Sparkles, Leaf, Heart, TrendingUp } from "lucide-react";
 import { toast } from "sonner";
-import productPowderImage from "@/assets/product-powder.jpg";
+import { getProducts } from "@/lib/api/products";
+import { useNavigate } from "react-router-dom";
+import { ProductCard } from "@/components/ProductCard";
 
-const sattuPowderTypes = [
-  {
-    id: "sattu-plain-500g",
-    name: "Plain Sattu Powder",
-    weight: "500g",
-    price: 120,
-    originalPrice: 150,
-    description: "Traditional roasted chana sattu powder, perfect for making refreshing sattu drinks and parathas.",
-    features: ["100% Natural", "No Additives", "Rich in Protein", "Energy Booster"],
-    image: productPowderImage,
-    inStock: true
-  },
-  {
-    id: "sattu-plain-1kg",
-    name: "Plain Sattu Powder",
-    weight: "1kg",
-    price: 220,
-    originalPrice: 280,
-    description: "Value pack of traditional roasted chana sattu powder, ideal for regular consumption.",
-    features: ["100% Natural", "No Additives", "Rich in Protein", "Energy Booster"],
-    image: productPowderImage,
-    inStock: true
-  },
-  {
-    id: "sattu-masala-500g",
-    name: "Masala Sattu Powder",
-    weight: "500g",
-    price: 150,
-    originalPrice: 190,
-    description: "Pre-mixed with spices and salt, ready to make instant sattu drink. Just add water!",
-    features: ["Pre-Mixed Spices", "Instant Drink", "Authentic Taste", "Time Saver"],
-    image: productPowderImage,
-    inStock: true
-  },
-  {
-    id: "sattu-masala-1kg",
-    name: "Masala Sattu Powder",
-    weight: "1kg",
-    price: 280,
-    originalPrice: 350,
-    description: "Large pack of pre-mixed masala sattu, perfect for families and regular use.",
-    features: ["Pre-Mixed Spices", "Instant Drink", "Authentic Taste", "Time Saver"],
-    image: productPowderImage,
-    inStock: true
-  },
-  {
-    id: "sattu-sweet-500g",
-    name: "Sweet Sattu Powder",
-    weight: "500g",
-    price: 140,
-    originalPrice: 170,
-    description: "Naturally sweetened sattu powder with jaggery, perfect for kids and sweet lovers.",
-    features: ["Natural Sweetness", "With Jaggery", "Kid Friendly", "Nutritious Snack"],
-    image: productPowderImage,
-    inStock: true
-  },
-  {
-    id: "sattu-organic-500g",
-    name: "Organic Sattu Powder",
-    weight: "500g",
-    price: 180,
-    originalPrice: 220,
-    description: "100% organic certified sattu made from organic chana, pesticide-free and pure.",
-    features: ["Organic Certified", "Pesticide Free", "Premium Quality", "Farm Fresh"],
-    image: productPowderImage,
-    inStock: true
-  }
-];
+interface Product {
+  _id: string;
+  name: string;
+  description: string;
+  price: number;
+  originalPrice?: number;
+  category: string;
+  images: string[];
+  in_stock: boolean;
+  rating: number;
+  reviews_count: number;
+  benefits?: string[];
+}
 
 export default function SattuPowder() {
-  const [quantities, setQuantities] = useState<Record<string, number>>(
-    sattuPowderTypes.reduce((acc, product) => ({ ...acc, [product.id]: 1 }), {})
-  );
+  const navigate = useNavigate();
+  const [products, setProducts] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const handleQuantityChange = (productId: string, delta: number) => {
-    setQuantities(prev => ({
-      ...prev,
-      [productId]: Math.max(1, (prev[productId] || 1) + delta)
-    }));
+  useEffect(() => {
+    fetchSattuPowderProducts();
+  }, []);
+
+  const fetchSattuPowderProducts = async () => {
+    try {
+      setIsLoading(true);
+      // Fetch products from multiple categories (Atta, Multi Grain Mix, Pre-mix)
+      const [attaResponse, multiGrainResponse, premixResponse] = await Promise.all([
+        getProducts(1, 50, { category: "Atta" }),
+        getProducts(1, 50, { category: "Multi Grain Mix" }),
+        getProducts(1, 50, { category: "Pre-mix" })
+      ]);
+      
+      console.log("Atta Response:", attaResponse);
+      console.log("Multi Grain Response:", multiGrainResponse);
+      console.log("Pre-mix Response:", premixResponse);
+      
+      const allProducts = [];
+      if (attaResponse.success && attaResponse.data) {
+        console.log("Atta products found:", attaResponse.data.length);
+        allProducts.push(...attaResponse.data);
+      }
+      if (multiGrainResponse.success && multiGrainResponse.data) {
+        console.log("Multi Grain products found:", multiGrainResponse.data.length);
+        allProducts.push(...multiGrainResponse.data);
+      }
+      if (premixResponse.success && premixResponse.data) {
+        console.log("Pre-mix products found:", premixResponse.data.length);
+        allProducts.push(...premixResponse.data);
+      }
+      
+      console.log("Total products:", allProducts.length);
+      setProducts(allProducts);
+    } catch (error) {
+      console.error("Error fetching products:", error);
+      toast.error("Failed to load products");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleAddToCart = (product: typeof sattuPowderTypes[0]) => {
-    const quantity = quantities[product.id];
-    toast.success(`Added ${quantity}x ${product.name} (${product.weight}) to cart!`, {
-      icon: <Check className="h-5 w-5" />
-    });
-  };
 
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
-      
+
       <main className="flex-1">
-        {/* Hero Section */}
-        <section className="py-16 bg-gradient-to-br from-primary/5 via-background to-primary/10">
+        {/* Products Section - Display First */}
+        <section className="py-16 bg-gradient-to-b from-emerald-50/50 to-white">
           <div className="container mx-auto px-4">
-            <div className="max-w-3xl mx-auto text-center animate-fade-in">
-              <Badge className="mb-4">Premium Quality</Badge>
-              <h1 className="text-5xl font-bold mb-6">Sattu Powder Collection</h1>
-              <p className="text-xl text-muted-foreground mb-8">
-                Discover our range of authentic sattu powder varieties - from traditional plain to pre-mixed masala, 
-                sweet jaggery blend to organic certified options. Choose your favorite and experience the power of 
-                this ancient superfood.
+            <div className="mb-8 text-center">
+              <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-emerald-100 px-4 py-2 text-sm font-medium text-emerald-800">
+                <Sparkles className="h-4 w-4 text-emerald-600" />
+                Grain Fusion Premium Collection
+              </div>
+              <h2 className="text-3xl font-bold text-emerald-900">
+                Our Premium Products
+              </h2>
+              <p className="mt-3 text-emerald-700/70">Atta, Multi Grain Mix & Pre-mix</p>
+            </div>
+
+            {isLoading ? (
+              <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+                {[1, 2, 3, 4, 5, 6].map((i) => (
+                  <Card key={i} className="overflow-hidden">
+                    <Skeleton className="h-64 w-full" />
+                    <CardContent className="p-6 space-y-4">
+                      <Skeleton className="h-6 w-3/4" />
+                      <Skeleton className="h-4 w-full" />
+                      <Skeleton className="h-4 w-full" />
+                      <Skeleton className="h-10 w-full" />
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <>
+              <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+                {products.map((product) => (
+                  <ProductCard key={product._id} product={product} />
+                ))}
+              </div>
+
+              {/* Browse All Products Button */}
+              <div className="mt-12 text-center">
+                <Button
+                  size="lg"
+                  onClick={() => navigate("/products")}
+                  className="bg-emerald-700 hover:bg-emerald-800 text-white px-8"
+                >
+                  Browse All Products
+                </Button>
+              </div>
+              </>
+            )}
+          </div>
+        </section>
+
+        {/* Hero Section - Emerald & Lime Theme */}
+        <section className="relative overflow-hidden py-20 md:py-28">
+          <div className="absolute inset-0 bg-gradient-to-r from-emerald-950/95 via-emerald-900/85 to-emerald-800/60" />
+          <div
+            className="absolute -left-24 top-1/2 h-[500px] w-[500px] -translate-y-1/2 rounded-full bg-emerald-700/20 blur-3xl"
+            aria-hidden
+          />
+          <div
+            className="absolute -right-24 top-1/3 h-[400px] w-[400px] rounded-full bg-lime-400/20 blur-3xl"
+            aria-hidden
+          />
+
+          <div className="container relative z-10 mx-auto px-4">
+            <div className="mx-auto max-w-4xl text-center text-white">
+              <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-sm font-medium backdrop-blur">
+                <Sparkles className="h-4 w-4 text-lime-300" />
+                Premium Grain Fusion Collection
+              </div>
+              
+              <h1 className="mb-6 text-4xl font-bold leading-tight md:text-6xl">
+                Premium <span className="text-lime-300">Grain Fusion Products</span>
+              </h1>
+              
+              <p className="mb-8 text-lg leading-relaxed text-emerald-100/80 md:text-xl">
+                Discover the power of traditional Indian superfoods. Our premium collection 
+                brings you nutritious atta, multi-grain mixes, and ready-to-use pre-mixes - all packed with protein, fiber, and natural energy.
               </p>
+
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 mt-8">
+                <div className="rounded-2xl border border-white/20 bg-white/10 p-5 backdrop-blur">
+                  <Leaf className="h-8 w-8 text-lime-300 mx-auto mb-2" />
+                  <p className="text-sm uppercase tracking-wide text-emerald-100/80">100% Natural</p>
+                  <p className="mt-1 text-2xl font-semibold text-lime-200">No Additives</p>
+                </div>
+                <div className="rounded-2xl border border-white/20 bg-white/10 p-5 backdrop-blur">
+                  <TrendingUp className="h-8 w-8 text-lime-300 mx-auto mb-2" />
+                  <p className="text-sm uppercase tracking-wide text-emerald-100/80">Rich in Protein</p>
+                  <p className="mt-1 text-2xl font-semibold text-lime-200">20g per 100g</p>
+                </div>
+                <div className="rounded-2xl border border-white/20 bg-white/10 p-5 backdrop-blur">
+                  <Heart className="h-8 w-8 text-lime-300 mx-auto mb-2" />
+                  <p className="text-sm uppercase tracking-wide text-emerald-100/80">Customer Love</p>
+                  <p className="mt-1 text-2xl font-semibold text-lime-200">5★ Rated</p>
+                </div>
+              </div>
             </div>
           </div>
         </section>
 
         {/* What is Sattu Section */}
-        <section className="py-16 bg-muted/30">
+        <section className="bg-gradient-to-r from-emerald-50 via-white to-lime-50 py-16">
           <div className="container mx-auto px-4">
-            <div className="max-w-4xl mx-auto">
-              <h2 className="text-3xl font-bold mb-6 text-center">What is Sattu?</h2>
-              <div className="prose prose-lg mx-auto text-muted-foreground">
-                <p className="mb-4">
+            <div className="mx-auto max-w-4xl">
+              <h2 className="mb-6 text-center text-3xl font-bold text-emerald-900">What is Sattu?</h2>
+              <div className="space-y-4 text-base leading-relaxed text-emerald-800/90 md:text-lg">
+                <p>
                   Sattu is a traditional superfood from Bihar and other parts of India, made by dry roasting 
                   chana (Bengal gram) and grinding it into a fine powder. This protein-rich flour has been a 
                   staple in Indian households for centuries, known for its cooling properties and nutritional benefits.
                 </p>
-                <p className="mb-4">
+                <p>
                   Rich in protein, fiber, calcium, and iron, sattu is perfect for athletes, fitness enthusiasts, 
                   and anyone looking for a natural energy boost. It helps in digestion, keeps you cool during summers, 
                   and provides sustained energy throughout the day.
@@ -141,149 +203,47 @@ export default function SattuPowder() {
           </div>
         </section>
 
-        {/* Products Section */}
-        <section className="py-16">
+        {/* Health Benefits Section */}
+        <section className="bg-gradient-to-r from-lime-50 via-white to-emerald-50 py-16">
           <div className="container mx-auto px-4">
-            <h2 className="text-3xl font-bold mb-12 text-center">Our Sattu Powder Varieties</h2>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {sattuPowderTypes.map((product) => {
-                const discount = Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100);
-                const quantity = quantities[product.id] || 1;
+            <h2 className="mb-12 text-center text-3xl font-bold text-emerald-900">
+              Health Benefits of Sattu
+            </h2>
 
-                return (
-                  <Card key={product.id} className="powder-product-card overflow-hidden hover:shadow-xl transition-all duration-300">
-                    <div className="relative">
-                      <img 
-                        src={product.image} 
-                        alt={product.name}
-                        className="w-full h-64 object-cover"
-                      />
-                      {discount > 0 && (
-                        <Badge className="absolute top-3 left-3 bg-destructive text-destructive-foreground">
-                          {discount}% OFF
-                        </Badge>
-                      )}
-                      <Badge className="absolute top-3 right-3 bg-primary">
-                        {product.weight}
-                      </Badge>
-                    </div>
-
-                    <CardContent className="p-6">
-                      <h3 className="text-xl font-bold mb-2">{product.name}</h3>
-                      <p className="text-muted-foreground mb-4 text-sm">{product.description}</p>
-
-                      <div className="flex flex-wrap gap-2 mb-4">
-                        {product.features.map((feature, index) => (
-                          <Badge key={index} variant="secondary" className="text-xs">
-                            {feature}
-                          </Badge>
-                        ))}
-                      </div>
-
-                      <div className="flex items-baseline gap-2 mb-4">
-                        <span className="text-2xl font-bold text-primary">₹{product.price}</span>
-                        <span className="text-sm text-muted-foreground line-through">₹{product.originalPrice}</span>
-                      </div>
-
-                      <div className="flex items-center gap-3 mb-4">
-                        <span className="text-sm font-medium">Quantity:</span>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            size="icon"
-                            variant="outline"
-                            className="h-8 w-8"
-                            onClick={() => handleQuantityChange(product.id, -1)}
-                          >
-                            <Minus className="h-4 w-4" />
-                          </Button>
-                          <span className="w-8 text-center font-medium">{quantity}</span>
-                          <Button
-                            size="icon"
-                            variant="outline"
-                            className="h-8 w-8"
-                            onClick={() => handleQuantityChange(product.id, 1)}
-                          >
-                            <Plus className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-
-                      <Button 
-                        className="w-full"
-                        onClick={() => handleAddToCart(product)}
-                        disabled={!product.inStock}
-                      >
-                        <ShoppingCart className="mr-2 h-4 w-4" />
-                        Add to Cart - ₹{product.price * quantity}
-                      </Button>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
-          </div>
-        </section>
-
-        {/* Benefits Section */}
-        <section className="py-16 bg-muted/30">
-          <div className="container mx-auto px-4">
-            <h2 className="text-3xl font-bold mb-12 text-center">Health Benefits of Sattu</h2>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
-              <Card>
-                <CardContent className="p-6">
-                  <h3 className="font-bold text-lg mb-2">High in Protein</h3>
-                  <p className="text-muted-foreground text-sm">
-                    Contains about 20g protein per 100g, making it excellent for muscle building and recovery.
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="p-6">
-                  <h3 className="font-bold text-lg mb-2">Natural Coolant</h3>
-                  <p className="text-muted-foreground text-sm">
-                    Known for its cooling properties, perfect for hot summer days to keep your body temperature balanced.
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="p-6">
-                  <h3 className="font-bold text-lg mb-2">Aids Digestion</h3>
-                  <p className="text-muted-foreground text-sm">
-                    Rich in fiber, it promotes healthy digestion and helps prevent constipation.
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="p-6">
-                  <h3 className="font-bold text-lg mb-2">Low Glycemic Index</h3>
-                  <p className="text-muted-foreground text-sm">
-                    Great for diabetics as it helps regulate blood sugar levels naturally.
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="p-6">
-                  <h3 className="font-bold text-lg mb-2">Energy Booster</h3>
-                  <p className="text-muted-foreground text-sm">
-                    Provides sustained energy throughout the day without sugar crashes.
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="p-6">
-                  <h3 className="font-bold text-lg mb-2">Rich in Minerals</h3>
-                  <p className="text-muted-foreground text-sm">
-                    Contains iron, calcium, magnesium, and other essential minerals for overall health.
-                  </p>
-                </CardContent>
-              </Card>
+            <div className="mx-auto grid max-w-5xl grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {[
+                {
+                  title: "High in Protein",
+                  description: "Contains about 20g protein per 100g, making it excellent for muscle building and recovery.",
+                },
+                {
+                  title: "Natural Coolant",
+                  description: "Known for its cooling properties, perfect for hot summer days to keep your body temperature balanced.",
+                },
+                {
+                  title: "Aids Digestion",
+                  description: "Rich in fiber, it promotes healthy digestion and helps prevent constipation.",
+                },
+                {
+                  title: "Low Glycemic Index",
+                  description: "Great for diabetics as it helps regulate blood sugar levels naturally.",
+                },
+                {
+                  title: "Energy Booster",
+                  description: "Provides sustained energy throughout the day without sugar crashes.",
+                },
+                {
+                  title: "Rich in Minerals",
+                  description: "Contains iron, calcium, magnesium, and other essential minerals for overall health.",
+                },
+              ].map(({ title, description }) => (
+                <Card key={title} className="border-emerald-100 bg-white shadow-md hover:shadow-lg transition-shadow">
+                  <CardContent className="p-6">
+                    <h3 className="mb-2 text-lg font-bold text-emerald-900">{title}</h3>
+                    <p className="text-sm text-emerald-700/80">{description}</p>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
           </div>
         </section>
