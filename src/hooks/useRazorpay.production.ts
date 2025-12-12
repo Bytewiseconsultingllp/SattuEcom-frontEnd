@@ -237,7 +237,7 @@ export const useRazorpay = () => {
         key: key_id,
         amount: amount * 100, // Amount in paise
         currency,
-        name: 'Sattu Ecom',
+        name: 'Grain Fusion',
         description: 'Order Payment',
         order_id: razorpay_order_id,
         timeout: CONFIG.RAZORPAY_CHECKOUT_TIMEOUT / 1000, // Convert to seconds
