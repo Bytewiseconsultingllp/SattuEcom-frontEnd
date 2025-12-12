@@ -1,133 +1,176 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ShoppingCart, Minus, Plus, Check } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Sparkles, Candy, Cookie, Heart, Check } from "lucide-react";
 import { toast } from "sonner";
-import productLadooImage from "@/assets/product-ladoo.jpg";
+import { getProducts } from "@/lib/api/products";
+import { useNavigate } from "react-router-dom";
+import { ProductCard } from "@/components/ProductCard";
 
-const snacksLadooProducts = [
-  {
-    id: "ladoo-plain-250g",
-    name: "Traditional Sattu Ladoo",
-    weight: "250g (10 pieces)",
-    price: 150,
-    originalPrice: 180,
-    description: "Classic sattu ladoo made with jaggery and ghee. Perfect traditional sweet snack.",
-    features: ["Jaggery Sweetened", "Pure Ghee", "No Sugar", "Authentic Recipe"],
-    image: productLadooImage,
-    inStock: true
-  },
-  {
-    id: "ladoo-plain-500g",
-    name: "Traditional Sattu Ladoo",
-    weight: "500g (20 pieces)",
-    price: 280,
-    originalPrice: 340,
-    description: "Family pack of classic sattu ladoos, ideal for festivals and family gatherings.",
-    features: ["Jaggery Sweetened", "Pure Ghee", "No Sugar", "Authentic Recipe"],
-    image: productLadooImage,
-    inStock: true
-  },
-  {
-    id: "ladoo-dryfruits-250g",
-    name: "Dry Fruits Sattu Ladoo",
-    weight: "250g (10 pieces)",
-    price: 200,
-    originalPrice: 250,
-    description: "Premium ladoos loaded with almonds, cashews, and raisins for extra nutrition.",
-    features: ["Mixed Dry Fruits", "Rich in Nuts", "Premium Quality", "Energy Packed"],
-    image: productLadooImage,
-    inStock: true
-  },
-  {
-    id: "ladoo-chocolate-250g",
-    name: "Chocolate Sattu Ladoo",
-    weight: "250g (10 pieces)",
-    price: 180,
-    originalPrice: 220,
-    description: "Modern twist on tradition - sattu ladoos with rich cocoa for chocolate lovers.",
-    features: ["Cocoa Flavored", "Kid Favorite", "Healthy Treat", "Unique Taste"],
-    image: productLadooImage,
-    inStock: true
-  },
-  {
-    id: "barfi-plain-250g",
-    name: "Sattu Barfi",
-    weight: "250g",
-    price: 160,
-    originalPrice: 200,
-    description: "Soft and delicious sattu barfi, perfect for festivals and special occasions.",
-    features: ["Melt in Mouth", "Festival Special", "Pure Ingredients", "Traditional Sweet"],
-    image: productLadooImage,
-    inStock: true
-  },
-  {
-    id: "chikki-200g",
-    name: "Sattu Chikki",
-    weight: "200g",
-    price: 120,
-    originalPrice: 150,
-    description: "Crunchy sattu chikki with jaggery and sesame seeds. Perfect tea-time snack.",
-    features: ["Crunchy Texture", "Sesame Seeds", "Tea Time Snack", "Natural Sweetness"],
-    image: productLadooImage,
-    inStock: true
-  }
-];
+interface Product {
+  _id: string;
+  name: string;
+  description: string;
+  price: number;
+  originalPrice?: number;
+  category: string;
+  images: string[];
+  in_stock: boolean;
+  rating: number;
+  reviews_count: number;
+}
 
 export default function SnacksLadoo() {
-  const [quantities, setQuantities] = useState<Record<string, number>>(
-    snacksLadooProducts.reduce((acc, product) => ({ ...acc, [product.id]: 1 }), {})
-  );
+  const navigate = useNavigate();
+  const [products, setProducts] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const handleQuantityChange = (productId: string, delta: number) => {
-    setQuantities(prev => ({
-      ...prev,
-      [productId]: Math.max(1, (prev[productId] || 1) + delta)
-    }));
-  };
+  useEffect(() => {
+    fetchSnacksLadooProducts();
+  }, []);
 
-  const handleAddToCart = (product: typeof snacksLadooProducts[0]) => {
-    const quantity = quantities[product.id];
-    toast.success(`Added ${quantity}x ${product.name} to cart!`, {
-      icon: <Check className="h-5 w-5" />
-    });
+  const fetchSnacksLadooProducts = async () => {
+    try {
+      setIsLoading(true);
+      // Fetch Snacks & Ladoo category products
+      const response = await getProducts(1, 50, { category: "Snacks & Ladoo" });
+      
+      console.log("Snacks & Ladoo Response:", response);
+      
+      if (response.success && response.data) {
+        console.log("Snacks & Ladoo products found:", response.data.length);
+        setProducts(response.data);
+      }
+    } catch (error) {
+      console.error("Error fetching products:", error);
+      toast.error("Failed to load products");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
-      
+
       <main className="flex-1">
-        {/* Hero Section */}
-        <section className="py-16 bg-gradient-to-br from-primary/5 via-background to-primary/10">
+        {/* Products Section - Display First */}
+        <section className="py-16 bg-gradient-to-b from-emerald-50/50 to-white">
           <div className="container mx-auto px-4">
-            <div className="max-w-3xl mx-auto text-center animate-fade-in">
-              <Badge className="mb-4">Healthy Indulgence</Badge>
-              <h1 className="text-5xl font-bold mb-6">Sattu Snacks & Ladoo</h1>
-              <p className="text-xl text-muted-foreground mb-8">
+            <div className="mb-8 text-center">
+              <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-emerald-100 px-4 py-2 text-sm font-medium text-emerald-800">
+                <Sparkles className="h-4 w-4 text-emerald-600" />
+                Healthy Indulgence
+              </div>
+              <h2 className="text-3xl font-bold text-emerald-900">
+                Snacks & Ladoo Collection
+              </h2>
+              <p className="mt-3 text-emerald-700/70">Traditional sweets & nutritious snacks</p>
+            </div>
+
+            {isLoading ? (
+              <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+                {[1, 2, 3, 4, 5, 6].map((i) => (
+                  <Card key={i} className="overflow-hidden">
+                    <Skeleton className="h-64 w-full" />
+                    <CardContent className="p-6 space-y-4">
+                      <Skeleton className="h-6 w-3/4" />
+                      <Skeleton className="h-4 w-full" />
+                      <Skeleton className="h-4 w-full" />
+                      <Skeleton className="h-10 w-full" />
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <>
+              <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+                {products.map((product) => (
+                  <ProductCard key={product._id} product={product} />
+                ))}
+              </div>
+
+              {/* Browse All Products Button */}
+              <div className="mt-12 text-center">
+                <Button
+                  size="lg"
+                  onClick={() => navigate("/products")}
+                  className="bg-emerald-700 hover:bg-emerald-800 text-white px-8"
+                >
+                  Browse All Products
+                </Button>
+              </div>
+              </>
+            )}
+          </div>
+        </section>
+
+        {/* Hero Section - Emerald & Lime Theme */}
+        <section className="relative overflow-hidden py-20 md:py-28">
+          <div className="absolute inset-0 bg-gradient-to-r from-emerald-950/95 via-emerald-900/85 to-emerald-800/60" />
+          <div
+            className="absolute -left-24 top-1/2 h-[500px] w-[500px] -translate-y-1/2 rounded-full bg-emerald-700/20 blur-3xl"
+            aria-hidden
+          />
+          <div
+            className="absolute -right-24 top-1/3 h-[400px] w-[400px] rounded-full bg-lime-400/20 blur-3xl"
+            aria-hidden
+          />
+
+          <div className="container relative z-10 mx-auto px-4">
+            <div className="mx-auto max-w-4xl text-center text-white">
+              <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-sm font-medium backdrop-blur">
+                <Candy className="h-4 w-4 text-lime-300" />
+                Traditional Meets Modern
+              </div>
+              
+              <h1 className="mb-6 text-4xl font-bold leading-tight md:text-6xl">
+                Sattu <span className="text-lime-300">Snacks & Ladoo</span>
+              </h1>
+              
+              <p className="mb-8 text-lg leading-relaxed text-emerald-100/80 md:text-xl">
                 Satisfy your sweet tooth the healthy way! Our range of sattu-based sweets and snacks 
                 combines traditional recipes with modern flavors. From classic ladoos to innovative 
-                chocolate varieties, every bite is packed with nutrition and nostalgia.
+                treats, every bite is packed with nutrition and nostalgia.
               </p>
+
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 mt-8">
+                <div className="rounded-2xl border border-white/20 bg-white/10 p-5 backdrop-blur">
+                  <Candy className="h-8 w-8 text-lime-300 mx-auto mb-2" />
+                  <p className="text-sm uppercase tracking-wide text-emerald-100/80">Natural Sweetness</p>
+                  <p className="mt-1 text-2xl font-semibold text-lime-200">Jaggery Based</p>
+                </div>
+                <div className="rounded-2xl border border-white/20 bg-white/10 p-5 backdrop-blur">
+                  <Cookie className="h-8 w-8 text-lime-300 mx-auto mb-2" />
+                  <p className="text-sm uppercase tracking-wide text-emerald-100/80">High Protein</p>
+                  <p className="mt-1 text-2xl font-semibold text-lime-200">Energy Boost</p>
+                </div>
+                <div className="rounded-2xl border border-white/20 bg-white/10 p-5 backdrop-blur">
+                  <Heart className="h-8 w-8 text-lime-300 mx-auto mb-2" />
+                  <p className="text-sm uppercase tracking-wide text-emerald-100/80">No Additives</p>
+                  <p className="mt-1 text-2xl font-semibold text-lime-200">100% Natural</p>
+                </div>
+              </div>
             </div>
           </div>
         </section>
 
         {/* About Sattu Sweets Section */}
-        <section className="py-16 bg-muted/30">
+        <section className="bg-gradient-to-r from-emerald-50 via-white to-lime-50 py-16">
           <div className="container mx-auto px-4">
-            <div className="max-w-4xl mx-auto">
-              <h2 className="text-3xl font-bold mb-6 text-center">The Art of Sattu Sweets</h2>
-              <div className="prose prose-lg mx-auto text-muted-foreground">
-                <p className="mb-4">
+            <div className="mx-auto max-w-4xl">
+              <h2 className="mb-6 text-center text-3xl font-bold text-emerald-900">The Art of Sattu Sweets</h2>
+              <div className="space-y-4 text-base leading-relaxed text-emerald-800/90 md:text-lg">
+                <p>
                   Sattu ladoos and sweets have been a cherished part of Indian cuisine for generations. 
                   These protein-rich treats are traditionally made during festivals, offered as prasad in 
                   temples, and enjoyed as nutritious snacks by people of all ages.
                 </p>
-                <p className="mb-4">
+                <p>
                   Our sattu sweets are made using time-tested recipes with premium ingredients - pure desi ghee, 
                   organic jaggery, and high-quality dry fruits. Unlike regular sweets loaded with refined sugar, 
                   our sattu-based treats provide sustained energy and nutrition.
@@ -141,147 +184,83 @@ export default function SnacksLadoo() {
           </div>
         </section>
 
-        {/* Products Section */}
-        <section className="py-16">
+        {/* Benefits Section */}
+        <section className="py-16 bg-gradient-to-r from-lime-50 via-white to-emerald-50">
           <div className="container mx-auto px-4">
-            <h2 className="text-3xl font-bold mb-12 text-center">Our Sweets & Snacks Collection</h2>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {snacksLadooProducts.map((product) => {
-                const discount = Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100);
-                const quantity = quantities[product.id] || 1;
+            <h2 className="mb-12 text-center text-3xl font-bold text-emerald-900">
+              Why Choose Our Sattu Sweets?
+            </h2>
 
-                return (
-                  <Card key={product.id} className="snack-product-card overflow-hidden hover:shadow-xl transition-all duration-300">
-                    <div className="relative">
-                      <img 
-                        src={product.image} 
-                        alt={product.name}
-                        className="w-full h-64 object-cover"
-                      />
-                      {discount > 0 && (
-                        <Badge className="absolute top-3 left-3 bg-destructive text-destructive-foreground">
-                          {discount}% OFF
-                        </Badge>
-                      )}
-                      <Badge className="absolute top-3 right-3 bg-primary">
-                        {product.weight}
-                      </Badge>
-                    </div>
-
-                    <CardContent className="p-6">
-                      <h3 className="text-xl font-bold mb-2">{product.name}</h3>
-                      <p className="text-muted-foreground mb-4 text-sm">{product.description}</p>
-
-                      <div className="flex flex-wrap gap-2 mb-4">
-                        {product.features.map((feature, index) => (
-                          <Badge key={index} variant="secondary" className="text-xs">
-                            {feature}
-                          </Badge>
-                        ))}
-                      </div>
-
-                      <div className="flex items-baseline gap-2 mb-4">
-                        <span className="text-2xl font-bold text-primary">₹{product.price}</span>
-                        <span className="text-sm text-muted-foreground line-through">₹{product.originalPrice}</span>
-                      </div>
-
-                      <div className="flex items-center gap-3 mb-4">
-                        <span className="text-sm font-medium">Quantity:</span>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            size="icon"
-                            variant="outline"
-                            className="h-8 w-8"
-                            onClick={() => handleQuantityChange(product.id, -1)}
-                          >
-                            <Minus className="h-4 w-4" />
-                          </Button>
-                          <span className="w-8 text-center font-medium">{quantity}</span>
-                          <Button
-                            size="icon"
-                            variant="outline"
-                            className="h-8 w-8"
-                            onClick={() => handleQuantityChange(product.id, 1)}
-                          >
-                            <Plus className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-
-                      <Button 
-                        className="w-full"
-                        onClick={() => handleAddToCart(product)}
-                        disabled={!product.inStock}
-                      >
-                        <ShoppingCart className="mr-2 h-4 w-4" />
-                        Add to Cart - ₹{product.price * quantity}
-                      </Button>
-                    </CardContent>
-                  </Card>
-                );
-              })}
+            <div className="mx-auto grid max-w-5xl grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {[
+                {
+                  title: "Natural Sweetness",
+                  description: "Sweetened with organic jaggery instead of refined sugar, providing natural minerals and a healthier alternative.",
+                },
+                {
+                  title: "High Protein Content",
+                  description: "Each piece is protein-rich, making it an excellent post-workout snack or energy booster for active lifestyles.",
+                },
+                {
+                  title: "Pure Desi Ghee",
+                  description: "Made with authentic desi ghee for that rich, traditional taste and added nutritional benefits.",
+                },
+                {
+                  title: "No Artificial Additives",
+                  description: "Zero artificial colors, flavors, or preservatives. Only natural ingredients that you can trust.",
+                },
+                {
+                  title: "Perfect for All Ages",
+                  description: "From kids to elders, everyone can enjoy these nutritious treats without compromising on health.",
+                },
+                {
+                  title: "Long Shelf Life",
+                  description: "Stays fresh for weeks when stored properly, making it perfect for gifting and festivals.",
+                },
+              ].map(({ title, description }) => (
+                <Card key={title} className="border-emerald-100 bg-white shadow-md hover:shadow-lg transition-shadow">
+                  <CardContent className="p-6">
+                    <h3 className="mb-2 text-lg font-bold text-emerald-900">{title}</h3>
+                    <p className="text-sm text-emerald-700/80">{description}</p>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
           </div>
         </section>
 
-        {/* Benefits Section */}
-        <section className="py-16 bg-muted/30">
+        {/* Storage Tips Section */}
+        <section className="py-16 bg-gradient-to-r from-emerald-50 via-white to-lime-50">
           <div className="container mx-auto px-4">
-            <h2 className="text-3xl font-bold mb-12 text-center">Why Choose Our Sattu Sweets?</h2>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-              <Card>
-                <CardContent className="p-6">
-                  <h3 className="font-bold text-lg mb-2">Natural Sweetness</h3>
-                  <p className="text-muted-foreground text-sm">
-                    Sweetened with organic jaggery instead of refined sugar, providing natural minerals and a healthier alternative.
-                  </p>
-                </CardContent>
-              </Card>
+            <h2 className="mb-12 text-center text-3xl font-bold text-emerald-900">
+              Storage & Freshness Tips
+            </h2>
 
-              <Card>
-                <CardContent className="p-6">
-                  <h3 className="font-bold text-lg mb-2">High Protein Content</h3>
-                  <p className="text-muted-foreground text-sm">
-                    Each piece is protein-rich, making it an excellent post-workout snack or energy booster for active lifestyles.
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="p-6">
-                  <h3 className="font-bold text-lg mb-2">Pure Desi Ghee</h3>
-                  <p className="text-muted-foreground text-sm">
-                    Made with authentic desi ghee for that rich, traditional taste and added nutritional benefits.
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="p-6">
-                  <h3 className="font-bold text-lg mb-2">No Artificial Additives</h3>
-                  <p className="text-muted-foreground text-sm">
-                    Zero artificial colors, flavors, or preservatives. Only natural ingredients that you can trust.
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="p-6">
-                  <h3 className="font-bold text-lg mb-2">Perfect for All Ages</h3>
-                  <p className="text-muted-foreground text-sm">
-                    From kids to elders, everyone can enjoy these nutritious treats without compromising on health.
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardContent className="p-6">
-                  <h3 className="font-bold text-lg mb-2">Long Shelf Life</h3>
-                  <p className="text-muted-foreground text-sm">
-                    Stays fresh for weeks when stored properly, making it perfect for gifting and festivals.
-                  </p>
+            <div className="mx-auto max-w-3xl">
+              <Card className="border-emerald-100 bg-white shadow-md">
+                <CardContent className="p-8">
+                  <ul className="space-y-4">
+                    <li className="flex items-start gap-3">
+                      <Check className="h-5 w-5 text-emerald-600 mt-1 flex-shrink-0" />
+                      <span className="text-emerald-800">Store in an airtight container to maintain freshness</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <Check className="h-5 w-5 text-emerald-600 mt-1 flex-shrink-0" />
+                      <span className="text-emerald-800">Keep in a cool, dry place away from direct sunlight</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <Check className="h-5 w-5 text-emerald-600 mt-1 flex-shrink-0" />
+                      <span className="text-emerald-800">Best consumed within 3-4 weeks of purchase</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <Check className="h-5 w-5 text-emerald-600 mt-1 flex-shrink-0" />
+                      <span className="text-emerald-800">Can be refrigerated to extend shelf life during hot weather</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <Check className="h-5 w-5 text-emerald-600 mt-1 flex-shrink-0" />
+                      <span className="text-emerald-800">Perfect for gifting - beautifully packaged in food-grade boxes</span>
+                    </li>
+                  </ul>
                 </CardContent>
               </Card>
             </div>
