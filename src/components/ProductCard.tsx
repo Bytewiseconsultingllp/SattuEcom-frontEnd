@@ -14,8 +14,9 @@ import {
   CarouselItem,
   CarouselNext,
   CarouselPrevious,
+  type CarouselApi,
 } from "@/components/ui/carousel";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 
 export interface Product {
@@ -37,6 +38,8 @@ interface ProductCardProps {
 
 export const ProductCard = ({ product }: ProductCardProps) => {
   const cardRef = useRef<HTMLDivElement>(null);
+  const [carouselApi, setCarouselApi] = useState<CarouselApi>();
+  
   useEffect(() => {
     if (!cardRef.current) return;
     const tl = gsap.timeline();
@@ -101,8 +104,16 @@ export const ProductCard = ({ product }: ProductCardProps) => {
   const handleCardClick = (e: React.MouseEvent) => {
     // Allow carousel navigation without triggering card click
     const target = e.target as HTMLElement;
-    if (target.closest('button[aria-label*="slide"]')) {
+    // Check if click is on carousel buttons, wishlist button, or add to cart button
+    if (
+      target.closest('button[aria-label*="slide"]') ||
+      target.closest('button[aria-label*="Previous"]') ||
+      target.closest('button[aria-label*="Next"]') ||
+      target.closest('.carousel-button') ||
+      target.closest('button[type="button"]')
+    ) {
       e.preventDefault();
+      e.stopPropagation();
       return;
     }
     navigate(`/product/${product._id}`);
@@ -116,7 +127,7 @@ export const ProductCard = ({ product }: ProductCardProps) => {
     >
       <div className="relative overflow-hidden">
         {hasMultipleImages ? (
-          <Carousel className="w-full" opts={{ loop: true }}>
+          <Carousel className="w-full" opts={{ loop: true }} setApi={setCarouselApi}>
             <CarouselContent>
               {displayImages.map((imageUrl, index) => (
                 <CarouselItem key={index}>
@@ -129,12 +140,20 @@ export const ProductCard = ({ product }: ProductCardProps) => {
               ))}
             </CarouselContent>
             <CarouselPrevious 
-              className="left-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity" 
-              onClick={(e) => e.stopPropagation()}
+              className="carousel-button left-2 h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 hover:bg-white z-10" 
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                carouselApi?.scrollPrev();
+              }}
             />
             <CarouselNext 
-              className="right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity" 
-              onClick={(e) => e.stopPropagation()}
+              className="carousel-button right-2 h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 hover:bg-white z-10" 
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                carouselApi?.scrollNext();
+              }}
             />
           </Carousel>
         ) : (
