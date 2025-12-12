@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { ProductCard } from "@/components/ProductCard";
@@ -21,6 +21,23 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+// Debounce hook
+function useDebounce<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+}
+
 const Products = () => {
   const navigate = useNavigate();
   const [selectedCategory, setSelectedCategory] = useState("All Products");
@@ -39,15 +56,27 @@ const Products = () => {
   const [totalProducts, setTotalProducts] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
 
+  // Debounce search query (500ms delay)
+  const debouncedSearchQuery = useDebounce(searchQuery, 500);
+
   // Fetch categories on mount
   useEffect(() => {
     fetchCategories();
   }, []);
 
-  // Fetch products when page or page size changes
+  // Fetch products when filters change (using debounced search)
   useEffect(() => {
     getAllProducts();
-  }, [currentPage, pageSize]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPage, pageSize, selectedCategory, priceRange[0], priceRange[1], in_stockOnly, debouncedSearchQuery]);
+
+  // Reset to page 1 when filters change (not page-related changes)
+  useEffect(() => {
+    if (currentPage !== 1) {
+      setCurrentPage(1);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedCategory, priceRange[0], priceRange[1], in_stockOnly, debouncedSearchQuery]);
 
   async function fetchCategories() {
     try {
@@ -61,14 +90,43 @@ const Products = () => {
     }
   }
 
-  async function getAllProducts() {
+  const getAllProducts = useCallback(async () => {
     try {
       setIsLoading(true);
-      const response = await getProducts(currentPage, pageSize);
+      
+      // Build filters object
+      const filters: any = {};
+      
+      if (selectedCategory !== "All Products") {
+        filters.category = selectedCategory;
+      }
+      
+      if (priceRange[0] > 0) {
+        filters.minPrice = priceRange[0];
+      }
+      
+      if (priceRange[1] < 1000) {
+        filters.maxPrice = priceRange[1];
+      }
+      
+      if (in_stockOnly) {
+        filters.inStockOnly = true;
+      }
+      
+      // Use debounced search query
+      if (debouncedSearchQuery.trim()) {
+        filters.search = debouncedSearchQuery.trim();
+      }
+      
+      console.log("Fetching products with filters:", filters);
+      
+      const response = await getProducts(currentPage, pageSize, filters);
       if (response.success) {
         setAllProducts(response.data || []);
         setTotalProducts(response.total || 0);
         setTotalPages(response.totalPages || 0);
+        
+        console.log(`Loaded ${response.data?.length || 0} products of ${response.total || 0} total`);
       }
     } catch (error: any) {
       toast.error("Error fetching products");
@@ -76,60 +134,69 @@ const Products = () => {
     } finally {
       setIsLoading(false);
     }
-  }
+  }, [currentPage, pageSize, selectedCategory, priceRange, in_stockOnly, debouncedSearchQuery]);
 
   // Use categories from API instead of deriving from current page products
-  const derivedCategories = [
+  const derivedCategories = useMemo(() => [
     "All Products",
     ...categories.map(cat => cat.name)
-  ];
+  ], [categories]);
 
-  // Filter products based on all criteria
-  const filteredProducts = allProducts.filter(product => {
-    const categoryMatch = selectedCategory === "All Products" || product.category === selectedCategory;
-    const priceMatch = product.price >= priceRange[0] && product.price <= priceRange[1];
-    const stockMatch = !in_stockOnly || product.in_stock;
-    const searchMatch = searchQuery === "" || 
-      product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      product.description?.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    return categoryMatch && priceMatch && stockMatch && searchMatch;
-  });
+  // No need for client-side filtering anymore - API handles it
+  const filteredProducts = allProducts;
+
+  // Clear search handler
+  const handleClearSearch = useCallback(() => {
+    setSearchQuery("");
+  }, []);
+
+  // Clear all filters handler
+  const handleClearFilters = useCallback(() => {
+    setSelectedCategory("All Products");
+    setPriceRange([0, 1000]);
+    setIn_StockOnly(false);
+    setSearchQuery("");
+  }, []);
 
   // Handle product click to navigate to details page
-  const handleProductClick = (productId: string) => {
+  const handleProductClick = useCallback((productId: string) => {
     navigate(`/product/${productId}`);
-  };
+  }, [navigate]);
 
-  // Reset to first page when filters change
-  const handleFilterChange = () => {
-    setCurrentPage(1);
-  };
+  // Check if any filters are active
+  const hasActiveFilters = useMemo(() => {
+    return selectedCategory !== "All Products" || 
+           priceRange[0] > 0 || 
+           priceRange[1] < 1000 || 
+           in_stockOnly || 
+           searchQuery.trim() !== "";
+  }, [selectedCategory, priceRange, in_stockOnly, searchQuery]);
 
-  const handleCategoryChange = (category: string) => {
+  // Optimized handlers with useCallback
+  const handleCategoryChange = useCallback((category: string) => {
     setSelectedCategory(category);
-    handleFilterChange();
-  };
+  }, []);
 
-  const handlePriceChange = (range: number[]) => {
+  const handlePriceChange = useCallback((range: number[]) => {
     setPriceRange(range);
-    handleFilterChange();
-  };
+  }, []);
 
-  const handleStockChange = (checked: boolean) => {
+  const handleStockChange = useCallback((checked: boolean) => {
     setIn_StockOnly(checked);
-    handleFilterChange();
-  };
+  }, []);
 
-  const handleSearchChange = (query: string) => {
+  const handleSearchChange = useCallback((query: string) => {
     setSearchQuery(query);
-    handleFilterChange();
-  };
+  }, []);
 
-  const clearSearch = () => {
+  const clearSearch = useCallback(() => {
     setSearchQuery("");
-    handleFilterChange();
-  };
+  }, []);
+
+  // Check if search is pending (typed but not yet debounced)
+  const isSearchPending = useMemo(() => {
+    return searchQuery !== debouncedSearchQuery;
+  }, [searchQuery, debouncedSearchQuery]);
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -188,7 +255,9 @@ const Products = () => {
             {/* Search Bar with Enhanced Design */}
             <div className="mb-8" data-animate="true">
               <div className="relative max-w-3xl mx-auto">
-                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-emerald-600" />
+                <Search className={`absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 transition-colors ${
+                  isSearchPending ? 'text-emerald-400 animate-pulse' : 'text-emerald-600'
+                }`} />
                 <Input
                   placeholder="Search products by name or description..."
                   value={searchQuery}
@@ -199,9 +268,15 @@ const Products = () => {
                   <button
                     onClick={clearSearch}
                     className="absolute right-4 top-1/2 transform -translate-y-1/2 text-emerald-600 hover:text-emerald-800 transition-colors"
+                    aria-label="Clear search"
                   >
                     <X className="h-5 w-5" />
                   </button>
+                )}
+                {isSearchPending && (
+                  <span className="absolute right-16 top-1/2 transform -translate-y-1/2 text-xs text-emerald-600">
+                    Searching...
+                  </span>
                 )}
               </div>
             </div>
