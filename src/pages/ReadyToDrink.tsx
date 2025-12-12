@@ -1,255 +1,228 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ShoppingCart, Minus, Plus, Check } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Sparkles, Droplets, Zap, ThermometerSnowflake, Check } from "lucide-react";
 import { toast } from "sonner";
-import productDrinkImage from "@/assets/product-drink.jpg";
+import { getProducts } from "@/lib/api/products";
+import { useNavigate } from "react-router-dom";
+import { ProductCard } from "@/components/ProductCard";
 
-const readyToDrinkProducts = [
-  {
-    id: "rtd-plain-200ml",
-    name: "Plain Sattu Drink",
-    size: "200ml",
-    price: 30,
-    originalPrice: 40,
-    description: "Chilled plain sattu drink, perfect for instant refreshment. No added sugar or preservatives.",
-    features: ["Ready to Drink", "No Preservatives", "Refrigerated", "Natural Taste"],
-    image: productDrinkImage,
-    inStock: true
-  },
-  {
-    id: "rtd-plain-500ml",
-    name: "Plain Sattu Drink",
-    size: "500ml",
-    price: 60,
-    originalPrice: 80,
-    description: "Large bottle of chilled plain sattu drink for maximum refreshment throughout the day.",
-    features: ["Ready to Drink", "No Preservatives", "Refrigerated", "Natural Taste"],
-    image: productDrinkImage,
-    inStock: true
-  },
-  {
-    id: "rtd-masala-200ml",
-    name: "Masala Sattu Drink",
-    size: "200ml",
-    price: 35,
-    originalPrice: 45,
-    description: "Traditional namkeen sattu drink with authentic spices, salt, and a hint of lemon.",
-    features: ["Spiced Blend", "Authentic Recipe", "Instant Energy", "Cooling Effect"],
-    image: productDrinkImage,
-    inStock: true
-  },
-  {
-    id: "rtd-masala-500ml",
-    name: "Masala Sattu Drink",
-    size: "500ml",
-    price: 70,
-    originalPrice: 90,
-    description: "Large serving of traditional masala sattu, perfect for post-workout or summer refreshment.",
-    features: ["Spiced Blend", "Authentic Recipe", "Instant Energy", "Cooling Effect"],
-    image: productDrinkImage,
-    inStock: true
-  },
-  {
-    id: "rtd-sweet-200ml",
-    name: "Sweet Sattu Drink",
-    size: "200ml",
-    price: 35,
-    originalPrice: 45,
-    description: "Naturally sweetened with jaggery and cardamom for a delicious healthy treat.",
-    features: ["Natural Sweetness", "With Jaggery", "Cardamom Flavor", "Kid Friendly"],
-    image: productDrinkImage,
-    inStock: true
-  },
-  {
-    id: "rtd-mango-200ml",
-    name: "Mango Sattu Fusion",
-    size: "200ml",
-    price: 40,
-    originalPrice: 50,
-    description: "Innovative blend of sattu with real mango pulp for a tropical twist on tradition.",
-    features: ["Real Mango", "Fusion Flavor", "Vitamin Rich", "Refreshing"],
-    image: productDrinkImage,
-    inStock: true
-  }
-];
+interface Product {
+  _id: string;
+  name: string;
+  description: string;
+  price: number;
+  originalPrice?: number;
+  category: string;
+  images: string[];
+  in_stock: boolean;
+  rating: number;
+  reviews_count: number;
+}
 
 export default function ReadyToDrink() {
-  const [quantities, setQuantities] = useState<Record<string, number>>(
-    readyToDrinkProducts.reduce((acc, product) => ({ ...acc, [product.id]: 1 }), {})
-  );
+  const navigate = useNavigate();
+  const [products, setProducts] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const handleQuantityChange = (productId: string, delta: number) => {
-    setQuantities(prev => ({
-      ...prev,
-      [productId]: Math.max(1, (prev[productId] || 1) + delta)
-    }));
-  };
+  useEffect(() => {
+    fetchBeverageProducts();
+  }, []);
 
-  const handleAddToCart = (product: typeof readyToDrinkProducts[0]) => {
-    const quantity = quantities[product.id];
-    toast.success(`Added ${quantity}x ${product.name} (${product.size}) to cart!`, {
-      icon: <Check className="h-5 w-5" />
-    });
+  const fetchBeverageProducts = async () => {
+    try {
+      setIsLoading(true);
+      // Fetch Beverages and Ready to Drink category products
+      const [beveragesResponse, readyToDrinkResponse] = await Promise.all([
+        getProducts(1, 50, { category: "Beverages" }),
+        getProducts(1, 50, { category: "Ready to Drink" })
+      ]);
+      
+      console.log("Beverages Response:", beveragesResponse);
+      console.log("Ready to Drink Response:", readyToDrinkResponse);
+      
+      const allProducts = [];
+      if (beveragesResponse.success && beveragesResponse.data) {
+        console.log("Beverages products found:", beveragesResponse.data.length);
+        allProducts.push(...beveragesResponse.data);
+      }
+      if (readyToDrinkResponse.success && readyToDrinkResponse.data) {
+        console.log("Ready to Drink products found:", readyToDrinkResponse.data.length);
+        allProducts.push(...readyToDrinkResponse.data);
+      }
+      
+      console.log("Total products:", allProducts.length);
+      setProducts(allProducts);
+    } catch (error) {
+      console.error("Error fetching products:", error);
+      toast.error("Failed to load products");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
-      
+
       <main className="flex-1">
-        {/* Hero Section */}
-        <section className="py-16 bg-gradient-to-br from-primary/5 via-background to-primary/10">
+        {/* Products Section - Display First */}
+        <section className="py-16 bg-gradient-to-b from-emerald-50/50 to-white">
           <div className="container mx-auto px-4">
-            <div className="max-w-3xl mx-auto text-center animate-fade-in">
-              <Badge className="mb-4">Convenience Meets Nutrition</Badge>
-              <h1 className="text-5xl font-bold mb-6">Ready to Drink Sattu</h1>
-              <p className="text-xl text-muted-foreground mb-8">
-                Experience the convenience of ready-to-drink sattu beverages. Perfectly mixed, chilled, 
+            <div className="mb-8 text-center">
+              <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-emerald-100 px-4 py-2 text-sm font-medium text-emerald-800">
+                <Sparkles className="h-4 w-4 text-emerald-600" />
+                Ready to Drink Collection
+              </div>
+              <h2 className="text-3xl font-bold text-emerald-900">
+                Our Beverage Products
+              </h2>
+              <p className="mt-3 text-emerald-700/70">Refreshing beverages & ready-to-drink options</p>
+            </div>
+
+            {isLoading ? (
+              <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+                {[1, 2, 3, 4, 5, 6].map((i) => (
+                  <Card key={i} className="overflow-hidden">
+                    <Skeleton className="h-64 w-full" />
+                    <CardContent className="p-6 space-y-4">
+                      <Skeleton className="h-6 w-3/4" />
+                      <Skeleton className="h-4 w-full" />
+                      <Skeleton className="h-4 w-full" />
+                      <Skeleton className="h-10 w-full" />
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <>
+              <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
+                {products.map((product) => (
+                  <ProductCard key={product._id} product={product} />
+                ))}
+              </div>
+
+              {/* Browse All Products Button */}
+              <div className="mt-12 text-center">
+                <Button
+                  size="lg"
+                  onClick={() => navigate("/products")}
+                  className="bg-emerald-700 hover:bg-emerald-800 text-white px-8"
+                >
+                  Browse All Products
+                </Button>
+              </div>
+              </>
+            )}
+          </div>
+        </section>
+
+        {/* Hero Section - Emerald & Lime Theme */}
+        <section className="relative overflow-hidden py-20 md:py-28">
+          <div className="absolute inset-0 bg-gradient-to-r from-emerald-950/95 via-emerald-900/85 to-emerald-800/60" />
+          <div
+            className="absolute -left-24 top-1/2 h-[500px] w-[500px] -translate-y-1/2 rounded-full bg-emerald-700/20 blur-3xl"
+            aria-hidden
+          />
+          <div
+            className="absolute -right-24 top-1/3 h-[400px] w-[400px] rounded-full bg-lime-400/20 blur-3xl"
+            aria-hidden
+          />
+
+          <div className="container relative z-10 mx-auto px-4">
+            <div className="mx-auto max-w-4xl text-center text-white">
+              <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-sm font-medium backdrop-blur">
+                <Droplets className="h-4 w-4 text-lime-300" />
+                Convenience Meets Nutrition
+              </div>
+              
+              <h1 className="mb-6 text-4xl font-bold leading-tight md:text-6xl">
+                Ready to Drink <span className="text-lime-300">Beverages</span>
+              </h1>
+              
+              <p className="mb-8 text-lg leading-relaxed text-emerald-100/80 md:text-xl">
+                Experience the convenience of ready-to-drink beverages. Perfectly mixed, chilled, 
                 and ready to refresh you instantly. No mixing, no mess - just pure nutrition on the go!
               </p>
+
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3 mt-8">
+                <div className="rounded-2xl border border-white/20 bg-white/10 p-5 backdrop-blur">
+                  <ThermometerSnowflake className="h-8 w-8 text-lime-300 mx-auto mb-2" />
+                  <p className="text-sm uppercase tracking-wide text-emerald-100/80">Fresh & Chilled</p>
+                  <p className="mt-1 text-2xl font-semibold text-lime-200">Ready to Serve</p>
+                </div>
+                <div className="rounded-2xl border border-white/20 bg-white/10 p-5 backdrop-blur">
+                  <Zap className="h-8 w-8 text-lime-300 mx-auto mb-2" />
+                  <p className="text-sm uppercase tracking-wide text-emerald-100/80">Instant Energy</p>
+                  <p className="mt-1 text-2xl font-semibold text-lime-200">No Preparation</p>
+                </div>
+                <div className="rounded-2xl border border-white/20 bg-white/10 p-5 backdrop-blur">
+                  <Droplets className="h-8 w-8 text-lime-300 mx-auto mb-2" />
+                  <p className="text-sm uppercase tracking-wide text-emerald-100/80">Hydrating</p>
+                  <p className="mt-1 text-2xl font-semibold text-lime-200">Nutritious</p>
+                </div>
+              </div>
             </div>
           </div>
         </section>
 
         {/* Why Ready to Drink Section */}
-        <section className="py-16 bg-muted/30">
+        <section className="bg-gradient-to-r from-emerald-50 via-white to-lime-50 py-16">
           <div className="container mx-auto px-4">
-            <div className="max-w-4xl mx-auto">
-              <h2 className="text-3xl font-bold mb-6 text-center">Why Choose Ready to Drink?</h2>
-              <div className="prose prose-lg mx-auto text-muted-foreground">
-                <p className="mb-4">
-                  Our ready-to-drink sattu beverages are perfect for modern lifestyles. Pre-mixed with the 
-                  right proportions of sattu, spices (or sweeteners), and water, these drinks are ready to 
-                  consume straight from the bottle.
+            <div className="mx-auto max-w-4xl">
+              <h2 className="mb-6 text-center text-3xl font-bold text-emerald-900">Why Choose Ready to Drink?</h2>
+              <div className="space-y-4 text-base leading-relaxed text-emerald-800/90 md:text-lg">
+                <p>
+                  Our ready-to-drink beverages are perfect for modern lifestyles. Pre-mixed with the 
+                  right proportions, these drinks are ready to consume straight from the bottle.
                 </p>
-                <p className="mb-4">
+                <p>
                   Ideal for busy mornings, post-workout refreshment, office breaks, or travel. Each bottle 
                   is prepared fresh, refrigerated, and delivered to maintain optimal taste and nutrition.
                 </p>
                 <p>
-                  Whether you prefer the traditional namkeen style, the naturally sweet version, or our 
-                  innovative fusion flavors, there's a ready-to-drink sattu for everyone.
+                  Whether you prefer traditional flavors or innovative fusion blends, there's a 
+                  ready-to-drink beverage for everyone.
                 </p>
               </div>
             </div>
           </div>
         </section>
 
-        {/* Products Section */}
-        <section className="py-16">
+        {/* Storage Instructions Section */}
+        <section className="py-16 bg-gradient-to-r from-lime-50 via-white to-emerald-50">
           <div className="container mx-auto px-4">
-            <h2 className="text-3xl font-bold mb-12 text-center">Our Ready to Drink Range</h2>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {readyToDrinkProducts.map((product) => {
-                const discount = Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100);
-                const quantity = quantities[product.id] || 1;
+            <h2 className="mb-12 text-center text-3xl font-bold text-emerald-900">
+              Storage & Consumption Tips
+            </h2>
 
-                return (
-                  <Card key={product.id} className="drink-product-card overflow-hidden hover:shadow-xl transition-all duration-300">
-                    <div className="relative">
-                      <img 
-                        src={product.image} 
-                        alt={product.name}
-                        className="w-full h-64 object-cover"
-                      />
-                      {discount > 0 && (
-                        <Badge className="absolute top-3 left-3 bg-destructive text-destructive-foreground">
-                          {discount}% OFF
-                        </Badge>
-                      )}
-                      <Badge className="absolute top-3 right-3 bg-primary">
-                        {product.size}
-                      </Badge>
-                    </div>
-
-                    <CardContent className="p-6">
-                      <h3 className="text-xl font-bold mb-2">{product.name}</h3>
-                      <p className="text-muted-foreground mb-4 text-sm">{product.description}</p>
-
-                      <div className="flex flex-wrap gap-2 mb-4">
-                        {product.features.map((feature, index) => (
-                          <Badge key={index} variant="secondary" className="text-xs">
-                            {feature}
-                          </Badge>
-                        ))}
-                      </div>
-
-                      <div className="flex items-baseline gap-2 mb-4">
-                        <span className="text-2xl font-bold text-primary">₹{product.price}</span>
-                        <span className="text-sm text-muted-foreground line-through">₹{product.originalPrice}</span>
-                      </div>
-
-                      <div className="flex items-center gap-3 mb-4">
-                        <span className="text-sm font-medium">Quantity:</span>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            size="icon"
-                            variant="outline"
-                            className="h-8 w-8"
-                            onClick={() => handleQuantityChange(product.id, -1)}
-                          >
-                            <Minus className="h-4 w-4" />
-                          </Button>
-                          <span className="w-8 text-center font-medium">{quantity}</span>
-                          <Button
-                            size="icon"
-                            variant="outline"
-                            className="h-8 w-8"
-                            onClick={() => handleQuantityChange(product.id, 1)}
-                          >
-                            <Plus className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </div>
-
-                      <Button 
-                        className="w-full"
-                        onClick={() => handleAddToCart(product)}
-                        disabled={!product.inStock}
-                      >
-                        <ShoppingCart className="mr-2 h-4 w-4" />
-                        Add to Cart - ₹{product.price * quantity}
-                      </Button>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
-          </div>
-        </section>
-
-        {/* Storage Instructions */}
-        <section className="py-16 bg-muted/30">
-          <div className="container mx-auto px-4">
-            <div className="max-w-3xl mx-auto">
-              <h2 className="text-3xl font-bold mb-6 text-center">Storage & Consumption</h2>
-              <Card>
+            <div className="mx-auto max-w-3xl">
+              <Card className="border-emerald-100 bg-white shadow-md">
                 <CardContent className="p-8">
-                  <ul className="space-y-3 text-muted-foreground">
+                  <ul className="space-y-4">
                     <li className="flex items-start gap-3">
-                      <Check className="h-5 w-5 text-primary mt-1 flex-shrink-0" />
-                      <span>Keep refrigerated at 2-8°C for best taste and freshness</span>
+                      <Check className="h-5 w-5 text-emerald-600 mt-1 flex-shrink-0" />
+                      <span className="text-emerald-800">Keep refrigerated at 2-8°C for best taste and freshness</span>
                     </li>
                     <li className="flex items-start gap-3">
-                      <Check className="h-5 w-5 text-primary mt-1 flex-shrink-0" />
-                      <span>Consume within 24 hours of opening for optimal nutrition</span>
+                      <Check className="h-5 w-5 text-emerald-600 mt-1 flex-shrink-0" />
+                      <span className="text-emerald-800">Consume within 24 hours of opening for optimal nutrition</span>
                     </li>
                     <li className="flex items-start gap-3">
-                      <Check className="h-5 w-5 text-primary mt-1 flex-shrink-0" />
-                      <span>Shake well before drinking to ensure even consistency</span>
+                      <Check className="h-5 w-5 text-emerald-600 mt-1 flex-shrink-0" />
+                      <span className="text-emerald-800">Shake well before drinking to ensure even consistency</span>
                     </li>
                     <li className="flex items-start gap-3">
-                      <Check className="h-5 w-5 text-primary mt-1 flex-shrink-0" />
-                      <span>Best enjoyed chilled for maximum refreshment</span>
+                      <Check className="h-5 w-5 text-emerald-600 mt-1 flex-shrink-0" />
+                      <span className="text-emerald-800">Best enjoyed chilled for maximum refreshment</span>
                     </li>
                     <li className="flex items-start gap-3">
-                      <Check className="h-5 w-5 text-primary mt-1 flex-shrink-0" />
-                      <span>No artificial preservatives - natural ingredients only</span>
+                      <Check className="h-5 w-5 text-emerald-600 mt-1 flex-shrink-0" />
+                      <span className="text-emerald-800">No artificial preservatives - natural ingredients only</span>
                     </li>
                   </ul>
                 </CardContent>
