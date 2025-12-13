@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -44,9 +44,30 @@ import { toast } from "sonner";
 import { getProducts, deleteAProduct } from "@/lib/api/products";
 import { ProductForm } from "@/components/admin/ProductForm";
 import { Pagination } from "@/components/common/Pagination";
+import { getCategories } from "@/lib/api/categories";
+import * as XLSX from 'xlsx';
+
+// Debounce hook
+function useDebounce<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+}
 
 export function ModernProductsPage() {
   const [products, setProducts] = useState<any[]>([]);
+  const [allProductsForStats, setAllProductsForStats] = useState<any[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [viewMode, setViewMode] = useState<"grid" | "list">("list");
   const [searchQuery, setSearchQuery] = useState("");
@@ -60,16 +81,65 @@ export function ModernProductsPage() {
   const [totalProducts, setTotalProducts] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
 
+  // Debounce search query (500ms delay)
+  const debouncedSearchQuery = useDebounce(searchQuery, 500);
+
+  useEffect(() => {
+    fetchCategories();
+    fetchAllProductsForStats();
+  }, []);
+
   useEffect(() => {
     fetchProducts();
-  }, [currentPage, pageSize]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPage, pageSize, categoryFilter, debouncedSearchQuery]);
 
-  const fetchProducts = async () => {
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    if (currentPage !== 1) {
+      setCurrentPage(1);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [categoryFilter, debouncedSearchQuery]);
+
+  const fetchCategories = async () => {
+    try {
+      const response = await getCategories();
+      if (response.success && response.data) {
+        setCategories(response.data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch categories:", error);
+    }
+  };
+
+  const fetchAllProductsForStats = useCallback(async () => {
+    try {
+      // Fetch all products without filters for stats
+      const response = await getProducts(1, 1000, {});
+      if (response.success && response.data) {
+        setAllProductsForStats(response.data);
+      }
+    } catch (error) {
+      console.error("Failed to fetch products for stats:", error);
+    }
+  }, []);
+
+  const fetchProducts = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await getProducts(currentPage, pageSize, {
-        category: categoryFilter !== "all" ? categoryFilter : undefined,
-      });
+      const filters: any = {};
+      
+      if (categoryFilter !== "all") {
+        filters.category = categoryFilter;
+      }
+      
+      // Use debounced search query
+      if (debouncedSearchQuery.trim()) {
+        filters.search = debouncedSearchQuery.trim();
+      }
+      
+      const response = await getProducts(currentPage, pageSize, filters);
       
       const productsData = Array.isArray(response?.data) ? response.data : [];
       setProducts(productsData);
@@ -81,7 +151,7 @@ export function ModernProductsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentPage, pageSize, categoryFilter, debouncedSearchQuery]);
 
   const handleDeleteProduct = async (id: string) => {
     if (!confirm("Are you sure you want to delete this product?")) return;
@@ -89,28 +159,57 @@ export function ModernProductsPage() {
     try {
       await deleteAProduct(id);
       toast.success("Product deleted successfully");
-      fetchProducts();
+      
+      // Refresh both product list and stats
+      await Promise.all([
+        fetchProducts(),
+        fetchAllProductsForStats()
+      ]);
     } catch (error: any) {
       toast.error(error.message || "Failed to delete product");
     }
   };
 
-  const categories = Array.from(
-    new Set(
-      Array.isArray(products)
-        ? products.map((p) => p.category).filter(Boolean)
-        : []
-    )
-  );
-
+  // Stats based on all products (independent of filters)
   const stats = {
-    total: totalProducts,
-    inStock: Array.isArray(products)
-      ? products.filter((p) => p.in_stock === true).length
-      : 0,
-    outOfStock: Array.isArray(products)
-      ? products.filter((p) => p.in_stock === false).length
-      : 0,
+    total: allProductsForStats.length,
+    inStock: allProductsForStats.filter((p) => p.in_stock === true).length,
+    outOfStock: allProductsForStats.filter((p) => p.in_stock === false).length,
+  };
+
+  // Download products to Excel
+  const handleDownloadExcel = () => {
+    try {
+      // Prepare data for Excel
+      const excelData = allProductsForStats.map((product) => ({
+        'Product ID': product._id,
+        'Name': product.name,
+        'Category': product.category,
+        'Price': product.price,
+        'Original Price': product.originalPrice || product.original_price || '',
+        'Stock Status': product.in_stock ? 'In Stock' : 'Out of Stock',
+        'Rating': product.rating || 0,
+        'Reviews': product.reviews_count || 0,
+        'Description': product.description || '',
+      }));
+
+      // Create workbook and worksheet
+      const ws = XLSX.utils.json_to_sheet(excelData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Products');
+
+      // Generate filename with timestamp
+      const timestamp = new Date().toISOString().split('T')[0];
+      const filename = `products-${timestamp}.xlsx`;
+
+      // Download file
+      XLSX.writeFile(wb, filename);
+      
+      toast.success(`Downloaded ${allProductsForStats.length} products to ${filename}`);
+    } catch (error) {
+      console.error('Failed to download Excel:', error);
+      toast.error('Failed to download products');
+    }
   };
 
   const filteredProducts = products; // Filtering is now done on backend
@@ -224,8 +323,8 @@ export function ModernProductsPage() {
               <SelectContent>
                 <SelectItem value="all">All Categories</SelectItem>
                 {categories.map((cat) => (
-                  <SelectItem key={cat} value={cat}>
-                    {cat}
+                  <SelectItem key={cat._id || cat.name} value={cat.name}>
+                    {cat.name}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -246,7 +345,12 @@ export function ModernProductsPage() {
               >
                 <Grid3x3 className="h-4 w-4" />
               </Button>
-              <Button variant="outline" size="icon">
+              <Button 
+                variant="outline" 
+                size="icon"
+                onClick={handleDownloadExcel}
+                title="Download products to Excel"
+              >
                 <Download className="h-4 w-4" />
               </Button>
             </div>
@@ -284,7 +388,7 @@ export function ModernProductsPage() {
                 </TableHeader>
                 <TableBody>
                   {filteredProducts.map((product) => (
-                    <TableRow key={product.id}>
+                    <TableRow key={product._id}>
                       <TableCell>
                         <div className="flex items-center gap-3">
                           <img
@@ -295,7 +399,7 @@ export function ModernProductsPage() {
                           <div>
                             <p className="font-medium">{product.name}</p>
                             <p className="text-sm text-muted-foreground">
-                              {product.id}
+                              {product._id}
                             </p>
                           </div>
                         </div>
@@ -330,7 +434,7 @@ export function ModernProductsPage() {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => handleDeleteProduct(product.id)}
+                            onClick={() => handleDeleteProduct(product._id)}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -347,7 +451,7 @@ export function ModernProductsPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {filteredProducts.map((product) => (
             <Card
-              key={product.id}
+              key={product._id}
               className="hover:shadow-lg transition-all cursor-pointer"
             >
               <CardContent className="p-4">
@@ -392,7 +496,7 @@ export function ModernProductsPage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => handleDeleteProduct(product.id)}
+                    onClick={() => handleDeleteProduct(product._id)}
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
@@ -489,10 +593,15 @@ export function ModernProductsPage() {
           </DialogHeader>
           <ProductForm
             product={editingProduct}
-            onSuccess={() => {
+            onSuccess={async () => {
               setShowProductForm(false);
               setEditingProduct(null);
-              fetchProducts();
+              
+              // Refresh both product list and stats
+              await Promise.all([
+                fetchProducts(),
+                fetchAllProductsForStats()
+              ]);
             }}
             onCancel={() => {
               setShowProductForm(false);
